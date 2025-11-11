@@ -10,25 +10,25 @@ import (
 )
 
 type CreateProductRequest struct {
-	Name         string  `json:"name" binding:"required"`
-	Description  string  `json:"description"`
-	SKU          string  `json:"sku" binding:"required"`
-	Price        float64 `json:"price" binding:"required,min=0"`
-	StockQuantity int    `json:"stock_quantity" binding:"min=0"`
-	Unit         string  `json:"unit"`
-	Category     string  `json:"category"`
-	ImageURL     string  `json:"image_url"`
+	Name          string  `json:"name" binding:"required"`
+	Description   string  `json:"description"`
+	SKU           string  `json:"sku" binding:"required"`
+	Price         float64 `json:"price" binding:"required,min=0"`
+	StockQuantity int     `json:"stock_quantity" binding:"min=0"`
+	Unit          string  `json:"unit"`
+	Category      string  `json:"category"`
+	ImageURL      string  `json:"image_url"`
 }
 
 type UpdateProductRequest struct {
-	Name         string  `json:"name"`
-	Description  string  `json:"description"`
-	SKU          string  `json:"sku"`
-	Price        float64 `json:"price" binding:"omitempty,min=0"`
-	StockQuantity *int   `json:"stock_quantity"`
-	Unit         string  `json:"unit"`
-	Category     string  `json:"category"`
-	ImageURL     string  `json:"image_url"`
+	Name          string  `json:"name"`
+	Description   string  `json:"description"`
+	SKU           string  `json:"sku"`
+	Price         float64 `json:"price" binding:"omitempty,min=0"`
+	StockQuantity *int    `json:"stock_quantity"`
+	Unit          string  `json:"unit"`
+	Category      string  `json:"category"`
+	ImageURL      string  `json:"image_url"`
 }
 
 func GetProducts(c *gin.Context) {
@@ -97,15 +97,15 @@ func CreateProduct(c *gin.Context) {
 	}
 
 	product := models.Product{
-		SupplierID:   userID.(uint),
-		Name:         req.Name,
-		Description:  req.Description,
-		SKU:          req.SKU,
-		Price:        req.Price,
+		SupplierID:    userID.(uint),
+		Name:          req.Name,
+		Description:   req.Description,
+		SKU:           req.SKU,
+		Price:         req.Price,
 		StockQuantity: req.StockQuantity,
-		Unit:         req.Unit,
-		Category:     req.Category,
-		ImageURL:     req.ImageURL,
+		Unit:          req.Unit,
+		Category:      req.Category,
+		ImageURL:      req.ImageURL,
 	}
 
 	if err := database.DB.Create(&product).Error; err != nil {
@@ -227,4 +227,3 @@ func RestoreProduct(c *gin.Context) {
 
 	c.JSON(http.StatusOK, product)
 }
-

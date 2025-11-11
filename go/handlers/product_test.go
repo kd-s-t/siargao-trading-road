@@ -18,13 +18,13 @@ import (
 
 func setupProductTest(t *testing.T) (*gin.Engine, *config.Config, models.User) {
 	gin.SetMode(gin.TestMode)
-	
+
 	cfg := &config.Config{
 		JWTSecret: "test-secret-key",
 	}
-	
+
 	database.DB.Exec("TRUNCATE TABLE products, users CASCADE")
-	
+
 	supplier := models.User{
 		Email:    "supplier@test.com",
 		Password: "hashed",
@@ -32,13 +32,13 @@ func setupProductTest(t *testing.T) (*gin.Engine, *config.Config, models.User) {
 		Role:     models.RoleSupplier,
 	}
 	database.DB.Create(&supplier)
-	
+
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
 		c.Set("config", cfg)
 		c.Next()
 	})
-	
+
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(cfg))
 	{
@@ -48,7 +48,7 @@ func setupProductTest(t *testing.T) (*gin.Engine, *config.Config, models.User) {
 		api.PUT("/products/:id", UpdateProduct)
 		api.DELETE("/products/:id", DeleteProduct)
 	}
-	
+
 	return r, cfg, supplier
 }
 
@@ -65,9 +65,9 @@ func createTestToken(userID uint, role string, cfg *config.Config) string {
 
 func TestCreateProduct(t *testing.T) {
 	r, cfg, supplier := setupProductTest(t)
-	
+
 	token := createTestToken(supplier.ID, "supplier", cfg)
-	
+
 	t.Run("successful creation", func(t *testing.T) {
 		reqBody := CreateProductRequest{
 			Name:          "Test Product",
@@ -78,22 +78,22 @@ func TestCreateProduct(t *testing.T) {
 			Unit:          "piece",
 			Category:      "test",
 		}
-		
+
 		body, _ := json.Marshal(reqBody)
 		req, _ := http.NewRequest("POST", "/api/products", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
-		
+
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
-		
+
 		if w.Code != http.StatusCreated {
 			t.Errorf("Expected status %d, got %d", http.StatusCreated, w.Code)
 		}
-		
+
 		var product models.Product
 		json.Unmarshal(w.Body.Bytes(), &product)
-		
+
 		if product.Name != reqBody.Name {
 			t.Errorf("Expected name %s, got %s", reqBody.Name, product.Name)
 		}
@@ -101,7 +101,7 @@ func TestCreateProduct(t *testing.T) {
 			t.Errorf("Expected price %f, got %f", reqBody.Price, product.Price)
 		}
 	})
-	
+
 	t.Run("duplicate SKU", func(t *testing.T) {
 		reqBody := CreateProductRequest{
 			Name:          "Another Product",
@@ -109,15 +109,15 @@ func TestCreateProduct(t *testing.T) {
 			Price:         200.00,
 			StockQuantity: 30,
 		}
-		
+
 		body, _ := json.Marshal(reqBody)
 		req, _ := http.NewRequest("POST", "/api/products", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
-		
+
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
-		
+
 		if w.Code != http.StatusConflict {
 			t.Errorf("Expected status %d, got %d", http.StatusConflict, w.Code)
 		}
@@ -126,31 +126,31 @@ func TestCreateProduct(t *testing.T) {
 
 func TestGetProducts(t *testing.T) {
 	r, cfg, supplier := setupProductTest(t)
-	
+
 	product := models.Product{
-		SupplierID:   supplier.ID,
-		Name:         "Test Product",
-		SKU:          "SKU002",
-		Price:        100.00,
+		SupplierID:    supplier.ID,
+		Name:          "Test Product",
+		SKU:           "SKU002",
+		Price:         100.00,
 		StockQuantity: 50,
 	}
 	database.DB.Create(&product)
-	
+
 	token := createTestToken(supplier.ID, "supplier", cfg)
-	
+
 	req, _ := http.NewRequest("GET", "/api/products", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
-	
+
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
 	}
-	
+
 	var products []models.Product
 	json.Unmarshal(w.Body.Bytes(), &products)
-	
+
 	if len(products) != 1 {
 		t.Errorf("Expected 1 product, got %d", len(products))
 	}
@@ -158,39 +158,39 @@ func TestGetProducts(t *testing.T) {
 
 func TestUpdateProduct(t *testing.T) {
 	r, cfg, supplier := setupProductTest(t)
-	
+
 	product := models.Product{
-		SupplierID:   supplier.ID,
-		Name:         "Original Product",
-		SKU:          "SKU003",
-		Price:        100.00,
+		SupplierID:    supplier.ID,
+		Name:          "Original Product",
+		SKU:           "SKU003",
+		Price:         100.00,
 		StockQuantity: 50,
 	}
 	database.DB.Create(&product)
-	
+
 	token := createTestToken(supplier.ID, "supplier", cfg)
-	
+
 	reqBody := UpdateProductRequest{
-		Name:         "Updated Product",
-		Price:        150.00,
+		Name:          "Updated Product",
+		Price:         150.00,
 		StockQuantity: intPtr(75),
 	}
-	
+
 	body, _ := json.Marshal(reqBody)
 	req, _ := http.NewRequest("PUT", fmt.Sprintf("/api/products/%d", product.ID), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
-	
+
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
 	}
-	
+
 	var updatedProduct models.Product
 	json.Unmarshal(w.Body.Bytes(), &updatedProduct)
-	
+
 	if updatedProduct.Name != reqBody.Name {
 		t.Errorf("Expected name %s, got %s", reqBody.Name, updatedProduct.Name)
 	}
@@ -199,4 +199,3 @@ func TestUpdateProduct(t *testing.T) {
 func intPtr(i int) *int {
 	return &i
 }
-

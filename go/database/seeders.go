@@ -143,14 +143,14 @@ func SeedProducts() error {
 			}
 
 			product := models.Product{
-				SupplierID:   supplier.ID,
-				Name:         template.name,
-				Description:  template.description,
-				SKU:          sku,
-				Price:        template.price,
+				SupplierID:    supplier.ID,
+				Name:          template.name,
+				Description:   template.description,
+				SKU:           sku,
+				Price:         template.price,
 				StockQuantity: template.stock + (j * 10),
-				Unit:         template.unit,
-				Category:     template.category,
+				Unit:          template.unit,
+				Category:      template.category,
 			}
 
 			if err := DB.Create(&product).Error; err != nil {
@@ -202,7 +202,7 @@ func SeedOrders() error {
 
 	orderCount := 0
 	usedKeys := make(map[string]bool)
-	
+
 	for i, combo := range combinations {
 		if orderCount >= 10 {
 			break
@@ -216,7 +216,7 @@ func SeedOrders() error {
 		supplier := suppliers[combo.supplierIndex]
 		status := statuses[i%len(statuses)]
 		key := fmt.Sprintf("%d-%d-%s", store.ID, supplier.ID, status)
-		
+
 		if usedKeys[key] && orderCount < 9 {
 			continue
 		}
@@ -268,4 +268,3 @@ func SeedOrders() error {
 
 	return nil
 }
-

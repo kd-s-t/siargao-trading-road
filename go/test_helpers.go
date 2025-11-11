@@ -19,7 +19,7 @@ import (
 func setupTestDB(t *testing.T) *config.Config {
 	os.Setenv("DB_NAME", "wholesale_test")
 	os.Setenv("JWT_SECRET", "test-secret-key")
-	
+
 	cfg, err := config.Load()
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
@@ -44,7 +44,7 @@ func cleanupTestDB(t *testing.T) {
 func setupRouter(cfg *config.Config) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	
+
 	r.Use(func(c *gin.Context) {
 		c.Set("config", cfg)
 		c.Next()
@@ -101,23 +101,23 @@ func (tc *TestClient) Register(email, password, name, role string) map[string]in
 		"name":     name,
 		"role":     role,
 	}
-	
+
 	body, _ := json.Marshal(reqBody)
 	req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	w := httptest.NewRecorder()
 	tc.router.ServeHTTP(w, req)
 
 	var response map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &response)
-	
+
 	if w.Code == http.StatusCreated {
 		if token, ok := response["token"].(string); ok {
 			tc.token = token
 		}
 	}
-	
+
 	return response
 }
 
@@ -126,23 +126,23 @@ func (tc *TestClient) Login(email, password string) map[string]interface{} {
 		"email":    email,
 		"password": password,
 	}
-	
+
 	body, _ := json.Marshal(reqBody)
 	req, _ := http.NewRequest("POST", "/api/login", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	w := httptest.NewRecorder()
 	tc.router.ServeHTTP(w, req)
 
 	var response map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &response)
-	
+
 	if w.Code == http.StatusOK {
 		if token, ok := response["token"].(string); ok {
 			tc.token = token
 		}
 	}
-	
+
 	return response
 }
 
@@ -282,4 +282,3 @@ func Uint(v interface{}) uint {
 		return 0
 	}
 }
-

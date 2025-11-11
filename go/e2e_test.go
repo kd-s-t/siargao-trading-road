@@ -25,7 +25,7 @@ func TestFullBusinessFlow(t *testing.T) {
 		t.Run("Register supplier "+supplier.name, func(t *testing.T) {
 			client := NewTestClient(t, cfg)
 			response := client.Register(supplier.email, "password123", supplier.name, "supplier")
-			
+
 			if token, ok := response["token"].(string); ok {
 				supplierTokens[i] = token
 				if user, ok := response["user"].(map[string]interface{}); ok {
@@ -73,7 +73,7 @@ func TestFullBusinessFlow(t *testing.T) {
 				fmt.Sprintf("Store %d", i+1),
 				"store",
 			)
-			
+
 			if token, ok := response["token"].(string); ok {
 				storeTokens[i] = token
 				storeClients[i] = client
@@ -177,7 +177,7 @@ func TestFullBusinessFlow(t *testing.T) {
 
 			currentOrder := client.GetOrder(orderID)
 			currentStatus, _ := currentOrder["status"].(string)
-			
+
 			if currentStatus != "preparing" {
 				client.UpdateOrderStatus(orderID, "preparing")
 			}
@@ -198,7 +198,7 @@ func TestFullBusinessFlow(t *testing.T) {
 
 			currentOrder := client.GetOrder(orderID)
 			currentStatus, _ := currentOrder["status"].(string)
-			
+
 			if currentStatus != "preparing" {
 				client.UpdateOrderStatus(orderID, "preparing")
 			}
@@ -221,11 +221,11 @@ func TestFullBusinessFlow(t *testing.T) {
 
 			currentOrder := client.GetOrder(orderID)
 			currentStatus := currentOrder["status"].(string)
-			
+
 			if currentStatus != "preparing" {
 				client.UpdateOrderStatus(orderID, "preparing")
 			}
-			
+
 			currentOrder = client.GetOrder(orderID)
 			currentStatus, _ = currentOrder["status"].(string)
 			if currentStatus != "in_transit" {
@@ -236,4 +236,3 @@ func TestFullBusinessFlow(t *testing.T) {
 		})
 	}
 }
-

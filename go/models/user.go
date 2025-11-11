@@ -15,14 +15,14 @@ const (
 )
 
 type User struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	Email     string    `gorm:"uniqueIndex;not null" json:"email"`
-	Password  string    `gorm:"not null" json:"-"`
-	Name      string    `gorm:"not null" json:"name"`
-	Phone     string    `json:"phone"`
-	Role      UserRole  `gorm:"type:varchar(20);not null" json:"role"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	Email     string         `gorm:"uniqueIndex;not null" json:"email"`
+	Password  string         `gorm:"not null" json:"-"`
+	Name      string         `gorm:"not null" json:"name"`
+	Phone     string         `json:"phone"`
+	Role      UserRole       `gorm:"type:varchar(20);not null" json:"role"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -35,8 +35,7 @@ type Supplier struct {
 
 type Store struct {
 	User
-	StoreName      string `json:"store_name"`
-	Address        string `json:"address"`
+	StoreName       string `json:"store_name"`
+	Address         string `json:"address"`
 	BusinessLicense string `json:"business_license,omitempty"`
 }
-

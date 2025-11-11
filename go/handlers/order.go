@@ -81,11 +81,11 @@ func UpdateOrderStatus(c *gin.Context) {
 	}
 
 	validStatuses := map[string]bool{
-		"draft":       true,
-		"preparing":   true,
-		"in_transit":  true,
-		"delivered":   true,
-		"cancelled":   true,
+		"draft":      true,
+		"preparing":  true,
+		"in_transit": true,
+		"delivered":  true,
+		"cancelled":  true,
 	}
 
 	if !validStatuses[req.Status] {
@@ -130,9 +130,9 @@ func CreateDraftOrder(c *gin.Context) {
 	}
 
 	order := models.Order{
-		StoreID:    userID.(uint),
-		SupplierID: req.SupplierID,
-		Status:     models.OrderStatusDraft,
+		StoreID:     userID.(uint),
+		SupplierID:  req.SupplierID,
+		Status:      models.OrderStatusDraft,
 		TotalAmount: 0,
 	}
 
@@ -305,5 +305,3 @@ func GetDraftOrder(c *gin.Context) {
 
 	c.JSON(http.StatusOK, order)
 }
-
-

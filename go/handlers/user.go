@@ -72,27 +72,27 @@ func GetUserAnalytics(c *gin.Context) {
 	}
 
 	userID := c.Param("id")
-	
+
 	var user models.User
 	if err := database.DB.First(&user, userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
-	
+
 	var totalOrders int64
 	var totalEarnings float64
 	var orders []models.Order
-	
+
 	if user.Role == "store" {
 		database.DB.Model(&models.Order{}).
 			Where("store_id = ? AND status != ?", userID, "draft").
 			Count(&totalOrders)
-		
+
 		database.DB.Model(&models.Order{}).
 			Where("store_id = ? AND status != ?", userID, "draft").
 			Select("COALESCE(SUM(total_amount), 0)").
 			Scan(&totalEarnings)
-		
+
 		database.DB.Preload("OrderItems").Preload("OrderItems.Product").
 			Where("store_id = ? AND status != ?", userID, "draft").
 			Order("created_at DESC").
@@ -101,12 +101,12 @@ func GetUserAnalytics(c *gin.Context) {
 		database.DB.Model(&models.Order{}).
 			Where("supplier_id = ? AND status != ?", userID, "draft").
 			Count(&totalOrders)
-		
+
 		database.DB.Model(&models.Order{}).
 			Where("supplier_id = ? AND status != ?", userID, "draft").
 			Select("COALESCE(SUM(total_amount), 0)").
 			Scan(&totalEarnings)
-		
+
 		database.DB.Preload("OrderItems").Preload("OrderItems.Product").
 			Where("supplier_id = ? AND status != ?", userID, "draft").
 			Order("created_at DESC").
@@ -115,10 +115,10 @@ func GetUserAnalytics(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "analytics only available for stores and suppliers"})
 		return
 	}
-	
+
 	var productCounts = make(map[uint]map[string]interface{})
 	var totalProductsBought int64
-	
+
 	for _, order := range orders {
 		for _, item := range order.OrderItems {
 			totalProductsBought += int64(item.Quantity)
@@ -135,12 +135,12 @@ func GetUserAnalytics(c *gin.Context) {
 			}
 		}
 	}
-	
+
 	var productsBought []map[string]interface{}
 	for _, productInfo := range productCounts {
 		productsBought = append(productsBought, productInfo)
 	}
-	
+
 	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
 	var recentOrders []models.Order
 	if user.Role == "store" {
@@ -154,14 +154,14 @@ func GetUserAnalytics(c *gin.Context) {
 			Order("created_at DESC").
 			Find(&recentOrders)
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
-		"total_orders":        totalOrders,
-		"total_earnings":       totalEarnings,
+		"total_orders":          totalOrders,
+		"total_earnings":        totalEarnings,
 		"total_products_bought": totalProductsBought,
-		"orders":              orders,
-		"products_bought":     productsBought,
-		"recent_orders":       recentOrders,
+		"orders":                orders,
+		"products_bought":       productsBought,
+		"recent_orders":         recentOrders,
 	})
 }
 
@@ -177,7 +177,7 @@ func GetDashboardAnalytics(c *gin.Context) {
 	var totalStores int64
 	var totalOrders int64
 	var totalEarnings float64
-	
+
 	database.DB.Model(&models.User{}).Count(&totalUsers)
 	database.DB.Model(&models.User{}).Where("role = ?", "supplier").Count(&totalSuppliers)
 	database.DB.Model(&models.User{}).Where("role = ?", "store").Count(&totalStores)
@@ -186,40 +186,40 @@ func GetDashboardAnalytics(c *gin.Context) {
 		Where("status != ?", "draft").
 		Select("COALESCE(SUM(total_amount), 0)").
 		Scan(&totalEarnings)
-	
+
 	var orders []models.Order
 	database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").
 		Where("status != ?", "draft").
 		Order("created_at DESC").
 		Limit(100).
 		Find(&orders)
-	
+
 	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
 	var dailyStats []map[string]interface{}
-	
+
 	for i := 0; i < 30; i++ {
 		date := thirtyDaysAgo.AddDate(0, 0, i)
 		nextDate := date.AddDate(0, 0, 1)
-		
+
 		var dayOrders int64
 		var dayEarnings float64
-		
+
 		database.DB.Model(&models.Order{}).
 			Where("status != ? AND created_at >= ? AND created_at < ?", "draft", date, nextDate).
 			Count(&dayOrders)
-		
+
 		database.DB.Model(&models.Order{}).
 			Where("status != ? AND created_at >= ? AND created_at < ?", "draft", date, nextDate).
 			Select("COALESCE(SUM(total_amount), 0)").
 			Scan(&dayEarnings)
-		
+
 		dailyStats = append(dailyStats, map[string]interface{}{
 			"date":     date.Format("2006-01-02"),
 			"orders":   dayOrders,
 			"earnings": dayEarnings,
 		})
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"total_users":     totalUsers,
 		"total_suppliers": totalSuppliers,
@@ -227,7 +227,6 @@ func GetDashboardAnalytics(c *gin.Context) {
 		"total_orders":    totalOrders,
 		"total_earnings":  totalEarnings,
 		"recent_orders":   orders,
-		"daily_stats":    dailyStats,
+		"daily_stats":     dailyStats,
 	})
 }
-

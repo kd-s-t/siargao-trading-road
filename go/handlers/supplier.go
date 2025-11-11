@@ -23,12 +23,12 @@ func GetSuppliers(c *gin.Context) {
 	}
 
 	type SupplierInfo struct {
-		ID          uint   `json:"id"`
-		Name        string `json:"name"`
-		Email       string `json:"email"`
-		Phone       string `json:"phone"`
-		Description string `json:"description"`
-		ProductCount int   `json:"product_count"`
+		ID           uint   `json:"id"`
+		Name         string `json:"name"`
+		Email        string `json:"email"`
+		Phone        string `json:"phone"`
+		Description  string `json:"description"`
+		ProductCount int    `json:"product_count"`
 	}
 
 	var supplierInfos []SupplierInfo
@@ -37,11 +37,11 @@ func GetSuppliers(c *gin.Context) {
 		database.DB.Model(&models.Product{}).Where("supplier_id = ?", supplier.ID).Count(&productCount)
 
 		supplierInfos = append(supplierInfos, SupplierInfo{
-			ID:          supplier.ID,
-			Name:        supplier.Name,
-			Email:       supplier.Email,
-			Phone:       supplier.Phone,
-			Description: "Wholesale supplier offering various products",
+			ID:           supplier.ID,
+			Name:         supplier.Name,
+			Email:        supplier.Email,
+			Phone:        supplier.Phone,
+			Description:  "Wholesale supplier offering various products",
 			ProductCount: int(productCount),
 		})
 	}
@@ -72,4 +72,3 @@ func GetSupplierProducts(c *gin.Context) {
 
 	c.JSON(http.StatusOK, products)
 }
-
