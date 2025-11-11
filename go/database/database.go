@@ -31,7 +31,7 @@ func Connect(cfg *config.Config) error {
 		return err
 	}
 
-	err = SeedAdmin()
+	err = SeedAll()
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import {
   TextInput,
@@ -50,6 +51,13 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Surface style={styles.surface} elevation={3}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../assets/icon.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
           <Text variant="headlineMedium" style={styles.title}>
             Wholesale
           </Text>
@@ -114,6 +122,14 @@ const styles = StyleSheet.create({
   surface: {
     padding: 24,
     borderRadius: 8,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logo: {
+    width: 120,
+    height: 120,
   },
   title: {
     textAlign: 'center',

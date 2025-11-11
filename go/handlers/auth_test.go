@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
@@ -114,9 +115,10 @@ func TestLogin(t *testing.T) {
 	
 	database.DB.Exec("TRUNCATE TABLE users CASCADE")
 	
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
 	user := models.User{
 		Email:    "login@example.com",
-		Password: "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+		Password: string(hashedPassword),
 		Name:     "Login User",
 		Role:     models.RoleSupplier,
 	}
