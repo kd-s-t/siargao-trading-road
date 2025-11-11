@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+echo "Running pre-push checks..."
+
+echo "Building Go..."
+cd go && go build ./... && cd ..
+if [ $? -ne 0 ]; then
+  echo "Go build failed. Please fix the issues before pushing."
+  exit 1
+fi
+
+echo "Building web..."
+npm run build --workspace=web
+if [ $? -ne 0 ]; then
+  echo "Web build failed. Please fix the issues before pushing."
+  exit 1
+fi
+
+echo "All pre-push checks passed!"
+

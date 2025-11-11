@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+echo "Running pre-commit checks..."
+
+echo "Formatting Go code..."
+cd go && go fmt ./... && cd ..
+if [ $? -ne 0 ]; then
+  echo "Go formatting failed. Please fix the issues before committing."
+  exit 1
+fi
+
+echo "Linting web..."
+npm run lint:web
+if [ $? -ne 0 ]; then
+  echo "Web linting failed. Please fix the issues before committing."
+  exit 1
+fi
+
+echo "Linting mobile..."
+npm run lint:mobile
+if [ $? -ne 0 ]; then
+  echo "Mobile linting failed. Please fix the issues before committing."
+  exit 1
+fi
+
+echo "Pre-commit checks passed!"

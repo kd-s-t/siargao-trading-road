@@ -1,0 +1,64 @@
+package main
+
+import (
+	"log"
+
+	"github.com/gin-gonic/gin"
+	"siargao-trading-road/config"
+	"siargao-trading-road/database"
+	"siargao-trading-road/handlers"
+	"siargao-trading-road/middleware"
+)
+
+func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal("Failed to load config:", err)
+	}
+
+	err = database.Connect(cfg)
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+
+	r := gin.Default()
+
+	r.Use(func(c *gin.Context) {
+		c.Set("config", cfg)
+		c.Next()
+	})
+
+	api := r.Group("/api")
+	{
+		api.POST("/register", handlers.Register)
+		api.POST("/login", handlers.Login)
+
+		protected := api.Group("/")
+		protected.Use(middleware.AuthMiddleware(cfg))
+		{
+			protected.GET("/me", handlers.GetMe)
+			protected.GET("/products", handlers.GetProducts)
+			protected.GET("/products/:id", handlers.GetProduct)
+			protected.POST("/products", handlers.CreateProduct)
+			protected.PUT("/products/:id", handlers.UpdateProduct)
+			protected.DELETE("/products/:id", handlers.DeleteProduct)
+			protected.POST("/products/:id/restore", handlers.RestoreProduct)
+			protected.GET("/orders", handlers.GetOrders)
+			protected.GET("/orders/:id", handlers.GetOrder)
+			protected.PUT("/orders/:id/status", handlers.UpdateOrderStatus)
+			protected.GET("/orders/draft", handlers.GetDraftOrder)
+			protected.POST("/orders/draft", handlers.CreateDraftOrder)
+			protected.POST("/orders/:id/items", handlers.AddOrderItem)
+			protected.PUT("/orders/items/:item_id", handlers.UpdateOrderItem)
+			protected.DELETE("/orders/items/:item_id", handlers.RemoveOrderItem)
+			protected.GET("/suppliers", handlers.GetSuppliers)
+			protected.GET("/suppliers/:id/products", handlers.GetSupplierProducts)
+		}
+	}
+
+	log.Printf("Server starting on port %s", cfg.Port)
+	if err := r.Run(":" + cfg.Port); err != nil {
+		log.Fatal("Failed to start server:", err)
+	}
+}
+

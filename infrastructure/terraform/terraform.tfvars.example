@@ -1,0 +1,24 @@
+aws_region = "us-east-1"
+ami_id = "ami-xxxxxxxxx"
+instance_type = "t2.micro"
+public_key_path = "/path/to/your/public/key.pub"
+private_key_path = "/path/to/your/private/key"
+repo_url = "https://github.com/your-username/siargao-trading-road.git"
+environment = "production"
+
+enable_ssl = false
+ssl_domains = ["siargaotradingroad.com", "www.siargaotradingroad.com"]
+ssl_email = "admin@siargaotradingroad.com"
+
+db_name = "wholesale"
+db_username = "wholesale_admin"
+db_password = ""
+rds_instance_class = "db.t3.micro"
+rds_allocated_storage = 20
+rds_max_allocated_storage = 100
+rds_engine_version = "15.4"
+rds_backup_retention_period = 7
+rds_skip_final_snapshot = false
+
+mobile_build_retention_days = 90
+
