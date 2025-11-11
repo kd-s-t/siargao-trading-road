@@ -28,12 +28,12 @@ npm run android
 
 Create a `.env` file in the mobile directory:
 ```
-EXPO_PUBLIC_API_URL=http://localhost:8080/api
+EXPO_PUBLIC_API_URL=http://localhost:3020/api
 ```
 
 For physical devices, use your computer's IP address:
 ```
-EXPO_PUBLIC_API_URL=http://192.168.1.xxx:8080/api
+EXPO_PUBLIC_API_URL=http://192.168.1.xxx:3020/api
 ```
 
 ## Features

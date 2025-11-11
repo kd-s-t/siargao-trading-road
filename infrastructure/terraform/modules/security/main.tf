@@ -50,16 +50,16 @@ resource "aws_security_group" "wholesale_sg" {
 
   ingress {
     description = "Next.js web app"
-    from_port   = 3000
-    to_port     = 3000
+    from_port   = 3021
+    to_port     = 3021
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     description = "Go API"
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = 3020
+    to_port     = 3020
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
