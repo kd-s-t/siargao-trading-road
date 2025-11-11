@@ -22,7 +22,7 @@ Wholesale marketplace app connecting suppliers and stores in Siargao.
 </div>
 
 <div align="center"> 
-	<img src="https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white" /> 
+	<img src="https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" /> 
 	<img src="https://img.shields.io/badge/terraform-%235835CC.svg?style=for-the-badge&logo=terraform&logoColor=white" /> 
 	<img src="https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white" />
 </div>
@@ -35,7 +35,7 @@ Wholesale marketplace app connecting suppliers and stores in Siargao.
 - **Store Management**: Register, browse suppliers, purchase wholesale
 - **Product Management**: Full CRUD operations with soft delete and restore
 - **Authentication**: JWT-based secure authentication system
-- **Multi-Platform**: React Native mobile app and Next.js web admin panel
+- **Multi-Platform**: React Native mobile app (suppliers & stores) and Next.js web admin panel (admin only)
 - **RESTful API**: Golang backend with Gin framework
 
 ---
