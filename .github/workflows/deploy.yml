@@ -191,12 +191,12 @@ jobs:
             
             # Update docker-compose.yml with image tags
             echo "📝 Updating docker-compose.yml with image tags..."
-            cat > docker-compose.yml << COMPOSE_EOF
+            cat > docker-compose.yml << 'COMPOSE_EOF'
 version: '3.8'
 
 services:
   api:
-    image: $API_IMAGE
+    image: ${API_IMAGE}
     container_name: siargao-api
     ports:
       - "3020:3020"
@@ -210,7 +210,7 @@ services:
       - siargao-network
 
   frontend:
-    image: $FRONTEND_IMAGE
+    image: ${FRONTEND_IMAGE}
     container_name: siargao-frontend
     ports:
       - "3021:3021"
@@ -219,7 +219,7 @@ services:
     environment:
       - PORT=3021
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=\${NEXT_PUBLIC_API_URL:-http://localhost:3020/api}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3020/api}
     depends_on:
       - api
     restart: unless-stopped
@@ -230,7 +230,10 @@ networks:
   siargao-network:
     driver: bridge
 COMPOSE_EOF
-            
+            # Substitute variables in docker-compose.yml
+            sed -i "s|\${API_IMAGE}|$API_IMAGE|g" docker-compose.yml
+            sed -i "s|\${FRONTEND_IMAGE}|$FRONTEND_IMAGE|g" docker-compose.yml
+
             # Stop existing containers
             echo "🛑 Stopping existing containers..."
             docker compose down || true
