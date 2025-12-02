@@ -650,7 +650,7 @@
 	"variable": [
 		{
 			"key": "base_url",
-			"value": "http://localhost:3020",
+			"value": "https://siargaotradingroad.com",
 			"type": "string"
 		},
 		{

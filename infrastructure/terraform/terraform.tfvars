@@ -6,8 +6,8 @@ private_key_path = "./modules/security/splitsafe-key-development.pem"
 repo_url = "https://github.com/kd-s-t/siargao-trading-road.git"
 environment = "development"
 
-enable_ssl = false
-ssl_domains = []
+enable_ssl = true
+ssl_domains = ["siargaotradingroad.com", "www.siargaotradingroad.com"]
 ssl_email = "admin@siargaotradingroad.com"
 
 db_name = "siargaotradingroad"

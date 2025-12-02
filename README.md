@@ -112,6 +112,37 @@ Alternatively, you can use `npm start` or `npx expo start` to launch the Expo de
 
 For detailed setup, environment variables, building, and deployment, see [reactnative/README.md](./reactnative/README.md).
 
+### Mobile App Release
+
+**Prerequisites:**
+- EAS CLI installed: `npm install -g eas-cli`
+- AWS CLI installed and configured
+- Expo account and EAS project initialized
+- Android credentials set up (one-time setup)
+
+**Quick Release:**
+```bash
+cd reactnative
+npm run release -- --platform android --profile preview
+```
+
+**Options:**
+- `--platform`: `android`, `ios`, or `all` (default: `all`)
+- `--profile`: `development`, `preview`, or `production` (default: `preview`)
+- `--environment`: `development`, `staging`, or `production` (default: `development`)
+
+The release script will:
+1. Build the app using EAS Build
+2. Download the build artifact
+3. Upload to S3 (versioned and latest)
+4. Provide download URLs
+
+Builds are automatically uploaded to:
+- **Versioned**: `{platform}/siargao-trading-road-{version}-{commit}-{timestamp}.{ext}`
+- **Latest**: `{platform}/latest.{ext}` (used by landing page)
+
+For detailed release instructions, troubleshooting, and setup, see [docs/RELEASE.md](./docs/RELEASE.md).
+
 ## Project Structure
 
 ```
@@ -162,4 +193,7 @@ Access at `http://localhost:2022`
 - [Backend API](./golang/README.md) - Golang API setup and testing
 - [Admin Panel](./nextjs/README.md) - Next.js admin panel setup
 - [Mobile App](./reactnative/README.md) - React Native mobile app setup and deployment
+- [Mobile App Release](./docs/RELEASE.md) - Build and release mobile app to S3
 - [Tech Stack](./docs/TECH_STACK.md) - Technology stack details
+- [Database Schema](./docs/DATABASE_SCHEMA.md) - Database structure and relationships
+- [EC2 Setup](./docs/EC2_SETUP.md) - Server setup instructions
