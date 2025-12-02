@@ -27,6 +27,7 @@ import {
   Select,
   MenuItem,
   Alert,
+  Avatar,
 } from '@mui/material';
 import { Search as SearchIcon, Add as AddIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
@@ -241,7 +242,18 @@ export default function UsersPage() {
                       onClick={() => router.push(`/users/${u.id}`)}
                     >
                       <TableCell>{u.id}</TableCell>
-                      <TableCell>{u.name}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar
+                            src={u.logo_url && u.logo_url.trim() !== '' ? u.logo_url : undefined}
+                            alt={u.name}
+                            sx={{ width: 40, height: 40, bgcolor: 'primary.main' }}
+                          >
+                            {u.name.charAt(0).toUpperCase()}
+                          </Avatar>
+                          <Typography variant="body2">{u.name}</Typography>
+                        </Box>
+                      </TableCell>
                       <TableCell>{u.email}</TableCell>
                       <TableCell>{u.phone || '-'}</TableCell>
                       <TableCell>

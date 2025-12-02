@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Image } from 'react-native';
 import {
   Text,
   Surface,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Divider,
   IconButton,
+  Avatar,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { supplierService, Supplier } from '../lib/suppliers';
@@ -94,13 +95,37 @@ export default function SuppliersScreen() {
               style={styles.supplierCard}
               onPress={() => handleSupplierPress(supplier)}
             >
+              {supplier.banner_url ? (
+                <Image
+                  source={{ uri: supplier.banner_url }}
+                  style={styles.bannerImage}
+                  resizeMode="cover"
+                />
+              ) : null}
               <Card.Content>
-                <Text variant="titleMedium" style={styles.supplierName}>
-                  {supplier.name}
-                </Text>
-                <Text variant="bodySmall" style={styles.supplierEmail}>
-                  {supplier.email}
-                </Text>
+                <View style={styles.headerRow}>
+                  {supplier.logo_url ? (
+                    <Avatar.Image
+                      size={60}
+                      source={{ uri: supplier.logo_url }}
+                      style={styles.logo}
+                    />
+                  ) : (
+                    <Avatar.Text
+                      size={60}
+                      label={supplier.name.charAt(0).toUpperCase()}
+                      style={styles.logo}
+                    />
+                  )}
+                  <View style={styles.nameContainer}>
+                    <Text variant="titleMedium" style={styles.supplierName}>
+                      {supplier.name}
+                    </Text>
+                    <Text variant="bodySmall" style={styles.supplierEmail}>
+                      {supplier.email}
+                    </Text>
+                  </View>
+                </View>
                 <Divider style={styles.divider} />
                 <Text variant="bodyMedium" style={styles.description}>
                   {supplier.description}
@@ -171,6 +196,23 @@ const styles = StyleSheet.create({
   },
   supplierCard: {
     marginBottom: 16,
+    overflow: 'hidden',
+  },
+  bannerImage: {
+    width: '100%',
+    height: 150,
+    backgroundColor: '#e0e0e0',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  logo: {
+    marginRight: 12,
+  },
+  nameContainer: {
+    flex: 1,
   },
   supplierName: {
     fontWeight: 'bold',
@@ -178,7 +220,6 @@ const styles = StyleSheet.create({
   },
   supplierEmail: {
     opacity: 0.7,
-    marginBottom: 8,
   },
   divider: {
     marginVertical: 12,

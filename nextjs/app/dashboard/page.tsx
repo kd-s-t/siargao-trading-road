@@ -234,7 +234,7 @@ export default function DashboardPage() {
               <Card>
                 <CardContent>
                   <Typography color="text.secondary" gutterBottom variant="body2">
-                    Total Earnings
+                    Total Transaction Volume
                   </Typography>
                   <Typography variant="h5" color="primary">
                     ₱{analytics.total_earnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -343,7 +343,7 @@ export default function DashboardPage() {
             >
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Daily Earnings (Last 30 Days)
+                  Daily Transaction Volume (Last 30 Days)
                 </Typography>
                 <Box sx={{ height: 300 }}>
                   <Line
@@ -351,7 +351,7 @@ export default function DashboardPage() {
                       labels: analytics.daily_stats.map((stat) => formatDate(stat.date)),
                       datasets: [
                         {
-                          label: 'Earnings',
+                          label: 'Transaction Volume',
                           data: analytics.daily_stats.map((stat) => stat.earnings),
                           borderColor: '#38b2ac',
                           backgroundColor: 'rgba(56, 178, 172, 0.1)',

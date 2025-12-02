@@ -126,3 +126,11 @@ module "s3_mobile" {
   build_retention_days = var.mobile_build_retention_days
 }
 
+module "s3_uploads" {
+  source = "./modules/s3-uploads"
+  
+  environment          = var.environment
+  ec2_role_arn         = module.iam.ec2_role_arn
+  upload_retention_days = 365
+}
+

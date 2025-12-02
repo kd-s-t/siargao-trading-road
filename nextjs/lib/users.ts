@@ -7,6 +7,8 @@ export interface User {
   phone?: string;
   role: 'supplier' | 'store' | 'admin';
   admin_level?: number;
+  logo_url?: string;
+  banner_url?: string;
   created_at: string;
   updated_at: string;
 }
