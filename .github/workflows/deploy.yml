@@ -156,14 +156,53 @@ jobs:
             set -e
             echo "🔧 Checking and installing required tools..."
             
+            wait_for_apt() {
+              echo "⏳ Waiting for apt to be available..."
+              local max_attempts=30
+              local attempt=0
+              
+              while [ $attempt -lt $max_attempts ]; do
+                if sudo lsof /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+                  echo "⏳ Apt lock exists, waiting... (attempt $((attempt+1))/$max_attempts)"
+                  sleep 2
+                  attempt=$((attempt+1))
+                else
+                  echo "✅ Apt is available"
+                  return 0
+                fi
+              done
+              
+              echo "⚠️ Apt lock still exists after waiting, attempting to clear..."
+              sudo pkill -9 apt-get || true
+              sudo pkill -9 apt || true
+              sudo pkill -9 dpkg || true
+              sleep 2
+              sudo rm -f /var/lib/dpkg/lock-frontend
+              sudo rm -f /var/lib/dpkg/lock
+              sudo rm -f /var/cache/apt/archives/lock
+              sudo dpkg --configure -a || true
+              echo "✅ Locks cleared"
+            }
+            
+            disable_auto_updates() {
+              echo "🔧 Disabling automatic updates temporarily..."
+              sudo systemctl stop unattended-upgrades || true
+              sudo systemctl disable unattended-upgrades || true
+            }
+            
+            wait_for_apt
+            disable_auto_updates
+            
             # Check and install Docker
             if ! command -v docker &> /dev/null; then
               echo "📦 Installing Docker..."
+              wait_for_apt
               sudo apt-get update
               sudo apt-get install -y ca-certificates curl gnupg lsb-release
               sudo mkdir -p /etc/apt/keyrings
               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
               echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+              wait_for_apt
               sudo apt-get update
               sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
               sudo usermod -aG docker $USER
