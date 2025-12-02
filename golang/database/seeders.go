@@ -7,6 +7,25 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func ResetAndSeed() error {
+	if err := ResetDatabase(); err != nil {
+		return err
+	}
+	return SeedAll()
+}
+
+func ResetDatabase() error {
+	if DB == nil {
+		return fmt.Errorf("database connection not initialized")
+	}
+	
+	if err := DB.Exec("TRUNCATE TABLE order_items, orders, products, business_documents, users CASCADE").Error; err != nil {
+		return fmt.Errorf("failed to truncate tables: %w", err)
+	}
+	
+	return nil
+}
+
 func SeedAll() error {
 	if err := SeedAdmin(); err != nil {
 		return err
@@ -32,14 +51,19 @@ func SeedAll() error {
 }
 
 func SeedSuppliers() error {
+	const s3BaseURL = "https://siargaotradingroad-user-uploads-development.s3.us-east-1.amazonaws.com"
+
 	suppliers := []struct {
-		email string
-		name  string
-		phone string
+		email     string
+		name      string
+		phone     string
+		logoURL   string
+		bannerURL string
 	}{
-		{"supplier1@example.com", "Fresh Produce Co", "09123456781"},
-		{"supplier2@example.com", "Meat & Seafood Supply", "09123456782"},
-		{"supplier3@example.com", "Beverage Distributors", "09123456783"},
+		{"nike@example.com", "Nike", "09123456781", fmt.Sprintf("%s/nikelogo.png", s3BaseURL), fmt.Sprintf("%s/nikebanner.jpg", s3BaseURL)},
+		{"toms@example.com", "Toms", "09123456782", fmt.Sprintf("%s/tomslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/tomsbanner.jpg", s3BaseURL)},
+		{"711@example.com", "7-Eleven", "09123456783", fmt.Sprintf("%s/711logo.png", s3BaseURL), fmt.Sprintf("%s/711banner.webp", s3BaseURL)},
+		{"walmart@example.com", "Walmart", "09123456784", fmt.Sprintf("%s/walmartlogo.png", s3BaseURL), fmt.Sprintf("%s/walmartbanner.jpg", s3BaseURL)},
 	}
 
 	for _, s := range suppliers {
@@ -54,11 +78,13 @@ func SeedSuppliers() error {
 		}
 
 		supplier := models.User{
-			Email:    s.email,
-			Password: string(hashedPassword),
-			Name:     s.name,
-			Phone:    s.phone,
-			Role:     models.RoleSupplier,
+			Email:     s.email,
+			Password:  string(hashedPassword),
+			Name:      s.name,
+			Phone:     s.phone,
+			LogoURL:   s.logoURL,
+			BannerURL: s.bannerURL,
+			Role:      models.RoleSupplier,
 		}
 
 		if err := DB.Create(&supplier).Error; err != nil {
