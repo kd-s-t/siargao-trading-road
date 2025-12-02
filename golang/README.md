@@ -20,7 +20,7 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=postgres
-DB_NAME=wholesale
+DB_NAME=siargao_trading_road
 JWT_SECRET=change-this-secret-key
 ```
 
@@ -73,6 +73,6 @@ go test ./... -cover
 
 For testing, use a separate database:
 ```bash
-export DB_NAME=wholesale_test
+export DB_NAME=siargao_trading_road_test
 export JWT_SECRET=test-secret-key
 ```

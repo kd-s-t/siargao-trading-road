@@ -41,5 +41,5 @@
 ## App Overview
 - **2 User Types:**
   - **Supplier**: Register, add items (Excel/JSON/manual)
-  - **Store**: Register, select supplier, buy wholesale
+  - **Store**: Register, select supplier, buy products
 

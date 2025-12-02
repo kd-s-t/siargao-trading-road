@@ -17,14 +17,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.wholesale.app"
+      "bundleIdentifier": "com.siargao.trading.road"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.wholesale.app",
+      "package": "com.siargao.trading.road",
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE"
@@ -33,7 +33,7 @@
     "web": {
       "favicon": "./assets/favicon.ico"
     },
-    "scheme": "wholesale"
+    "scheme": "siargao-trading-road"
   }
 }
 

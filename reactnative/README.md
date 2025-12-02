@@ -1,6 +1,6 @@
 # React Native Mobile App
 
-React Native mobile application for Siargao Trading Road wholesale marketplace. Built with Expo, React Navigation, and Material Design UI.
+React Native mobile application for Siargao Trading Road. Built with Expo, React Navigation, and Material Design UI.
 
 ## Prerequisites
 

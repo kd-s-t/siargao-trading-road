@@ -17,7 +17,7 @@ import (
 )
 
 func setupTestDB(t *testing.T) *config.Config {
-	os.Setenv("DB_NAME", "wholesale_test")
+	os.Setenv("DB_NAME", "siargao_trading_road_test")
 	os.Setenv("JWT_SECRET", "test-secret-key")
 
 	cfg, err := config.Load()

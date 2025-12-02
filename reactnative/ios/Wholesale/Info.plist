@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>Wholesale</string>
+    <string>Siargao Trading Road</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -27,8 +27,8 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>wholesale</string>
-          <string>com.wholesale.app</string>
+          <string>siargao-trading-road</string>
+          <string>com.siargao.trading.road</string>
         </array>
       </dict>
     </array>

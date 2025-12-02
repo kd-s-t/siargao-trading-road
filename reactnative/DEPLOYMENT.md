@@ -88,7 +88,7 @@ Add these secrets to your GitHub repository:
 4. **AWS_REGION**: AWS region (default: `us-east-1`)
 
 5. **S3_MOBILE_BUILDS_BUCKET**: S3 bucket name for mobile builds
-   - Created automatically by Terraform: `wholesale-mobile-builds-{environment}`
+   - Created automatically by Terraform: `siargao-trading-road-mobile-builds-{environment}`
    - Get from Terraform output: `terraform output mobile_builds_bucket_name`
 
 6. **API_DOMAIN**: Your production API domain (e.g., `api.siargaotradingroad.com`)
@@ -133,13 +133,13 @@ You can trigger builds manually from GitHub Actions:
 
 ### S3 Downloads (Automatic)
 Builds are automatically uploaded to S3 after completion:
-- **Versioned builds**: `android/wholesale-{version}-{commit}-{timestamp}.apk`
+- **Versioned builds**: `android/siargao-trading-road-{version}-{commit}-{timestamp}.apk`
 - **Latest builds**: `android/latest.apk` and `ios/latest.ipa`
 - **Public URLs**: Direct download links posted in PR comments
 
 Example URLs:
-- Android: `https://wholesale-mobile-builds-production.s3.us-east-1.amazonaws.com/android/latest.apk`
-- iOS: `https://wholesale-mobile-builds-production.s3.us-east-1.amazonaws.com/ios/latest.ipa`
+- Android: `https://siargao-trading-road-mobile-builds-production.s3.us-east-1.amazonaws.com/android/latest.apk`
+- iOS: `https://siargao-trading-road-mobile-builds-production.s3.us-east-1.amazonaws.com/ios/latest.ipa`
 
 ### Internal Testing
 - **S3 Downloads**: Use the latest.apk/latest.ipa links

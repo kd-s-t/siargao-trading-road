@@ -26,7 +26,7 @@ Base user table for both suppliers and stores.
 
 **User Roles:**
 - `supplier`: Business supplying products
-- `store`: Store purchasing wholesale products
+- `store`: Store purchasing products
 
 **Supplier-specific fields** (stored in users table when role='supplier'):
 - `business_name`: Name of supplier business

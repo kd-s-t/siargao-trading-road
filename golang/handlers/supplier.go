@@ -41,7 +41,7 @@ func GetSuppliers(c *gin.Context) {
 			Name:         supplier.Name,
 			Email:        supplier.Email,
 			Phone:        supplier.Phone,
-			Description:  "Wholesale supplier offering various products",
+			Description:  "Siargao Trading Road supplier offering various products",
 			ProductCount: int(productCount),
 		})
 	}
