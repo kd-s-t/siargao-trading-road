@@ -7,7 +7,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files
-COPY nextjs/package.json nextjs/package-lock.json* ./
+COPY nextjs/package.json ./
+COPY nextjs/package-lock.json ./
 
 # Install dependencies
 RUN npm ci --ignore-scripts
