@@ -2,14 +2,14 @@
 echo "Running pre-push checks..."
 
 echo "Building Go..."
-cd go && go build ./... && cd ..
+cd golang && go build ./... && cd ..
 if [ $? -ne 0 ]; then
   echo "Go build failed. Please fix the issues before pushing."
   exit 1
 fi
 
-echo "Building web..."
-npm run build --workspace=web
+echo "Building nextjs..."
+cd nextjs && npm run build && cd ..
 if [ $? -ne 0 ]; then
   echo "Web build failed. Please fix the issues before pushing."
   exit 1

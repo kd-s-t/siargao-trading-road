@@ -83,4 +83,3 @@ func isReadOnly(c *gin.Context) bool {
 
 	return level == 3
 }
-
