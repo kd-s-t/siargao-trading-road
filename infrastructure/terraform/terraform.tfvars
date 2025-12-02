@@ -19,6 +19,8 @@ rds_max_allocated_storage = 100
 rds_engine_version = "17.6"
 rds_backup_retention_period = 7
 rds_skip_final_snapshot = true
+rds_publicly_accessible = true
+rds_allowed_cidr_blocks = ["49.148.247.52/32"]
 
 mobile_build_retention_days = 90
 

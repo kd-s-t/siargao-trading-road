@@ -115,6 +115,8 @@ module "rds" {
   engine_version         = var.rds_engine_version
   backup_retention_period = var.rds_backup_retention_period
   skip_final_snapshot    = var.rds_skip_final_snapshot
+  publicly_accessible    = var.rds_publicly_accessible
+  allowed_cidr_blocks   = var.rds_allowed_cidr_blocks
 }
 
 module "s3_mobile" {
