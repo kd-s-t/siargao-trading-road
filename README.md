@@ -31,6 +31,15 @@ Wholesale marketplace app connecting suppliers and stores in Siargao.
 
 ---
 
+## Visual Overview
+
+<div align="center">
+  <h3>Landing Page</h3>
+  <img src="./landingpage.png" alt="Siargao Trading Road Landing Page" width="100%" />
+</div>
+
+---
+
 ## Features
 
 - **Supplier Management**: Register, add products via Excel/JSON/manual entry
@@ -133,6 +142,10 @@ npm run storybook
 ```
 
 Access at `http://localhost:2022`
+
+<div align="center">
+  <img src="./storybook.png" alt="Storybook Component Library" width="100%" />
+</div>
 
 **Available Stories:**
 - Buttons (variants, sizes, states, with icons)
