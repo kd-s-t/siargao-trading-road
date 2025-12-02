@@ -43,7 +43,21 @@ Before you can release the mobile app, ensure you have:
 
 ## Quick Start
 
-### Build and Release for Android
+### Build and Release for Android (Local - No Account Required)
+
+```bash
+cd reactnative
+npm run release:local:android
+```
+
+This builds locally using your Android development environment (Android Studio/Gradle) and doesn't require an Expo account.
+
+**Prerequisites for Local Builds:**
+- Android Studio installed
+- Android SDK configured
+- `ANDROID_HOME` or `ANDROID_SDK_ROOT` environment variable set
+
+### Build and Release for Android (EAS Cloud)
 
 ```bash
 cd reactnative
@@ -86,18 +100,25 @@ npm run release [OPTIONS]
 - `--region REGION` - AWS region for S3 upload
   - Default: `us-east-1`
   
+- `--local` - Build locally without EAS (no account required)
+  - Requires Android Studio for Android builds
+  - Requires Xcode (macOS) for iOS builds
+  
 - `--help` - Show help message
 
 ### Examples
 
 ```bash
-# Build Android for production
+# Build Android locally (no account needed)
+npm run release:local:android
+
+# Build Android for production (EAS)
 npm run release -- --platform android --profile production --environment production
 
-# Build iOS for staging
+# Build iOS for staging (EAS)
 npm run release -- --platform ios --profile preview --environment staging
 
-# Build both platforms for development
+# Build both platforms for development (EAS)
 npm run release -- --profile development
 ```
 

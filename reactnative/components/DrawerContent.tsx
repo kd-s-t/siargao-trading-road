@@ -38,24 +38,33 @@ export default function DrawerContent() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        {user?.logo_url ? (
-          <Image source={{ uri: user.logo_url }} style={styles.avatar} />
+        {user?.banner_url ? (
+          <Image source={{ uri: user.banner_url }} style={styles.banner} resizeMode="cover" />
         ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text variant="headlineMedium" style={styles.avatarText}>
-              {user?.name?.charAt(0).toUpperCase() || 'U'}
-            </Text>
-          </View>
+          <View style={styles.bannerPlaceholder} />
         )}
-        <Text variant="titleLarge" style={styles.name} numberOfLines={1}>
-          {user?.name || 'User'}
-        </Text>
-        <Text variant="bodySmall" style={styles.email} numberOfLines={1}>
-          {user?.email}
-        </Text>
-        <Text variant="bodySmall" style={styles.role}>
-          {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''}
-        </Text>
+        <View style={styles.avatarContainer}>
+          {user?.logo_url ? (
+            <Image source={{ uri: user.logo_url }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text variant="headlineMedium" style={styles.avatarText}>
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.headerContent}>
+          <Text variant="titleLarge" style={styles.name} numberOfLines={1}>
+            {user?.name || 'User'}
+          </Text>
+          <Text variant="bodySmall" style={styles.email} numberOfLines={1}>
+            {user?.email}
+          </Text>
+          <Text variant="bodySmall" style={styles.role}>
+            {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''}
+          </Text>
+        </View>
       </View>
 
       <Divider />
@@ -107,17 +116,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   header: {
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingBottom: 0,
     backgroundColor: '#f5f5f5',
+    position: 'relative',
+  },
+  banner: {
+    width: '100%',
+    height: 150,
+    backgroundColor: '#e0e0e0',
+  },
+  bannerPlaceholder: {
+    width: '100%',
+    height: 150,
+    backgroundColor: '#e0e0e0',
+  },
+  avatarContainer: {
+    position: 'absolute',
+    top: 110,
+    left: 0,
+    right: 0,
     alignItems: 'center',
+    zIndex: 1,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    marginBottom: 12,
+    borderWidth: 3,
+    borderColor: '#ffffff',
   },
   avatarPlaceholder: {
     width: 80,
@@ -126,7 +153,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#1976d2',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    borderWidth: 3,
+    borderColor: '#ffffff',
+  },
+  headerContent: {
+    paddingTop: 50,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
   },
   avatarText: {
     color: '#ffffff',

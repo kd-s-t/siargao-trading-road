@@ -3,9 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 func GetSuppliers(c *gin.Context) {
@@ -29,6 +30,8 @@ func GetSuppliers(c *gin.Context) {
 		Phone        string `json:"phone"`
 		Description  string `json:"description"`
 		ProductCount int    `json:"product_count"`
+		LogoURL      string `json:"logo_url"`
+		BannerURL    string `json:"banner_url"`
 	}
 
 	var supplierInfos []SupplierInfo
@@ -43,6 +46,8 @@ func GetSuppliers(c *gin.Context) {
 			Phone:        supplier.Phone,
 			Description:  "Siargao Trading Road supplier offering various products",
 			ProductCount: int(productCount),
+			LogoURL:      supplier.LogoURL,
+			BannerURL:    supplier.BannerURL,
 		})
 	}
 

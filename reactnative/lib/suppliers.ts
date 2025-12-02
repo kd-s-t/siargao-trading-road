@@ -8,6 +8,8 @@ export interface Supplier {
   phone: string;
   description: string;
   product_count: number;
+  logo_url?: string;
+  banner_url?: string;
 }
 
 export const supplierService = {
