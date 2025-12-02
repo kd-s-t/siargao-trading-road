@@ -33,7 +33,12 @@
     "web": {
       "favicon": "./assets/favicon.ico"
     },
-    "scheme": "siargao-trading-road"
+    "scheme": "siargao-trading-road",
+    "extra": {
+      "eas": {
+        "projectId": "7ae25f2e-cb85-4923-8d00-3d396c065d1e"
+      }
+    },
+    "owner": "kenntinio"
   }
 }
-
