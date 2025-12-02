@@ -1,0 +1,50 @@
+{
+  "name": "siargao-trading-road",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack -p 3021",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint",
+    "storybook": "STORYBOOK_DISABLE_TELEMETRY=1 storybook dev -p 2022",
+    "build-storybook": "storybook build -o storybook-static && node scripts/fix-storybook-base.js"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.5",
+    "@mui/material": "^7.3.5",
+    "@react-pdf/renderer": "^4.3.1",
+    "axios": "^1.13.2",
+    "chart.js": "^4.5.1",
+    "framer-motion": "^12.23.24",
+    "next": "16.0.1",
+    "react": "19.2.0",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "19.2.0",
+    "three": "^0.181.2",
+    "vanta": "^0.5.24"
+  },
+  "devDependencies": {
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/addon-interactions": "^8.6.14",
+    "@storybook/react": "^8.6.14",
+    "@storybook/react-webpack5": "^8.6.14",
+    "@storybook/test": "^8.6.14",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "ajv": "^8.17.1",
+    "concurrently": "^9.2.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.1",
+    "http-proxy-middleware": "^3.0.5",
+    "react-docgen-typescript": "^2.4.0",
+    "storybook": "^8.6.14",
+    "tailwindcss": "^4",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5"
+  }
+}
