@@ -29,6 +29,17 @@ Before you can release the mobile app, ensure you have:
    eas login
    eas init
    ```
+6. **Android Credentials Setup** - Run this once (interactive):
+   ```bash
+   cd reactnative
+   eas credentials
+   ```
+   
+   When prompted:
+   - Select: **Android**
+   - Choose: **Set up new credentials** (if you see "You don't have any Android Build Credentials", press any key and select "Set up new credentials")
+   - Choose: **Let Expo manage credentials** (recommended for preview builds)
+   - This will generate a keystore automatically
 
 ## Quick Start
 
@@ -221,6 +232,31 @@ Not logged in to EAS. Please login...
 ```bash
 eas login
 ```
+
+### Android Credentials Not Set Up
+
+If you see:
+```
+Generating a new Keystore is not supported in --non-interactive mode
+Error: build command failed.
+```
+
+**Solution:**
+
+You need to set up Android credentials first (one-time setup):
+
+```bash
+cd reactnative
+eas credentials
+```
+
+When prompted:
+1. Select **Android**
+2. Choose **Set up new credentials** or **Use existing credentials**
+3. For preview builds, choose **Let Expo manage credentials** (recommended)
+4. This will generate a keystore that Expo manages for you
+
+After credentials are set up, you can run the release script in non-interactive mode.
 
 ### AWS CLI Not Configured
 
