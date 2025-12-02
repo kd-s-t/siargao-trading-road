@@ -31,13 +31,13 @@ variable "ssl_email" {
 variable "db_name" {
   description = "RDS database name"
   type        = string
-  default     = "wholesale"
+  default     = "siargaotradingroad"
 }
 
 variable "db_username" {
   description = "RDS master username"
   type        = string
-  default     = "wholesale_admin"
+  default     = "siargaotradingroad_admin"
 }
 
 variable "db_password" {

@@ -10,6 +10,7 @@ Wholesale marketplace app connecting suppliers and stores in Siargao.
 	<img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" /> 
 	<img src="https://img.shields.io/badge/MUI-007FFF?style=for-the-badge&logo=mui&logoColor=white" /> 
 	<img src="https://img.shields.io/badge/Framer%20Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white" /> 
+	<img src="https://img.shields.io/badge/Storybook-FF4785?style=for-the-badge&logo=storybook&logoColor=white" /> 
 	<img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" /> 
 	<br />
 	<img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" /> 
@@ -21,6 +22,7 @@ Wholesale marketplace app connecting suppliers and stores in Siargao.
 	<img src="https://img.shields.io/badge/Expo-1C1E24?style=for-the-badge&logo=expo&logoColor=white" /> 
 	<img src="https://img.shields.io/badge/React%20Native-61DAFB?style=for-the-badge&logo=react&logoColor=black" /> 
 	<img src="https://img.shields.io/badge/React%20Navigation-61DAFB?style=for-the-badge&logo=react&logoColor=black" /> 
+	<img src="https://img.shields.io/badge/React%20Native%20Paper-6366F1?style=for-the-badge&logo=react&logoColor=white" /> 
 	<br />
 	<img src="https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white" /> 
 	<img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" /> 
@@ -67,7 +69,34 @@ Admin panel runs on port **3021** at `http://localhost:3021`.
 - Email: `admin@example.com`
 - Password: `admin123`
 
+**Storybook (Component Development):**
+```bash
+cd nextjs
+npm run storybook
+```
+
+Storybook runs on port **2022** at `http://localhost:2022`.
+
 For detailed setup, environment variables, and more information, see [nextjs/README.md](./nextjs/README.md).
+
+### Mobile App (React Native)
+
+**Prerequisites:**
+- Node.js 18+
+- Expo CLI (installed globally or via npx)
+- Backend API running on `http://localhost:3020`
+- iOS Simulator (for macOS) or Android Emulator / physical device
+
+**Setup and Run:**
+```bash
+cd reactnative
+npm install
+npm run ios
+```
+
+For Android, use `npm run android`, or run `npm start` and press `a` for Android. You can also scan the QR code with Expo Go app on your physical device.
+
+For detailed setup, environment variables, building, and deployment, see [reactnative/README.md](./reactnative/README.md).
 
 ## Project Structure
 
@@ -76,6 +105,7 @@ siargaotradingroad/
 ├── reactnative/    # React Native mobile app
 ├── golang/         # Golang REST API
 ├── nextjs/         # Next.js admin panel
+│   └── .storybook/  # Storybook configuration
 ├── postman/        # Postman API collection
 ├── infrastructure/ # Infrastructure as Code
 └── docs/           # Documentation
@@ -91,4 +121,5 @@ siargaotradingroad/
 
 - [Backend API](./golang/README.md) - Golang API setup and testing
 - [Admin Panel](./nextjs/README.md) - Next.js admin panel setup
+- [Mobile App](./reactnative/README.md) - React Native mobile app setup and deployment
 - [Tech Stack](./docs/TECH_STACK.md) - Technology stack details

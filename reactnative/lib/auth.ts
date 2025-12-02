@@ -6,6 +6,8 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
+  logo_url?: string;
+  banner_url?: string;
   role: 'supplier' | 'store' | 'admin';
   created_at: string;
   updated_at: string;
@@ -24,6 +26,20 @@ export const authService = {
 
   getMe: async (): Promise<User> => {
     const { data } = await api.get<User>('/me');
+    return data;
+  },
+
+  updateMe: async (updates: { name?: string; phone?: string; logo_url?: string; banner_url?: string }): Promise<User> => {
+    const { data } = await api.put<User>('/me', updates);
+    return data;
+  },
+
+  uploadImage: async (file: FormData): Promise<{ url: string; key: string }> => {
+    const { data } = await api.post<{ url: string; key: string }>('/upload', file, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return data;
   },
 

@@ -2,18 +2,18 @@ locals {
   ubuntu_ami_id = "ami-0c7217cdde317cfec"
 }
 
-resource "aws_eip" "wholesale_eip" {
-  instance = aws_instance.wholesale_server.id
+resource "aws_eip" "siargaotradingroad_eip" {
+  instance = aws_instance.siargaotradingroad_server.id
   domain   = "vpc"
   
   tags = {
-    Name = "wholesale-eip-${var.environment}"
+    Name = "siargaotradingroad-eip-${var.environment}"
     Project = "SiargaoTradingRoad"
     Environment = var.environment
   }
 }
 
-resource "aws_instance" "wholesale_server" {
+resource "aws_instance" "siargaotradingroad_server" {
   ami                    = local.ubuntu_ami_id
   instance_type          = var.instance_type
   key_name              = var.key_pair_name
@@ -27,7 +27,7 @@ resource "aws_instance" "wholesale_server" {
   }
 
   tags = {
-    Name = "wholesale-server-${var.environment}"
+    Name = "siargao-trading-road-server-${var.environment}"
     Project = "SiargaoTradingRoad"
     Environment = var.environment
   }
@@ -54,6 +54,27 @@ resource "aws_instance" "wholesale_server" {
       "sudo apt update -qq",
       "sudo apt install -y git curl wget unzip build-essential",
       "echo 'System packages installed'",
+      "echo '======================================================================================'",
+      "echo 'Installing Go...'",
+      "wget -q https://go.dev/dl/go1.21.0.linux-amd64.tar.gz",
+      "sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz",
+      "echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc",
+      "export PATH=$PATH:/usr/local/go/bin",
+      "go version || exit 1",
+      "rm go1.21.0.linux-amd64.tar.gz",
+      "echo 'Go installed'",
+      "echo '======================================================================================'",
+      "echo 'Installing Node.js and npm...'",
+      "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -",
+      "sudo apt install -y nodejs",
+      "node --version || exit 1",
+      "npm --version || exit 1",
+      "echo 'Node.js and npm installed'",
+      "echo '======================================================================================'",
+      "echo 'Cloning repository...'",
+      "cd ~",
+      "git clone ${var.repo_url} siargao-trading-road || echo 'Repository clone failed or already exists'",
+      "echo 'Repository cloned'",
       "echo '======================================================================================'",
       "echo 'Installing Docker...'",
       "sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release",
@@ -82,22 +103,6 @@ resource "aws_instance" "wholesale_server" {
       "aws --version || exit 1",
       "echo 'AWS CLI installed'",
       "echo '======================================================================================'",
-      "echo 'Installing Go...'",
-      "wget -q https://go.dev/dl/go1.21.0.linux-amd64.tar.gz",
-      "sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz",
-      "echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc",
-      "export PATH=$PATH:/usr/local/go/bin",
-      "go version || exit 1",
-      "rm go1.21.0.linux-amd64.tar.gz",
-      "echo 'Go installed'",
-      "echo '======================================================================================'",
-      "echo 'Installing Node.js and npm...'",
-      "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -",
-      "sudo apt install -y nodejs",
-      "node --version || exit 1",
-      "npm --version || exit 1",
-      "echo 'Node.js and npm installed'",
-      "echo '======================================================================================'",
       "echo 'Installing PostgreSQL client...'",
       "sudo apt install -y postgresql-client",
       "echo 'PostgreSQL client installed'",
@@ -124,10 +129,11 @@ resource "aws_instance" "wholesale_server" {
       "echo 'Additional tools installed'",
       "echo '======================================================================================'",
       "echo 'Setup complete!'",
-      "echo 'Docker and Docker Compose installed'",
-      "echo 'AWS CLI installed'",
       "echo 'Go installed'",
       "echo 'Node.js and npm installed'",
+      "echo 'Repository cloned'",
+      "echo 'Docker and Docker Compose installed'",
+      "echo 'AWS CLI installed'",
       "echo 'PM2 process manager installed'",
       "echo 'PostgreSQL client installed'",
       "echo 'Fail2ban security installed'",
@@ -161,6 +167,16 @@ resource "aws_instance" "wholesale_server" {
       "server {",
       "    listen 80;",
       "    server_name ${join(" ", var.ssl_domains)};",
+      "    ",
+      "    location /storybook/ {",
+      "        alias /home/ubuntu/siargao-trading-road/nextjs/storybook-static/;",
+      "        try_files \\$uri \\$uri/ /storybook/index.html;",
+      "        index index.html;",
+      "    }",
+      "    ",
+      "    location = /storybook {",
+      "        return 301 /storybook/;",
+      "    }",
       "    ",
       "    location / {",
       "        proxy_pass http://localhost:3021;",

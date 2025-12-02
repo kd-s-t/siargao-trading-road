@@ -1,16 +1,16 @@
-resource "aws_db_subnet_group" "wholesale_db_subnet" {
-  name       = "wholesale-db-subnet-${var.environment}"
+resource "aws_db_subnet_group" "siargaotradingroad_db_subnet" {
+  name       = "siargaotradingroad-db-subnet-${var.environment}"
   subnet_ids = var.subnet_ids
 
   tags = {
-    Name        = "wholesale-db-subnet-${var.environment}"
+    Name        = "siargaotradingroad-db-subnet-${var.environment}"
     Environment = var.environment
     Project     = "SiargaoTradingRoad"
   }
 }
 
 resource "aws_security_group" "rds_sg" {
-  name        = "wholesale-rds-sg-${var.environment}"
+  name        = "siargaotradingroad-rds-sg-${var.environment}"
   description = "Security group for RDS PostgreSQL instance"
   vpc_id      = var.vpc_id
 
@@ -30,14 +30,14 @@ resource "aws_security_group" "rds_sg" {
   }
 
   tags = {
-    Name        = "wholesale-rds-sg-${var.environment}"
+    Name        = "siargaotradingroad-rds-sg-${var.environment}"
     Environment = var.environment
     Project     = "SiargaoTradingRoad"
   }
 }
 
-resource "aws_db_instance" "wholesale_db" {
-  identifier = "wholesale-db-${var.environment}"
+resource "aws_db_instance" "siargaotradingroad_db" {
+  identifier = "siargaotradingroad-db-${var.environment}"
 
   engine         = "postgres"
   engine_version = var.engine_version
@@ -52,7 +52,7 @@ resource "aws_db_instance" "wholesale_db" {
   username = var.db_username
   password = var.db_password
 
-  db_subnet_group_name   = aws_db_subnet_group.wholesale_db_subnet.name
+  db_subnet_group_name   = aws_db_subnet_group.siargaotradingroad_db_subnet.name
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
   publicly_accessible    = false
 
@@ -61,7 +61,7 @@ resource "aws_db_instance" "wholesale_db" {
   maintenance_window     = var.maintenance_window
 
   skip_final_snapshot       = var.skip_final_snapshot
-  final_snapshot_identifier = var.skip_final_snapshot ? null : "wholesale-db-${var.environment}-final-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
+  final_snapshot_identifier = var.skip_final_snapshot ? null : "siargaotradingroad-db-${var.environment}-final-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
 
   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
   performance_insights_enabled    = true
@@ -69,14 +69,14 @@ resource "aws_db_instance" "wholesale_db" {
   monitoring_role_arn            = aws_iam_role.rds_monitoring.arn
 
   tags = {
-    Name        = "wholesale-db-${var.environment}"
+    Name        = "siargaotradingroad-db-${var.environment}"
     Environment = var.environment
     Project     = "SiargaoTradingRoad"
   }
 }
 
 resource "aws_iam_role" "rds_monitoring" {
-  name = "wholesale-rds-monitoring-${var.environment}"
+  name = "siargaotradingroad-rds-monitoring-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -92,7 +92,7 @@ resource "aws_iam_role" "rds_monitoring" {
   })
 
   tags = {
-    Name        = "wholesale-rds-monitoring-${var.environment}"
+    Name        = "siargaotradingroad-rds-monitoring-${var.environment}"
     Environment = var.environment
     Project     = "SiargaoTradingRoad"
   }

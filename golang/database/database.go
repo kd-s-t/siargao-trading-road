@@ -26,7 +26,7 @@ func Connect(cfg *config.Config) error {
 		return err
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{})
+	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{})
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,194 @@
+name: CI/CD Build and Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  build-and-push-ecr:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Create ECR repository if it doesn't exist
+        run: |
+          REPO_NAME="siargaotradingroad-development"
+          echo "🔍 Checking if ECR repository $REPO_NAME exists..."
+          
+          if ! aws ecr describe-repositories --repository-names $REPO_NAME --region us-east-1 2>/dev/null; then
+            echo "📦 Creating ECR repository $REPO_NAME..."
+            aws ecr create-repository \
+              --repository-name $REPO_NAME \
+              --region us-east-1 \
+              --image-scanning-configuration scanOnPush=true \
+              --image-tag-mutability MUTABLE
+            echo "✅ ECR repository $REPO_NAME created successfully"
+          else
+            echo "✅ ECR repository $REPO_NAME already exists"
+          fi
+
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "🐳 Building Docker image..."
+          docker buildx create --use || true
+          docker buildx build --platform linux/amd64 \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            --push \
+            .
+          
+          echo "✅ Image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          
+          # Verify image exists
+          if aws ecr describe-images --repository-name $ECR_REPOSITORY --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
+            echo "✅ Image pushed and verified: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          else
+            echo "❌ Failed to verify image in ECR: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+            exit 1
+          fi
+
+  deploy:
+    needs: [build-and-push-ecr]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Install network tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y netcat-openbsd
+
+      - name: Add EC2 to known hosts
+        run: |
+          EC2_HOST="${{ secrets.EC2_HOST }}"
+          EC2_PORT="${EC2_PORT:-22}"
+          
+          echo "🔍 Adding EC2 host to known_hosts..."
+          ssh-keyscan -p $EC2_PORT -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || {
+            echo "⚠️ ssh-keyscan failed, trying alternative method..."
+            # Try connecting once to add host key
+            ssh -o StrictHostKeyChecking=accept-new -p $EC2_PORT ${{ secrets.EC2_USER }}@$EC2_HOST "echo 'SSH connection test'" || {
+              echo "❌ SSH connection failed"
+              exit 1
+            }
+          }
+          
+          echo "✅ Host added to known_hosts successfully"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Deploy to EC2
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+            echo "🚀 Starting deployment..."
+            
+            # Reload environment and ensure services are available
+            echo "🔍 Checking services availability..."
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            
+            # Ensure docker group membership is active
+            newgrp docker 2>/dev/null || true
+            
+            # Create project directory if it doesn't exist
+            echo "📁 Setting up project directory..."
+            mkdir -p ~/siargao-trading-road
+            cd ~/siargao-trading-road
+            
+            # Clone repository if it doesn't exist, otherwise pull latest changes
+            if [ ! -d ".git" ]; then
+              echo "📥 Cloning repository..."
+              git clone https://github.com/${{ github.repository }}.git .
+            else
+              echo "📥 Pulling latest changes..."
+              git pull origin main
+            fi
+            
+            # Load environment from SSM into .env for docker-compose
+            echo "🔑 Loading environment from SSM Parameter Store..."
+            SSM_PATH="/siargaotradingroad/development"
+            AWS_REGION="us-east-1"
+            aws ssm get-parameters-by-path --path "$SSM_PATH" --with-decryption --recursive --region "$AWS_REGION" --query 'Parameters[*].[Name,Value]' --output text | awk -F '\t' '{split($1,a,"/"); print a[length(a)] "=" $2}' > .env || echo "# No SSM parameters found" > .env
+            echo "✅ .env created from SSM at $SSM_PATH"
+            
+            # Login to ECR
+            echo "🔐 Logging into ECR..."
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+            
+            # Check if image exists in ECR before pulling
+            echo "🔍 Checking if image exists in ECR..."
+            IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/siargaotradingroad-development:${{ github.sha }}"
+            
+            if ! aws ecr describe-images --repository-name siargaotradingroad-development --image-ids imageTag=${{ github.sha }} --region us-east-1 2>/dev/null; then
+              echo "❌ Image $IMAGE_URI does not exist in ECR!"
+              echo "🔍 Available images in repository:"
+              aws ecr describe-images --repository-name siargaotradingroad-development --region us-east-1 --query 'imageDetails[*].imageTags' --output table || echo "No images found"
+              exit 1
+            fi
+            
+            # Pre-pull image to surface any auth/network errors clearly
+            echo "🐳 Pulling image $IMAGE_URI..."
+            docker pull "$IMAGE_URI"
+            docker images | grep siargaotradingroad-development || true
+            
+            # Stop existing containers
+            echo "🛑 Stopping existing containers..."
+            docker compose down || true
+            docker ps -a | grep siargao || docker ps -a | head -5
+            
+            # Run the new container
+            echo "🚀 Starting new container..."
+            docker run -d \
+              --name siargao-trading-road \
+              --restart unless-stopped \
+              -p 3020:3020 \
+              -p 3021:3021 \
+              --env-file .env \
+              "$IMAGE_URI"
+            
+            echo "✅ Deployment complete!"
+            echo "📊 Container status:"
+            docker ps | grep siargao-trading-road || docker ps | head -3
+          EOF
+

@@ -10,8 +10,8 @@ enable_ssl = false
 ssl_domains = ["siargaotradingroad.com", "www.siargaotradingroad.com"]
 ssl_email = "admin@siargaotradingroad.com"
 
-db_name = "wholesale"
-db_username = "wholesale_admin"
+db_name = "siargaotradingroad"
+db_username = "siargaotradingroad_admin"
 db_password = ""
 rds_instance_class = "db.t3.micro"
 rds_allocated_storage = 20

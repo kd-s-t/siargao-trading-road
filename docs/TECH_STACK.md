@@ -8,6 +8,7 @@
 - **Tailwind CSS** v4
 - **Axios** for API calls
 - **Emotion** (styling engine for MUI)
+- **Storybook** 8.6.14 (component development and documentation)
 
 ## Frontend (Mobile)
 - **React Native** (Expo recommended)

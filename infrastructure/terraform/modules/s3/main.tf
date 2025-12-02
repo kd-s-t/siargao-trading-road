@@ -1,8 +1,8 @@
 resource "aws_s3_bucket" "mobile_builds" {
-  bucket = "wholesale-mobile-builds-${var.environment}"
+  bucket = "siargaotradingroad-mobile-builds-${var.environment}"
 
   tags = {
-    Name        = "wholesale-mobile-builds-${var.environment}"
+    Name        = "siargaotradingroad-mobile-builds-${var.environment}"
     Environment = var.environment
     Project     = "SiargaoTradingRoad"
   }

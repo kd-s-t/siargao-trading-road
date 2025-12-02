@@ -1,5 +1,5 @@
 resource "aws_iam_role" "ec2_role" {
-  name = "wholesale-ec2-role-${var.environment}"
+  name = "siargaotradingroad-ec2-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -15,14 +15,14 @@ resource "aws_iam_role" "ec2_role" {
   })
 
   tags = {
-    Name        = "wholesale-ec2-role-${var.environment}"
+    Name        = "siargaotradingroad-ec2-role-${var.environment}"
     Environment = var.environment
     Project     = "SiargaoTradingRoad"
   }
 }
 
 resource "aws_iam_role_policy" "ecr_policy" {
-  name = "wholesale-ecr-policy-${var.environment}"
+  name = "siargaotradingroad-ecr-policy-${var.environment}"
   role = aws_iam_role.ec2_role.id
 
   policy = jsonencode({
@@ -48,7 +48,7 @@ resource "aws_iam_role_policy" "ecr_policy" {
           "ssm:GetParametersByPath",
           "ssm:PutParameter"
         ]
-        Resource = "arn:aws:ssm:${var.aws_region}:*:parameter/wholesale/*"
+        Resource = "arn:aws:ssm:${var.aws_region}:*:parameter/siargaotradingroad/*"
       }
     ]
   })
@@ -60,7 +60,7 @@ resource "aws_iam_role_policy_attachment" "ssm_managed_instance_core" {
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "wholesale-ec2-profile-${var.environment}"
+  name = "siargaotradingroad-ec2-profile-${var.environment}"
   role = aws_iam_role.ec2_role.name
 }
 

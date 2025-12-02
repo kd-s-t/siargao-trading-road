@@ -21,13 +21,13 @@ variable "ec2_security_group_id" {
 variable "db_name" {
   description = "Name of the database"
   type        = string
-  default     = "wholesale"
+  default     = "siargaotradingroad"
 }
 
 variable "db_username" {
   description = "Master username for the database"
   type        = string
-  default     = "wholesale_admin"
+  default     = "siargaotradingroad_admin"
 }
 
 variable "db_password" {

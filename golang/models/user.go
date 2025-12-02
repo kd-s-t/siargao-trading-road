@@ -20,6 +20,8 @@ type User struct {
 	Password   string         `gorm:"not null" json:"-"`
 	Name       string         `gorm:"not null" json:"name"`
 	Phone      string         `json:"phone"`
+	LogoURL    string         `json:"logo_url"`
+	BannerURL  string         `json:"banner_url"`
 	Role       UserRole       `gorm:"type:varchar(20);not null" json:"role"`
 	AdminLevel *int           `gorm:"default:1" json:"admin_level,omitempty"`
 	CreatedAt  time.Time      `json:"created_at"`

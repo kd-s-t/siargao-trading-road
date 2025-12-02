@@ -16,7 +16,7 @@ import { productService, Product } from '../lib/products';
 import { useNavigation } from '@react-navigation/native';
 
 export default function ProductsScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigation = useNavigation();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,8 +44,8 @@ export default function ProductsScreen() {
     loadProducts();
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const openDrawer = () => {
+    (navigation as any).openDrawer();
   };
 
   const handleEdit = (product: Product) => {
@@ -111,12 +111,16 @@ export default function ProductsScreen() {
     <View style={styles.container}>
       <Surface style={styles.header} elevation={2}>
         <View style={styles.headerContent}>
+          <IconButton
+            icon="menu"
+            size={24}
+            onPress={openDrawer}
+            style={styles.menuButton}
+          />
           <Text variant="headlineSmall" style={styles.headerTitle}>
             My Products
           </Text>
-          <Button mode="text" onPress={handleLogout}>
-            Logout
-          </Button>
+          <View style={styles.headerSpacer} />
         </View>
         <View style={styles.filterContainer}>
           <Text variant="bodyMedium">Show deleted items</Text>
@@ -302,8 +306,13 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  menuButton: {
+    margin: 0,
+  },
+  headerSpacer: {
+    width: 48,
   },
   headerTitle: {
     fontWeight: 'bold',

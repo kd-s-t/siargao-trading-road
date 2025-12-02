@@ -1,4 +1,4 @@
 locals {
-  parameter_prefix = "/wholesale/${var.environment}"
+  parameter_prefix = "/siargaotradingroad/${var.environment}"
 }
 

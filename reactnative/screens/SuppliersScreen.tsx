@@ -3,17 +3,17 @@ import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import {
   Text,
   Surface,
-  Button,
   Card,
   ActivityIndicator,
   Divider,
+  IconButton,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { supplierService, Supplier } from '../lib/suppliers';
 import { useNavigation } from '@react-navigation/native';
 
 export default function SuppliersScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigation = useNavigation();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,12 +40,12 @@ export default function SuppliersScreen() {
     loadSuppliers();
   };
 
-  const handleLogout = async () => {
-    await logout();
-  };
-
   const handleSupplierPress = (supplier: Supplier) => {
     (navigation as any).navigate('SupplierProducts', { supplier });
+  };
+
+  const openDrawer = () => {
+    (navigation as any).openDrawer();
   };
 
   if (loading) {
@@ -60,12 +60,16 @@ export default function SuppliersScreen() {
     <View style={styles.container}>
       <Surface style={styles.header} elevation={2}>
         <View style={styles.headerContent}>
+          <IconButton
+            icon="menu"
+            size={24}
+            onPress={openDrawer}
+            style={styles.menuButton}
+          />
           <Text variant="headlineSmall" style={styles.headerTitle}>
             Suppliers
           </Text>
-          <Button mode="text" onPress={handleLogout}>
-            Logout
-          </Button>
+          <View style={styles.headerSpacer} />
         </View>
       </Surface>
 
@@ -143,8 +147,13 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  menuButton: {
+    margin: 0,
+  },
+  headerSpacer: {
+    width: 48,
   },
   headerTitle: {
     fontWeight: 'bold',

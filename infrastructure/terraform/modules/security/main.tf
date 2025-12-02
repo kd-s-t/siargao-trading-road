@@ -1,27 +1,27 @@
-resource "tls_private_key" "wholesale_key" {
+resource "tls_private_key" "siargaotradingroad_key" {
   algorithm = "ED25519"
   rsa_bits  = 4096
 }
 
-resource "aws_key_pair" "wholesale_key" {
-  key_name   = "wholesale-key-${var.environment}"
-  public_key = tls_private_key.wholesale_key.public_key_openssh
+resource "aws_key_pair" "siargaotradingroad_key" {
+  key_name   = "siargaotradingroad-key-${var.environment}"
+  public_key = tls_private_key.siargaotradingroad_key.public_key_openssh
 
   tags = {
-    Name = "wholesale-key-${var.environment}"
+    Name = "siargaotradingroad-key-${var.environment}"
     Project = "SiargaoTradingRoad"
     Environment = var.environment
   }
 }
 
 resource "local_file" "private_key" {
-  content  = tls_private_key.wholesale_key.private_key_openssh
-  filename = "${path.module}/wholesale-key-${var.environment}.pem"
+  content  = tls_private_key.siargaotradingroad_key.private_key_openssh
+  filename = "${path.module}/splitsafe-key-${var.environment}.pem"
   file_permission = "0600"
 }
 
-resource "aws_security_group" "wholesale_sg" {
-  name        = "wholesale-sg-${var.environment}"
+resource "aws_security_group" "siargaotradingroad_sg" {
+  name        = "siargaotradingroad-sg-${var.environment}"
   description = "Security group for Siargao Trading Road EC2 instance"
 
   ingress {
@@ -72,7 +72,7 @@ resource "aws_security_group" "wholesale_sg" {
   }
 
   tags = {
-    Name = "wholesale-sg-${var.environment}"
+    Name = "siargaotradingroad-sg-${var.environment}"
     Project = "SiargaoTradingRoad"
     Environment = var.environment
   }

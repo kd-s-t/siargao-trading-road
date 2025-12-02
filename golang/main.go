@@ -53,6 +53,8 @@ func main() {
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
 			protected.GET("/me", handlers.GetMe)
+			protected.PUT("/me", handlers.UpdateMe)
+			protected.POST("/upload", handlers.UploadImage)
 			protected.GET("/me/analytics", handlers.GetMyAnalytics)
 			protected.GET("/products", handlers.GetProducts)
 			protected.GET("/products/:id", handlers.GetProduct)

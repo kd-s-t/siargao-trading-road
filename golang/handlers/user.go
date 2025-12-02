@@ -27,6 +27,53 @@ func GetMe(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+func UpdateMe(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	var req struct {
+		Name      string `json:"name"`
+		Phone     string `json:"phone"`
+		LogoURL   string `json:"logo_url"`
+		BannerURL string `json:"banner_url"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.Name != "" {
+		user.Name = req.Name
+	}
+	if req.Phone != "" {
+		user.Phone = req.Phone
+	}
+	if req.LogoURL != "" {
+		user.LogoURL = req.LogoURL
+	}
+	if req.BannerURL != "" {
+		user.BannerURL = req.BannerURL
+	}
+
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
+		return
+	}
+
+	user.Password = ""
+	c.JSON(http.StatusOK, user)
+}
+
 func GetMyAnalytics(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {

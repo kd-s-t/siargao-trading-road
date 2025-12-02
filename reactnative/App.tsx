@@ -1,7 +1,9 @@
+import 'react-native-gesture-handler';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -14,11 +16,14 @@ import OrdersScreen from './screens/OrdersScreen';
 import SuppliersScreen from './screens/SuppliersScreen';
 import SupplierProductsScreen from './screens/SupplierProductsScreen';
 import TruckScreen from './screens/TruckScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import DrawerContent from './components/DrawerContent';
 import { ActivityIndicator, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator();
 
 function SupplierTabs() {
   return (
@@ -53,6 +58,70 @@ function SupplierTabs() {
   );
 }
 
+function StoreDrawer() {
+  return (
+    <Drawer.Navigator
+      drawerContent={(props) => <DrawerContent {...props} />}
+      screenOptions={{
+        headerShown: false,
+        drawerType: 'slide',
+        drawerStyle: {
+          width: 280,
+        },
+        swipeEnabled: true,
+        swipeEdgeWidth: 50,
+      }}
+    >
+      <Drawer.Screen name="Suppliers" component={SuppliersScreen} />
+      <Drawer.Screen name="SupplierProducts" component={SupplierProductsScreen} />
+      <Drawer.Screen name="Truck" component={TruckScreen} />
+      <Drawer.Screen name="Profile" component={ProfileScreen} />
+    </Drawer.Navigator>
+  );
+}
+
+function SupplierDrawer() {
+  return (
+    <Drawer.Navigator
+      drawerContent={(props) => <DrawerContent {...props} />}
+      screenOptions={{
+        headerShown: false,
+        drawerType: 'slide',
+        drawerStyle: {
+          width: 280,
+        },
+        swipeEnabled: true,
+        swipeEdgeWidth: 50,
+      }}
+    >
+      <Drawer.Screen name="SupplierMain" component={SupplierTabs} />
+      <Drawer.Screen name="AddProduct" component={AddProductScreen} />
+      <Drawer.Screen name="EditProduct" component={EditProductScreen} />
+      <Drawer.Screen name="Profile" component={ProfileScreen} />
+    </Drawer.Navigator>
+  );
+}
+
+function AdminDrawer() {
+  return (
+    <Drawer.Navigator
+      drawerContent={(props) => <DrawerContent {...props} />}
+      screenOptions={{
+        headerShown: false,
+        drawerType: 'slide',
+        drawerStyle: {
+          width: 280,
+        },
+        swipeEnabled: true,
+        swipeEdgeWidth: 50,
+      }}
+    >
+      <Drawer.Screen name="Dashboard" component={DashboardScreen} />
+      <Drawer.Screen name="Profile" component={ProfileScreen} />
+    </Drawer.Navigator>
+  );
+}
+
 function AppNavigator() {
   const { user, loading } = useAuth();
 
@@ -70,19 +139,11 @@ function AppNavigator() {
         {user ? (
           <>
             {user.role === 'supplier' ? (
-              <>
-                <Stack.Screen name="SupplierMain" component={SupplierTabs} />
-                <Stack.Screen name="AddProduct" component={AddProductScreen} />
-                <Stack.Screen name="EditProduct" component={EditProductScreen} />
-              </>
+              <Stack.Screen name="SupplierDrawer" component={SupplierDrawer} />
             ) : user.role === 'store' ? (
-              <>
-                <Stack.Screen name="Suppliers" component={SuppliersScreen} />
-                <Stack.Screen name="SupplierProducts" component={SupplierProductsScreen} />
-                <Stack.Screen name="Truck" component={TruckScreen} />
-              </>
+              <Stack.Screen name="StoreDrawer" component={StoreDrawer} />
             ) : (
-              <Stack.Screen name="Dashboard" component={DashboardScreen} />
+              <Stack.Screen name="AdminDrawer" component={AdminDrawer} />
             )}
           </>
         ) : (

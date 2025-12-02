@@ -1,0 +1,24 @@
+aws_region = "us-east-1"
+ami_id = "ami-0c7217cdde317cfec"
+instance_type = "t3.micro"
+public_key_path = "./modules/security/splitsafe-key-development.pem.pub"
+private_key_path = "./modules/security/splitsafe-key-development.pem"
+repo_url = "https://github.com/kd-s-t/siargao-trading-road.git"
+environment = "development"
+
+enable_ssl = false
+ssl_domains = []
+ssl_email = "admin@siargaotradingroad.com"
+
+db_name = "siargaotradingroad"
+db_username = "siargaotradingroad_admin"
+db_password = ""
+rds_instance_class = "db.t3.micro"
+rds_allocated_storage = 20
+rds_max_allocated_storage = 100
+rds_engine_version = "17.6"
+rds_backup_retention_period = 7
+rds_skip_final_snapshot = true
+
+mobile_build_retention_days = 90
+

@@ -1,5 +1,5 @@
 resource "aws_ecr_repository" "app" {
-  name                 = "wholesale-${var.environment}"
+  name                 = "siargaotradingroad-${var.environment}"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -8,7 +8,7 @@ resource "aws_ecr_repository" "app" {
   }
 
   tags = {
-    Name        = "wholesale-${var.environment}"
+    Name        = "siargaotradingroad-${var.environment}"
     Environment = var.environment
     Project     = "SiargaoTradingRoad"
   }
