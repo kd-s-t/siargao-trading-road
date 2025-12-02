@@ -276,8 +276,9 @@ jobs:
             export PATH=$PATH:/usr/bin:/usr/local/bin
             cd ~/siargao-trading-road
             
+            ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
             echo "🔐 Logging into ECR..."
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "\${ECR_REGISTRY}"
             echo "✅ Logged into ECR"
           EOF
 
@@ -314,13 +315,15 @@ jobs:
             export PATH=$PATH:/usr/bin:/usr/local/bin
             cd ~/siargao-trading-road
             
-            FRONTEND_IMAGE="$ECR_REGISTRY/siargaotradingroad-development-frontend:$IMAGE_TAG"
-            API_IMAGE="$ECR_REGISTRY/siargaotradingroad-development-api:$IMAGE_TAG"
+            ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+            IMAGE_TAG="${{ github.sha }}"
+            FRONTEND_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-frontend:\${IMAGE_TAG}"
+            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
             
             echo "🐳 Pulling frontend image..."
-            docker pull "$FRONTEND_IMAGE"
+            docker pull "\${FRONTEND_IMAGE}"
             echo "🐳 Pulling API image..."
-            docker pull "$API_IMAGE"
+            docker pull "\${API_IMAGE}"
             echo "✅ Images pulled successfully"
           EOF
 
@@ -335,11 +338,13 @@ jobs:
             export PATH=$PATH:/usr/bin:/usr/local/bin
             cd ~/siargao-trading-road
             
-            FRONTEND_IMAGE="$ECR_REGISTRY/siargaotradingroad-development-frontend:$IMAGE_TAG"
-            API_IMAGE="$ECR_REGISTRY/siargaotradingroad-development-api:$IMAGE_TAG"
+            ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+            IMAGE_TAG="${{ github.sha }}"
+            FRONTEND_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-frontend:\${IMAGE_TAG}"
+            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
             
             echo "📝 Updating docker-compose.yml with image tags..."
-            printf 'version: '\''3.8'\''\n\nservices:\n  api:\n    image: %s\n    container_name: siargao-api\n    ports:\n      - "3020:3020"\n    env_file:\n      - .env\n    environment:\n      - PORT=3020\n      - GIN_MODE=release\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\n  frontend:\n    image: %s\n    container_name: siargao-frontend\n    ports:\n      - "3021:3021"\n    env_file:\n      - .env\n    environment:\n      - PORT=3021\n      - NODE_ENV=production\n      - NEXT_PUBLIC_API_URL=\${NEXT_PUBLIC_API_URL:-http://localhost:3020/api}\n    depends_on:\n      - api\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\nnetworks:\n  siargao-network:\n    driver: bridge\n' "$API_IMAGE" "$FRONTEND_IMAGE" > docker-compose.yml
+            printf 'version: '\''3.8'\''\n\nservices:\n  api:\n    image: %s\n    container_name: siargao-api\n    ports:\n      - "3020:3020"\n    env_file:\n      - .env\n    environment:\n      - PORT=3020\n      - GIN_MODE=release\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\n  frontend:\n    image: %s\n    container_name: siargao-frontend\n    ports:\n      - "3021:3021"\n    env_file:\n      - .env\n    environment:\n      - PORT=3021\n      - NODE_ENV=production\n      - NEXT_PUBLIC_API_URL=\${NEXT_PUBLIC_API_URL:-http://localhost:3020/api}\n    depends_on:\n      - api\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\nnetworks:\n  siargao-network:\n    driver: bridge\n' "\${API_IMAGE}" "\${FRONTEND_IMAGE}" > docker-compose.yml
             echo "✅ docker-compose.yml updated"
           EOF
 
