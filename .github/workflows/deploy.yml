@@ -52,9 +52,13 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: siargaotradingroad-development
           IMAGE_TAG: ${{ github.sha }}
+          NEXT_PUBLIC_API_URL: https://siargaotradingroad.com/api
+          NEXT_PUBLIC_ENVIRONMENT: production
         run: |
           echo "🐳 Building Next.js frontend image..."
           docker buildx build --platform linux/amd64 \
+            --build-arg NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+            --build-arg NEXT_PUBLIC_ENVIRONMENT=$NEXT_PUBLIC_ENVIRONMENT \
             -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG \
             -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:latest \
             --push \
@@ -344,7 +348,7 @@ jobs:
             API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
             
             echo "📝 Updating docker-compose.yml with image tags..."
-            printf 'version: '\''3.8'\''\n\nservices:\n  api:\n    image: %s\n    container_name: siargao-api\n    ports:\n      - "3020:3020"\n    env_file:\n      - .env\n    environment:\n      - PORT=3020\n      - GIN_MODE=release\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\n  frontend:\n    image: %s\n    container_name: siargao-frontend\n    ports:\n      - "3021:3021"\n    env_file:\n      - .env\n    environment:\n      - PORT=3021\n      - NODE_ENV=production\n      - NEXT_PUBLIC_API_URL=\${NEXT_PUBLIC_API_URL:-http://localhost:3020/api}\n    depends_on:\n      - api\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\nnetworks:\n  siargao-network:\n    driver: bridge\n' "\${API_IMAGE}" "\${FRONTEND_IMAGE}" > docker-compose.yml
+            printf 'version: '\''3.8'\''\n\nservices:\n  api:\n    image: %s\n    container_name: siargao-api\n    ports:\n      - "3020:3020"\n    env_file:\n      - .env\n    environment:\n      - PORT=3020\n      - GIN_MODE=release\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\n  frontend:\n    image: %s\n    container_name: siargao-frontend\n    ports:\n      - "3021:3021"\n    env_file:\n      - .env\n    environment:\n      - PORT=3021\n      - NODE_ENV=production\n    depends_on:\n      - api\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\nnetworks:\n  siargao-network:\n    driver: bridge\n' "\${API_IMAGE}" "\${FRONTEND_IMAGE}" > docker-compose.yml
             echo "✅ docker-compose.yml updated"
           EOF
 
