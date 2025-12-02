@@ -55,6 +55,9 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/server.js ./server.js
 COPY --from=builder /app/package.json ./package.json
 
+# Install server dependencies (http-proxy-middleware for custom server)
+RUN npm install --production --ignore-scripts http-proxy-middleware
+
 USER nextjs
 
 EXPOSE 3021
