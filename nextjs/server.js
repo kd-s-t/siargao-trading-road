@@ -5,13 +5,13 @@ const next = require('next');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
-const port = 3021;
+const hostname = process.env.HOSTNAME || '0.0.0.0';
+const port = parseInt(process.env.PORT || '3021', 10);
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-const storybookProxy = createProxyMiddleware({
+const storybookProxy = dev ? createProxyMiddleware({
   target: 'http://localhost:6006',
   changeOrigin: true,
   ws: true,
@@ -37,7 +37,7 @@ const storybookProxy = createProxyMiddleware({
     }
   },
   logLevel: 'silent',
-});
+}) : null;
 
 app.prepare().then(() => {
   const server = createServer(async (req, res) => {
@@ -45,7 +45,7 @@ app.prepare().then(() => {
       const parsedUrl = parse(req.url, true);
       const { pathname } = parsedUrl;
 
-      if (dev && pathname.startsWith('/storybook')) {
+      if (dev && storybookProxy && pathname.startsWith('/storybook')) {
         storybookProxy(req, res);
         return;
       }
@@ -61,7 +61,7 @@ app.prepare().then(() => {
   });
 
   server.on('upgrade', (req, socket, head) => {
-    if (req.url.startsWith('/storybook')) {
+    if (dev && storybookProxy && req.url.startsWith('/storybook')) {
       storybookProxy.upgrade(req, socket, head);
     }
   });
