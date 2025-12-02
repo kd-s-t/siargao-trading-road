@@ -18,7 +18,7 @@ func Connect(cfg *config.Config) error {
 		" password=" + cfg.DBPassword +
 		" dbname=" + cfg.DBName +
 		" port=" + cfg.DBPort +
-		" sslmode=disable TimeZone=Asia/Manila"
+		" sslmode=require TimeZone=Asia/Manila"
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
