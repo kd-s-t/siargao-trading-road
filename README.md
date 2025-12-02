@@ -38,7 +38,7 @@ Siargao Trading Road marketplace app connecting suppliers and stores in Siargao.
   <img src="./landingpage.png" alt="Siargao Trading Road Landing Page" width="100%" style="border: 1px solid;" />
   
   <h3>Mobile App - Login Screen</h3>
-  <img src="./login.png" alt="Mobile App Login Screen" width="100%" style="border: 1px solid;" />
+  <img src="./login.png" alt="Mobile App Login Screen" width="30%" style="border: 1px solid;" />
 </div>
 
 ---
