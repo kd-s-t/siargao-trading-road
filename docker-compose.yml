@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.go
+    container_name: siargao-api
+    ports:
+      - "3020:3020"
+    env_file:
+      - .env
+    environment:
+      - PORT=3020
+      - GIN_MODE=release
+    restart: unless-stopped
+    networks:
+      - siargao-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: siargao-frontend
+    ports:
+      - "3021:3021"
+    env_file:
+      - .env
+    environment:
+      - PORT=3021
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3020/api}
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - siargao-network
+
+networks:
+  siargao-network:
+    driver: bridge
+

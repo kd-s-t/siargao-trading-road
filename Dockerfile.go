@@ -1,0 +1,39 @@
+# Production Dockerfile for Siargao Trading Road Go API
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates
+
+# Copy go mod files
+COPY golang/go.mod golang/go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY golang/ ./
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -a -installsuffix cgo \
+    -o main .
+
+# Final stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata
+
+WORKDIR /root/
+
+# Copy the binary from builder
+COPY --from=builder /app/main .
+
+# Expose port
+EXPOSE 3020
+
+# Run the binary
+CMD ["./main"]
+

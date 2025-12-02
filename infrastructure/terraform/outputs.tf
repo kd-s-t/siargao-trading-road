@@ -30,14 +30,24 @@ output "house_key" {
   sensitive   = true
 }
 
-output "ecr_repository_url" {
-  description = "URL of the ECR repository"
-  value       = module.ecr.repository_url
+output "ecr_frontend_repository_url" {
+  description = "URL of the frontend ECR repository"
+  value       = module.ecr.frontend_repository_url
 }
 
-output "ecr_repository_name" {
-  description = "Name of the ECR repository"
-  value       = module.ecr.repository_name
+output "ecr_frontend_repository_name" {
+  description = "Name of the frontend ECR repository"
+  value       = module.ecr.frontend_repository_name
+}
+
+output "ecr_api_repository_url" {
+  description = "URL of the API ECR repository"
+  value       = module.ecr.api_repository_url
+}
+
+output "ecr_api_repository_name" {
+  description = "Name of the API ECR repository"
+  value       = module.ecr.api_repository_name
 }
 
 output "db_instance_endpoint" {

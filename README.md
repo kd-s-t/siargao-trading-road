@@ -91,10 +91,20 @@ For detailed setup, environment variables, and more information, see [nextjs/REA
 ```bash
 cd reactnative
 npm install
-npm run ios
+npx expo run:ios
 ```
 
-For Android, use `npm run android`, or run `npm start` and press `a` for Android. You can also scan the QR code with Expo Go app on your physical device.
+For Android, use `npx expo run:android`. These commands build and run a development build on the simulator/emulator.
+
+Alternatively, you can use `npm start` or `npx expo start` to launch the Expo dev server, then press `i` for iOS or `a` for Android, or scan the QR code with Expo Go app on your physical device.
+
+**Storybook (Component Development):**
+```bash
+cd reactnative
+npm run storybook
+```
+
+Storybook runs on port **7007** at `http://localhost:7007`.
 
 For detailed setup, environment variables, building, and deployment, see [reactnative/README.md](./reactnative/README.md).
 
@@ -116,6 +126,46 @@ siargaotradingroad/
 - **Supplier**: Register, add items (Excel/JSON/manual)
 - **Store**: Register, select supplier, buy wholesale
 - **Admin**: Manage users, products, orders via web panel
+
+## Storybook
+
+This project uses [Storybook](https://storybook.js.org/) for component development and documentation.
+
+### Next.js Storybook (Web Components)
+
+View and test web components built with Material-UI:
+
+```bash
+cd nextjs
+npm run storybook
+```
+
+Access at `http://localhost:2022`
+
+**Available Stories:**
+- Buttons (variants, sizes, states, with icons)
+- Headers (Admin, Store, Supplier, Landing page)
+- Logo (different sizes and backgrounds)
+- Tables (Products, Orders, Dashboard)
+- Navigation (Admin, Store, Supplier drawers)
+
+### React Native Storybook (Mobile Components)
+
+View and test mobile components built with React Native Paper:
+
+```bash
+cd reactnative
+npm run storybook
+```
+
+Access at `http://localhost:7007`
+
+**Available Stories:**
+- Buttons (variants, sizes, states, with icons)
+- Headers (Admin, Store, Supplier, Products)
+- Logo (different sizes and backgrounds)
+- Tables/Cards (Products list, Orders list, empty states)
+- Navigation (Admin, Store, Supplier drawers)
 
 ## Documentation
 

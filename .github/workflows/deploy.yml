@@ -25,44 +25,57 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Create ECR repository if it doesn't exist
+      - name: Create ECR repositories if they don't exist
         run: |
-          REPO_NAME="siargaotradingroad-development"
-          echo "🔍 Checking if ECR repository $REPO_NAME exists..."
-          
-          if ! aws ecr describe-repositories --repository-names $REPO_NAME --region us-east-1 2>/dev/null; then
-            echo "📦 Creating ECR repository $REPO_NAME..."
-            aws ecr create-repository \
-              --repository-name $REPO_NAME \
-              --region us-east-1 \
-              --image-scanning-configuration scanOnPush=true \
-              --image-tag-mutability MUTABLE
-            echo "✅ ECR repository $REPO_NAME created successfully"
-          else
-            echo "✅ ECR repository $REPO_NAME already exists"
-          fi
+          for REPO_NAME in "siargaotradingroad-development-frontend" "siargaotradingroad-development-api"; do
+            echo "🔍 Checking if ECR repository $REPO_NAME exists..."
+            
+            if ! aws ecr describe-repositories --repository-names $REPO_NAME --region us-east-1 2>/dev/null; then
+              echo "📦 Creating ECR repository $REPO_NAME..."
+              aws ecr create-repository \
+                --repository-name $REPO_NAME \
+                --region us-east-1 \
+                --image-scanning-configuration scanOnPush=true \
+                --image-tag-mutability MUTABLE
+              echo "✅ ECR repository $REPO_NAME created successfully"
+            else
+              echo "✅ ECR repository $REPO_NAME already exists"
+            fi
+          done
 
-      - name: Build and push Docker image
+      - name: Build and push Docker images
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: siargaotradingroad-development
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "🐳 Building Docker image..."
+          echo "🐳 Building Next.js frontend image..."
           docker buildx create --use || true
           docker buildx build --platform linux/amd64 \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:latest \
             --push \
+            -f Dockerfile \
             .
           
-          echo "✅ Image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "🐳 Building Go API image..."
+          docker buildx build --platform linux/amd64 \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY-api:latest \
+            --push \
+            -f Dockerfile.go \
+            .
           
-          # Verify image exists
-          if aws ecr describe-images --repository-name $ECR_REPOSITORY --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
-            echo "✅ Image pushed and verified: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "✅ Images pushed:"
+          echo "  - $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG"
+          echo "  - $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG"
+          
+          # Verify images exist
+          if aws ecr describe-images --repository-name $ECR_REPOSITORY-frontend --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null && \
+             aws ecr describe-images --repository-name $ECR_REPOSITORY-api --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
+            echo "✅ Images pushed and verified"
           else
-            echo "❌ Failed to verify image in ECR: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+            echo "❌ Failed to verify images in ECR"
             exit 1
           fi
 
@@ -156,39 +169,78 @@ jobs:
             echo "🔐 Logging into ECR..."
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
             
-            # Check if image exists in ECR before pulling
-            echo "🔍 Checking if image exists in ECR..."
-            IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/siargaotradingroad-development:${{ github.sha }}"
+            # Check if images exist in ECR before pulling
+            echo "🔍 Checking if images exist in ECR..."
+            FRONTEND_IMAGE="${{ steps.login-ecr.outputs.registry }}/siargaotradingroad-development-frontend:${{ github.sha }}"
+            API_IMAGE="${{ steps.login-ecr.outputs.registry }}/siargaotradingroad-development-api:${{ github.sha }}"
             
-            if ! aws ecr describe-images --repository-name siargaotradingroad-development --image-ids imageTag=${{ github.sha }} --region us-east-1 2>/dev/null; then
-              echo "❌ Image $IMAGE_URI does not exist in ECR!"
-              echo "🔍 Available images in repository:"
-              aws ecr describe-images --repository-name siargaotradingroad-development --region us-east-1 --query 'imageDetails[*].imageTags' --output table || echo "No images found"
+            if ! aws ecr describe-images --repository-name siargaotradingroad-development-frontend --image-ids imageTag=${{ github.sha }} --region us-east-1 2>/dev/null; then
+              echo "❌ Frontend image does not exist in ECR!"
               exit 1
             fi
             
-            # Pre-pull image to surface any auth/network errors clearly
-            echo "🐳 Pulling image $IMAGE_URI..."
-            docker pull "$IMAGE_URI"
-            docker images | grep siargaotradingroad-development || true
+            if ! aws ecr describe-images --repository-name siargaotradingroad-development-api --image-ids imageTag=${{ github.sha }} --region us-east-1 2>/dev/null; then
+              echo "❌ API image does not exist in ECR!"
+              exit 1
+            fi
+            
+            # Pre-pull images
+            echo "🐳 Pulling images..."
+            docker pull "$FRONTEND_IMAGE"
+            docker pull "$API_IMAGE"
+            
+            # Update docker-compose.yml with image tags
+            echo "📝 Updating docker-compose.yml with image tags..."
+            cat > docker-compose.yml << COMPOSE_EOF
+version: '3.8'
+
+services:
+  api:
+    image: $API_IMAGE
+    container_name: siargao-api
+    ports:
+      - "3020:3020"
+    env_file:
+      - .env
+    environment:
+      - PORT=3020
+      - GIN_MODE=release
+    restart: unless-stopped
+    networks:
+      - siargao-network
+
+  frontend:
+    image: $FRONTEND_IMAGE
+    container_name: siargao-frontend
+    ports:
+      - "3021:3021"
+    env_file:
+      - .env
+    environment:
+      - PORT=3021
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=\${NEXT_PUBLIC_API_URL:-http://localhost:3020/api}
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - siargao-network
+
+networks:
+  siargao-network:
+    driver: bridge
+COMPOSE_EOF
             
             # Stop existing containers
             echo "🛑 Stopping existing containers..."
             docker compose down || true
-            docker ps -a | grep siargao || docker ps -a | head -5
             
-            # Run the new container
-            echo "🚀 Starting new container..."
-            docker run -d \
-              --name siargao-trading-road \
-              --restart unless-stopped \
-              -p 3020:3020 \
-              -p 3021:3021 \
-              --env-file .env \
-              "$IMAGE_URI"
+            # Start containers with docker-compose
+            echo "🚀 Starting containers with docker-compose..."
+            docker compose up -d
             
             echo "✅ Deployment complete!"
             echo "📊 Container status:"
-            docker ps | grep siargao-trading-road || docker ps | head -3
+            docker compose ps
           EOF
 

@@ -63,6 +63,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "mobile_builds" {
     id     = "delete-old-builds"
     status = "Enabled"
 
+    filter {}
+
     expiration {
       days = var.build_retention_days
     }

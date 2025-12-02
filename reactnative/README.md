@@ -228,11 +228,21 @@ This project uses [Storybook](https://storybook.js.org/) for component developme
 npm run storybook
 ```
 
+Storybook runs on port **7007** at `http://localhost:7007`.
+
 This will start the Storybook server where you can:
 - View and interact with components in isolation
 - Test different component states and props
 - Document component usage and examples
 - Develop components without running the full app
+
+### Available Component Stories
+
+- **Buttons** - All variants (contained, outlined, text), sizes, states, with icons, login buttons
+- **Headers** - Admin, Store, Supplier headers with different colors, products header
+- **Logo** - Different sizes and background contexts
+- **Tables/Cards** - Products list, orders list with status chips, empty states
+- **Navigation** - Admin, Store, and Supplier navigation drawers
 
 ### Creating Stories
 
