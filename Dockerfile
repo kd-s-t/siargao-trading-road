@@ -8,10 +8,10 @@ WORKDIR /app
 
 # Copy package files
 COPY nextjs/package.json ./
-COPY nextjs/package-lock.json ./
+COPY nextjs/package-lock.json* ./
 
 # Install dependencies
-RUN npm ci --ignore-scripts
+RUN if [ -f package-lock.json ]; then npm ci --ignore-scripts; else npm install --ignore-scripts; fi
 
 # Rebuild the source code only when needed
 FROM base AS builder
