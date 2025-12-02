@@ -12,6 +12,9 @@
     "build:all": "eas build --platform all",
     "submit:android": "eas submit --platform android",
     "submit:ios": "eas submit --platform ios",
+    "release": "bash scripts/compilemobile.sh",
+    "release:android": "bash scripts/compilemobile.sh --platform android",
+    "release:ios": "bash scripts/compilemobile.sh --platform ios",
     "lint": "echo 'No linting configured for mobile'"
   },
   "dependencies": {

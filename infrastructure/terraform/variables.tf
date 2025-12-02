@@ -83,6 +83,18 @@ variable "rds_skip_final_snapshot" {
   default     = false
 }
 
+variable "rds_publicly_accessible" {
+  description = "Whether the RDS instance should be publicly accessible"
+  type        = bool
+  default     = false
+}
+
+variable "rds_allowed_cidr_blocks" {
+  description = "List of CIDR blocks allowed to access RDS directly (e.g., [\"1.2.3.4/32\"])"
+  type        = list(string)
+  default     = []
+}
+
 variable "mobile_build_retention_days" {
   description = "Number of days to retain mobile app builds in S3"
   type        = number

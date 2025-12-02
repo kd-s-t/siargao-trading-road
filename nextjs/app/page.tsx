@@ -22,6 +22,8 @@ import {
   TrendingUp as TrendingUpIcon,
   Security as SecurityIcon,
   Speed as SpeedIcon,
+  PhoneAndroid as AndroidIcon,
+  PhoneIphone as IOSIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,7 +39,20 @@ declare global {
   }
 }
 
-const APP_DOWNLOAD_URL = process.env.NEXT_PUBLIC_APP_DOWNLOAD_URL || 'https://your-s3-bucket.s3.amazonaws.com/app.apk';
+// Stable download URLs that always point to the latest build
+const getDownloadUrls = () => {
+  const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || 'development';
+  const awsRegion = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
+  const bucketName = `siargaotradingroad-mobile-builds-${environment}`;
+  const baseUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com`;
+  
+  return {
+    android: `${baseUrl}/android/latest.apk`,
+    ios: `${baseUrl}/ios/latest.ipa`,
+  };
+};
+
+const DOWNLOAD_URLS = getDownloadUrls();
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -223,27 +238,54 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<DownloadIcon />}
-              href={APP_DOWNLOAD_URL}
-              download
-              sx={{
-                py: 1.5,
-                px: 4,
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                borderRadius: 2,
-                textTransform: 'none',
-                boxShadow: 4,
-                '&:hover': {
-                  boxShadow: 6,
-                },
-              }}
-            >
-              Download Mobile App
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<AndroidIcon />}
+                href={DOWNLOAD_URLS.android}
+                download
+                sx={{
+                  py: 1.5,
+                  px: 4,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  boxShadow: 4,
+                  backgroundColor: '#3DDC84',
+                  '&:hover': {
+                    boxShadow: 6,
+                    backgroundColor: '#2EB872',
+                  },
+                }}
+              >
+                Download Android
+              </Button>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<IOSIcon />}
+                href={DOWNLOAD_URLS.ios}
+                download
+                sx={{
+                  py: 1.5,
+                  px: 4,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  boxShadow: 4,
+                  backgroundColor: '#000000',
+                  '&:hover': {
+                    boxShadow: 6,
+                    backgroundColor: '#1a1a1a',
+                  },
+                }}
+              >
+                Download iOS
+              </Button>
+            </Box>
           </motion.div>
         </Box>
 
@@ -269,27 +311,48 @@ export default function Home() {
                 </Typography>
                 <Typography variant="body1" sx={{ mb: 3, opacity: 0.9 }}>
                   Download our mobile app to start connecting with suppliers and stores.
-                  Available for Android devices.
+                  Available for Android and iOS devices.
                 </Typography>
-                <Button
-                  variant="contained"
-                  size="large"
-                  startIcon={<DownloadIcon />}
-                  href={APP_DOWNLOAD_URL}
-                  download
-                  sx={{
-                    bgcolor: 'background.paper',
-                    color: 'primary.main',
-                    '&:hover': {
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<AndroidIcon />}
+                    href={DOWNLOAD_URLS.android}
+                    download
+                    sx={{
                       bgcolor: 'background.paper',
-                      opacity: 0.9,
-                    },
-                    textTransform: 'none',
-                    fontWeight: 600,
-                  }}
-                >
-                  Download APK
-                </Button>
+                      color: 'primary.main',
+                      '&:hover': {
+                        bgcolor: 'background.paper',
+                        opacity: 0.9,
+                      },
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Download Android
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<IOSIcon />}
+                    href={DOWNLOAD_URLS.ios}
+                    download
+                    sx={{
+                      bgcolor: 'background.paper',
+                      color: 'primary.main',
+                      '&:hover': {
+                        bgcolor: 'background.paper',
+                        opacity: 0.9,
+                      },
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Download iOS
+                  </Button>
+                </Box>
               </Box>
             </Box>
           </Paper>
@@ -360,27 +423,54 @@ export default function Home() {
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
               Download the mobile app and join Siargao Trading Road today.
             </Typography>
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<DownloadIcon />}
-              href={APP_DOWNLOAD_URL}
-              download
-              sx={{
-                py: 1.5,
-                px: 4,
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                borderRadius: 2,
-                textTransform: 'none',
-                boxShadow: 4,
-                '&:hover': {
-                  boxShadow: 6,
-                },
-              }}
-            >
-              Download Now
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<AndroidIcon />}
+                href={DOWNLOAD_URLS.android}
+                download
+                sx={{
+                  py: 1.5,
+                  px: 4,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  boxShadow: 4,
+                  backgroundColor: '#3DDC84',
+                  '&:hover': {
+                    boxShadow: 6,
+                    backgroundColor: '#2EB872',
+                  },
+                }}
+              >
+                Download Android
+              </Button>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<IOSIcon />}
+                href={DOWNLOAD_URLS.ios}
+                download
+                sx={{
+                  py: 1.5,
+                  px: 4,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  boxShadow: 4,
+                  backgroundColor: '#000000',
+                  '&:hover': {
+                    boxShadow: 6,
+                    backgroundColor: '#1a1a1a',
+                  },
+                }}
+              >
+                Download iOS
+              </Button>
+            </Box>
           </motion.div>
         </Box>
       </Container>

@@ -18,11 +18,11 @@ func ResetDatabase() error {
 	if DB == nil {
 		return fmt.Errorf("database connection not initialized")
 	}
-	
+
 	if err := DB.Exec("TRUNCATE TABLE order_items, orders, products, business_documents, users CASCADE").Error; err != nil {
 		return fmt.Errorf("failed to truncate tables: %w", err)
 	}
-	
+
 	return nil
 }
 

@@ -22,6 +22,17 @@ resource "aws_security_group" "rds_sg" {
     security_groups = [var.ec2_security_group_id]
   }
 
+  dynamic "ingress" {
+    for_each = length(var.allowed_cidr_blocks) > 0 ? [1] : []
+    content {
+      description = "PostgreSQL from allowed IPs"
+      from_port   = 5432
+      to_port     = 5432
+      protocol    = "tcp"
+      cidr_blocks = var.allowed_cidr_blocks
+    }
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -54,7 +65,7 @@ resource "aws_db_instance" "siargaotradingroad_db" {
 
   db_subnet_group_name   = aws_db_subnet_group.siargaotradingroad_db_subnet.name
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
-  publicly_accessible    = false
+  publicly_accessible    = var.publicly_accessible
 
   backup_retention_period = var.backup_retention_period
   backup_window          = var.backup_window

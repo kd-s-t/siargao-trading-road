@@ -84,3 +84,15 @@ variable "skip_final_snapshot" {
   default     = false
 }
 
+variable "publicly_accessible" {
+  description = "Whether the RDS instance should be publicly accessible"
+  type        = bool
+  default     = false
+}
+
+variable "allowed_cidr_blocks" {
+  description = "List of CIDR blocks allowed to access RDS (for direct access from specific IPs)"
+  type        = list(string)
+  default     = []
+}
+
