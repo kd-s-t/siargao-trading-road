@@ -4,20 +4,22 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type RegisterRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
-	Name     string `json:"name" binding:"required"`
-	Phone    string `json:"phone"`
-	Role     string `json:"role" binding:"required"`
+	Email      string `json:"email" binding:"required,email"`
+	Password   string `json:"password" binding:"required,min=6"`
+	Name       string `json:"name" binding:"required"`
+	Phone      string `json:"phone"`
+	Role       string `json:"role" binding:"required"`
+	AdminLevel *int   `json:"admin_level,omitempty"`
 
 	BusinessName    string `json:"business_name,omitempty"`
 	Address         string `json:"address,omitempty"`
@@ -86,6 +88,91 @@ func Register(c *gin.Context) {
 	})
 }
 
+func AdminRegisterUser(c *gin.Context) {
+	role, _ := c.Get("role")
+	adminLevel, _ := c.Get("admin_level")
+
+	if role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only admin can register users"})
+		return
+	}
+
+	level := 1
+	if adminLevel != nil {
+		if l, ok := adminLevel.(float64); ok {
+			level = int(l)
+		} else if l, ok := adminLevel.(int); ok {
+			level = l
+		}
+	}
+
+	if level > 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "level 3 admins cannot register users"})
+		return
+	}
+
+	var req RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.Role != string(models.RoleSupplier) && req.Role != string(models.RoleStore) && req.Role != string(models.RoleAdmin) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "role must be 'supplier', 'store', or 'admin'"})
+		return
+	}
+
+	if req.Role == string(models.RoleAdmin) {
+		if level > 1 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "only level 1 admins can create admin users"})
+			return
+		}
+		if req.AdminLevel == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "admin_level is required when creating admin users"})
+			return
+		}
+		if *req.AdminLevel < 2 || *req.AdminLevel > 3 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "admin_level must be 2 or 3"})
+			return
+		}
+		if level == 2 && *req.AdminLevel < 3 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "level 2 admins can only create level 3 admin users"})
+			return
+		}
+	}
+
+	var existingUser models.User
+	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "email already exists"})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		return
+	}
+
+	user := models.User{
+		Email:    req.Email,
+		Password: string(hashedPassword),
+		Name:     req.Name,
+		Phone:    req.Phone,
+		Role:     models.UserRole(req.Role),
+	}
+	if req.Role == string(models.RoleAdmin) && req.AdminLevel != nil {
+		user.AdminLevel = req.AdminLevel
+	}
+
+	if err := database.DB.Create(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		return
+	}
+
+	user.Password = ""
+	c.JSON(http.StatusCreated, user)
+}
+
 func Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -123,6 +210,9 @@ func generateToken(user models.User, cfg *config.Config) (string, error) {
 		"email":   user.Email,
 		"role":    user.Role,
 		"exp":     time.Now().Add(time.Hour * 24 * 7).Unix(),
+	}
+	if user.AdminLevel != nil {
+		claims["admin_level"] = *user.AdminLevel
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

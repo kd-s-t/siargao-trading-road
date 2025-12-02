@@ -19,9 +19,9 @@ const (
 type Order struct {
 	ID              uint           `gorm:"primaryKey" json:"id"`
 	StoreID         uint           `gorm:"not null;index" json:"store_id"`
-	Store           User           `gorm:"foreignKey:StoreID" json:"store"`
+	Store           User           `gorm:"foreignKey:StoreID;references:ID" json:"store"`
 	SupplierID      uint           `gorm:"not null;index" json:"supplier_id"`
-	Supplier        User           `gorm:"foreignKey:SupplierID" json:"-"`
+	Supplier        User           `gorm:"foreignKey:SupplierID;references:ID" json:"supplier,omitempty"`
 	Status          OrderStatus    `gorm:"type:varchar(20);not null;default:'draft'" json:"status"`
 	TotalAmount     float64        `gorm:"type:decimal(10,2);default:0" json:"total_amount"`
 	ShippingAddress string         `gorm:"type:text" json:"shipping_address"`

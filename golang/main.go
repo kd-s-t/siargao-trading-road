@@ -3,11 +3,12 @@ package main
 import (
 	"log"
 
-	"github.com/gin-gonic/gin"
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
 	"siargao-trading-road/handlers"
 	"siargao-trading-road/middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -24,6 +25,21 @@ func main() {
 	r := gin.Default()
 
 	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+
+		if c.Request.Method == "OPTIONS" {
+			c.Writer.WriteHeader(204)
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	})
+
+	r.Use(func(c *gin.Context) {
 		c.Set("config", cfg)
 		c.Next()
 	})
@@ -37,6 +53,7 @@ func main() {
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
 			protected.GET("/me", handlers.GetMe)
+			protected.GET("/me/analytics", handlers.GetMyAnalytics)
 			protected.GET("/products", handlers.GetProducts)
 			protected.GET("/products/:id", handlers.GetProduct)
 			protected.POST("/products", handlers.CreateProduct)
@@ -56,6 +73,7 @@ func main() {
 			protected.GET("/users", handlers.GetUsers)
 			protected.GET("/users/:id", handlers.GetUser)
 			protected.GET("/users/:id/analytics", handlers.GetUserAnalytics)
+			protected.POST("/users/register", handlers.AdminRegisterUser)
 			protected.GET("/dashboard/analytics", handlers.GetDashboardAnalytics)
 		}
 	}

@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"strings"
 
+	"siargao-trading-road/config"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"siargao-trading-road/config"
 )
 
 func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
@@ -49,6 +50,9 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		c.Set("user_id", claims["user_id"])
 		c.Set("email", claims["email"])
 		c.Set("role", claims["role"])
+		if adminLevel, ok := claims["admin_level"]; ok {
+			c.Set("admin_level", adminLevel)
+		}
 
 		c.Next()
 	}

@@ -3,9 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CreateProductRequest struct {
@@ -36,7 +37,7 @@ func GetProducts(c *gin.Context) {
 	includeDeleted := c.Query("include_deleted") == "true"
 
 	var products []models.Product
-	query := database.DB
+	query := database.DB.Preload("Supplier")
 
 	if role == "supplier" {
 		query = query.Where("supplier_id = ?", userID)
@@ -60,7 +61,7 @@ func GetProduct(c *gin.Context) {
 	role, _ := c.Get("role")
 
 	var product models.Product
-	query := database.DB.Where("id = ?", id)
+	query := database.DB.Preload("Supplier").Where("id = ?", id)
 
 	if role == "supplier" {
 		query = query.Where("supplier_id = ?", userID)

@@ -55,11 +55,13 @@ func SeedAdmin() error {
 		return err
 	}
 
+	level1 := 1
 	admin := models.User{
-		Email:    adminEmail,
-		Password: string(hashedPassword),
-		Name:     adminName,
-		Role:     models.RoleAdmin,
+		Email:      adminEmail,
+		Password:   string(hashedPassword),
+		Name:       adminName,
+		Role:       models.RoleAdmin,
+		AdminLevel: &level1,
 	}
 
 	return DB.Create(&admin).Error

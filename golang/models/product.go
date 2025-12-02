@@ -9,7 +9,7 @@ import (
 type Product struct {
 	ID            uint           `gorm:"primaryKey" json:"id"`
 	SupplierID    uint           `gorm:"not null;index" json:"supplier_id"`
-	Supplier      User           `gorm:"foreignKey:SupplierID" json:"-"`
+	Supplier      User           `gorm:"foreignKey:SupplierID" json:"supplier,omitempty"`
 	Name          string         `gorm:"not null" json:"name"`
 	Description   string         `gorm:"type:text" json:"description"`
 	SKU           string         `gorm:"uniqueIndex" json:"sku"`
