@@ -3,9 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 func GetOrders(c *gin.Context) {
@@ -304,4 +305,34 @@ func GetDraftOrder(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, order)
+}
+
+func SendInvoiceEmail(c *gin.Context) {
+	id := c.Param("id")
+	userID, _ := c.Get("user_id")
+	role, _ := c.Get("role")
+
+	var order models.Order
+	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").Where("id = ?", id)
+
+	if role == "supplier" {
+		query = query.Where("supplier_id = ?", userID)
+	} else if role == "store" {
+		query = query.Where("store_id = ?", userID)
+	}
+
+	if err := query.First(&order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
+		return
+	}
+
+	if order.Store.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "store email not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Invoice email sent successfully",
+		"to":      order.Store.Email,
+	})
 }

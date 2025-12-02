@@ -63,6 +63,7 @@ func main() {
 			protected.GET("/orders", handlers.GetOrders)
 			protected.GET("/orders/:id", handlers.GetOrder)
 			protected.PUT("/orders/:id/status", handlers.UpdateOrderStatus)
+			protected.POST("/orders/:id/send-invoice", handlers.SendInvoiceEmail)
 			protected.GET("/orders/draft", handlers.GetDraftOrder)
 			protected.POST("/orders/draft", handlers.CreateDraftOrder)
 			protected.POST("/orders/:id/items", handlers.AddOrderItem)
