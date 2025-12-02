@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Alert, Image } from 'react-native';
 import {
   Text,
   Surface,
@@ -9,6 +9,7 @@ import {
   Divider,
   IconButton,
   TextInput,
+  Avatar,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { supplierService, Supplier } from '../lib/suppliers';
@@ -83,6 +84,13 @@ export default function SupplierProductsScreen() {
 
   return (
     <View style={styles.container}>
+      {supplier.banner_url && supplier.banner_url.trim() !== '' ? (
+        <Image
+          source={{ uri: supplier.banner_url }}
+          style={styles.bannerImage}
+          resizeMode="cover"
+        />
+      ) : null}
       <Surface style={styles.header} elevation={2}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
@@ -91,6 +99,19 @@ export default function SupplierProductsScreen() {
               size={24}
               onPress={() => navigation.goBack()}
             />
+            {supplier.logo_url && supplier.logo_url.trim() !== '' ? (
+              <Avatar.Image
+                size={50}
+                source={{ uri: supplier.logo_url }}
+                style={styles.logo}
+              />
+            ) : (
+              <Avatar.Text
+                size={50}
+                label={supplier.name.charAt(0).toUpperCase()}
+                style={styles.logo}
+              />
+            )}
             <Text variant="headlineSmall" style={styles.headerTitle}>
               {supplier.name}
             </Text>
@@ -199,6 +220,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  bannerImage: {
+    width: '100%',
+    height: 150,
+    backgroundColor: '#e0e0e0',
+  },
   header: {
     paddingTop: 50,
     paddingBottom: 16,
@@ -213,6 +239,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+  },
+  logo: {
+    marginRight: 8,
+    marginLeft: 8,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
   },
   headerTitle: {
     fontWeight: 'bold',

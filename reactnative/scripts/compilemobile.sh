@@ -167,6 +167,74 @@ build_and_upload() {
         fi
       fi
       
+      # Auto-detect and set JAVA_HOME if not set
+      if [ -z "$JAVA_HOME" ]; then
+        # Check for Homebrew OpenJDK installations first (preferred)
+        # Try OpenJDK 17/11 first, then fall back to any OpenJDK version
+        if [ -d "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home" ]; then
+          export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+          echo -e "${GREEN}✓ Auto-detected JAVA_HOME (Homebrew OpenJDK 17): $JAVA_HOME${NC}"
+        elif [ -d "/opt/homebrew/opt/openjdk@11/libexec/openjdk.jdk/Contents/Home" ]; then
+          export JAVA_HOME="/opt/homebrew/opt/openjdk@11/libexec/openjdk.jdk/Contents/Home"
+          echo -e "${GREEN}✓ Auto-detected JAVA_HOME (Homebrew OpenJDK 11): $JAVA_HOME${NC}"
+        elif [ -d "/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home" ]; then
+          export JAVA_HOME="/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home"
+          echo -e "${GREEN}✓ Auto-detected JAVA_HOME (Homebrew OpenJDK): $JAVA_HOME${NC}"
+        elif [ -d "/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home" ]; then
+          export JAVA_HOME="/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+          echo -e "${GREEN}✓ Auto-detected JAVA_HOME (Homebrew OpenJDK 17): $JAVA_HOME${NC}"
+        elif [ -d "/usr/local/opt/openjdk@11/libexec/openjdk.jdk/Contents/Home" ]; then
+          export JAVA_HOME="/usr/local/opt/openjdk@11/libexec/openjdk.jdk/Contents/Home"
+          echo -e "${GREEN}✓ Auto-detected JAVA_HOME (Homebrew OpenJDK 11): $JAVA_HOME${NC}"
+        elif [ -d "/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home" ]; then
+          export JAVA_HOME="/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home"
+          echo -e "${GREEN}✓ Auto-detected JAVA_HOME (Homebrew OpenJDK): $JAVA_HOME${NC}"
+        elif command -v /usr/libexec/java_home &> /dev/null; then
+          # Try to get Java 17 or 11 first (required for React Native)
+          JAVA_HOME_CANDIDATE=$(/usr/libexec/java_home -v 17 2>/dev/null || /usr/libexec/java_home -v 11 2>/dev/null || /usr/libexec/java_home 2>/dev/null)
+          if [ -n "$JAVA_HOME_CANDIDATE" ] && [ -f "$JAVA_HOME_CANDIDATE/bin/javac" ]; then
+            export JAVA_HOME="$JAVA_HOME_CANDIDATE"
+            echo -e "${GREEN}✓ Auto-detected JAVA_HOME: $JAVA_HOME${NC}"
+          else
+            echo -e "${RED}Error: No JDK found. React Native requires Java 11 or 17 (JDK, not JRE).${NC}"
+            echo ""
+            echo "Install OpenJDK 17 with Homebrew:"
+            echo "  brew install openjdk@17"
+            echo ""
+            echo "Then add to your shell profile (~/.zshrc or ~/.bash_profile):"
+            echo "  export JAVA_HOME=\$(/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home)"
+            echo "  export PATH=\"\$JAVA_HOME/bin:\$PATH\""
+            echo ""
+            echo "Or set JAVA_HOME manually for this session:"
+            echo "  export JAVA_HOME=\$(/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home)"
+            exit 1
+          fi
+        else
+          echo -e "${RED}Error: No JDK found. React Native requires Java 11 or 17 (JDK, not JRE).${NC}"
+          echo ""
+          echo "Install OpenJDK 17 with Homebrew:"
+          echo "  brew install openjdk@17"
+          exit 1
+        fi
+      else
+        echo -e "${GREEN}✓ Using JAVA_HOME: $JAVA_HOME${NC}"
+      fi
+      
+      # Verify Java version and that javac exists (JDK requirement)
+      if [ -n "$JAVA_HOME" ]; then
+        if [ ! -f "$JAVA_HOME/bin/javac" ]; then
+          echo -e "${RED}Error: $JAVA_HOME/bin/javac not found. This is not a JDK (Java Development Kit).${NC}"
+          echo "React Native requires a JDK, not just a JRE (Java Runtime Environment)."
+          echo ""
+          echo "Install OpenJDK 17 with Homebrew:"
+          echo "  brew install openjdk@17"
+          exit 1
+        fi
+        
+        JAVA_VERSION=$("$JAVA_HOME/bin/java" -version 2>&1 | head -1)
+        echo -e "${GREEN}✓ Java version: $JAVA_VERSION${NC}"
+      fi
+      
       # Build Android APK locally using Gradle directly
       echo "Building Android APK..."
       

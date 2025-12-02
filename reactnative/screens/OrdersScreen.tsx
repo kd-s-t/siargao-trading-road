@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Image } from 'react-native';
 import {
   Text,
   Surface,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Divider,
   Chip,
+  Avatar,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { orderService, Order } from '../lib/orders';
@@ -105,15 +106,37 @@ export default function OrdersScreen() {
         ) : (
           orders.map((order) => (
             <Card key={order.id} style={styles.orderCard}>
+              {order.store.banner_url && order.store.banner_url.trim() !== '' ? (
+                <Image
+                  source={{ uri: order.store.banner_url }}
+                  style={styles.bannerImage}
+                  resizeMode="cover"
+                />
+              ) : null}
               <Card.Content>
                 <View style={styles.orderHeader}>
-                  <View>
-                    <Text variant="titleMedium" style={styles.orderTitle}>
-                      Order #{order.id}
-                    </Text>
-                    <Text variant="bodySmall" style={styles.storeName}>
-                      {order.store.name}
-                    </Text>
+                  <View style={styles.storeInfo}>
+                    {order.store.logo_url && order.store.logo_url.trim() !== '' ? (
+                      <Avatar.Image
+                        size={50}
+                        source={{ uri: order.store.logo_url }}
+                        style={styles.storeLogo}
+                      />
+                    ) : (
+                      <Avatar.Text
+                        size={50}
+                        label={order.store.name.charAt(0).toUpperCase()}
+                        style={styles.storeLogo}
+                      />
+                    )}
+                    <View>
+                      <Text variant="titleMedium" style={styles.orderTitle}>
+                        Order #{order.id}
+                      </Text>
+                      <Text variant="bodySmall" style={styles.storeName}>
+                        {order.store.name}
+                      </Text>
+                    </View>
                   </View>
                   <Chip
                     style={[
@@ -244,12 +267,28 @@ const styles = StyleSheet.create({
   },
   orderCard: {
     marginBottom: 16,
+    overflow: 'hidden',
+  },
+  bannerImage: {
+    width: '100%',
+    height: 120,
+    backgroundColor: '#e0e0e0',
   },
   orderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  storeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  storeLogo: {
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
   },
   orderTitle: {
     fontWeight: 'bold',
