@@ -1,5 +1,5 @@
 <div align="center"> 
-	<img src="./logo.png" width="100%" /> 
+	<img src="./logo.png" width="100%" style="border: 1px solid;" /> 
 </div>
 
 # Siargao Trading Road
@@ -35,10 +35,10 @@ Siargao Trading Road marketplace app connecting suppliers and stores in Siargao.
 
 <div align="center">
   <h3>Landing Page</h3>
-  <img src="./landingpage.png" alt="Siargao Trading Road Landing Page" width="100%" />
+  <img src="./landingpage.png" alt="Siargao Trading Road Landing Page" width="100%" style="border: 1px solid;" />
   
   <h3>Mobile App - Login Screen</h3>
-  <img src="./login.png" alt="Mobile App Login Screen" width="100%" />
+  <img src="./login.png" alt="Mobile App Login Screen" width="100%" style="border: 1px solid;" />
 </div>
 
 ---
@@ -147,7 +147,7 @@ npm run storybook
 Access at `http://localhost:2022`
 
 <div align="center">
-  <img src="./storybook.png" alt="Storybook Component Library" width="100%" />
+  <img src="./storybook.png" alt="Storybook Component Library" width="100%" style="border: 1px solid;" />
 </div>
 
 **Available Stories:**
