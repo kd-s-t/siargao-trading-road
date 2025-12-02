@@ -21,7 +21,7 @@ export default function DashboardScreen() {
       <Surface style={styles.header} elevation={2}>
         <View style={styles.headerContent}>
           <Text variant="headlineSmall" style={styles.headerTitle}>
-            Wholesale
+            Siargao Trading Road
           </Text>
           <Button mode="text" onPress={handleLogout}>
             Logout

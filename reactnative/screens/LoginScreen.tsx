@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import {
   TextInput,
@@ -51,14 +52,14 @@ export default function LoginScreen() {
       >
         <Surface style={styles.surface} elevation={3}>
           <View style={styles.logoContainer}>
-            <View style={styles.logoPlaceholder}>
-              <Text variant="headlineLarge" style={styles.logoText}>
-                W
-              </Text>
-            </View>
+            <Image
+              source={require('../assets/str.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
           <Text variant="headlineMedium" style={styles.title}>
-            Wholesale
+            Siargao Trading Road
           </Text>
           <Text variant="bodyMedium" style={styles.subtitle}>
             Sign in to continue
@@ -126,17 +127,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  logoPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#1976d2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
+  logo: {
+    width: 200,
+    height: 80,
   },
   title: {
     textAlign: 'center',

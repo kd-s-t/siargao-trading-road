@@ -1,12 +1,15 @@
 import React from 'react';
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { View, StyleSheet } from 'react-native';
 
 export const decorators = [
   (Story: any) => (
     <SafeAreaProvider>
       <PaperProvider>
-        <Story />
+        <View style={styles.container}>
+          <Story />
+        </View>
       </PaperProvider>
     </SafeAreaProvider>
   ),
@@ -20,4 +23,11 @@ export const parameters = {
     },
   },
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+});
 

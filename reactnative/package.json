@@ -12,8 +12,6 @@
     "build:all": "eas build --platform all",
     "submit:android": "eas submit --platform android",
     "submit:ios": "eas submit --platform ios",
-    "storybook": "STORYBOOK_DISABLE_TELEMETRY=1 storybook dev -p 7007",
-    "build-storybook": "storybook build",
     "lint": "echo 'No linting configured for mobile'"
   },
   "dependencies": {
