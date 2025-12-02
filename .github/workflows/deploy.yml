@@ -150,30 +150,18 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Deploy to EC2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: siargaotradingroad-development
-          IMAGE_TAG: ${{ github.sha }}
+      - name: Setup project directory and repository
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
-            echo "🚀 Starting deployment..."
-            
-            # Reload environment and ensure services are available
-            echo "🔍 Checking services availability..."
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
-            
-            # Ensure docker group membership is active
             newgrp docker 2>/dev/null || true
             
-            # Create project directory if it doesn't exist
             echo "📁 Setting up project directory..."
             mkdir -p ~/siargao-trading-road
             cd ~/siargao-trading-road
             
-            # Clone repository if it doesn't exist, otherwise pull latest changes
             if [ ! -d ".git" ]; then
               echo "📥 Cloning repository..."
               git clone https://github.com/${{ github.repository }}.git .
@@ -181,52 +169,137 @@ jobs:
               echo "📥 Pulling latest changes..."
               git pull origin main
             fi
+            echo "✅ Repository ready"
+          EOF
+
+      - name: Load environment from SSM
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            cd ~/siargao-trading-road
             
-            # Load environment from SSM into .env for docker-compose
             echo "🔑 Loading environment from SSM Parameter Store..."
             SSM_PATH="/siargaotradingroad/development"
             AWS_REGION="us-east-1"
             aws ssm get-parameters-by-path --path "$SSM_PATH" --with-decryption --recursive --region "$AWS_REGION" --query 'Parameters[*].[Name,Value]' --output text | awk -F '\t' '{split($1,a,"/"); print a[length(a)] "=" $2}' > .env || echo "# No SSM parameters found" > .env
             echo "✅ .env created from SSM at $SSM_PATH"
+          EOF
+
+      - name: Login to ECR on EC2
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            cd ~/siargao-trading-road
             
-            # Login to ECR
             echo "🔐 Logging into ECR..."
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+            echo "✅ Logged into ECR"
+          EOF
+
+      - name: Verify images exist in ECR
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
             
-            # Check if images exist in ECR before pulling
-            echo "🔍 Checking if images exist in ECR..."
-            FRONTEND_IMAGE="${{ steps.login-ecr.outputs.registry }}/siargaotradingroad-development-frontend:${{ github.sha }}"
-            API_IMAGE="${{ steps.login-ecr.outputs.registry }}/siargaotradingroad-development-api:${{ github.sha }}"
-            
-            if ! aws ecr describe-images --repository-name siargaotradingroad-development-frontend --image-ids imageTag=${{ github.sha }} --region us-east-1 2>/dev/null; then
+            echo "🔍 Verifying images exist in ECR..."
+            if ! aws ecr describe-images --repository-name siargaotradingroad-development-frontend --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
               echo "❌ Frontend image does not exist in ECR!"
               exit 1
             fi
             
-            if ! aws ecr describe-images --repository-name siargaotradingroad-development-api --image-ids imageTag=${{ github.sha }} --region us-east-1 2>/dev/null; then
+            if ! aws ecr describe-images --repository-name siargaotradingroad-development-api --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
               echo "❌ API image does not exist in ECR!"
               exit 1
             fi
-            
-            # Pre-pull images
-            echo "🐳 Pulling images..."
-            docker pull "$FRONTEND_IMAGE"
-            docker pull "$API_IMAGE"
-            
-            # Update docker-compose.yml with image tags
-            echo "📝 Updating docker-compose.yml with image tags..."
-            printf 'version: '\''3.8'\''\n\nservices:\n  api:\n    image: %s\n    container_name: siargao-api\n    ports:\n      - "3020:3020"\n    env_file:\n      - .env\n    environment:\n      - PORT=3020\n      - GIN_MODE=release\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\n  frontend:\n    image: %s\n    container_name: siargao-frontend\n    ports:\n      - "3021:3021"\n    env_file:\n      - .env\n    environment:\n      - PORT=3021\n      - NODE_ENV=production\n      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3020/api}\n    depends_on:\n      - api\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\nnetworks:\n  siargao-network:\n    driver: bridge\n' "$API_IMAGE" "$FRONTEND_IMAGE" > docker-compose.yml
+            echo "✅ Both images verified in ECR"
+          EOF
 
-            # Stop existing containers
+      - name: Pull Docker images
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            cd ~/siargao-trading-road
+            
+            FRONTEND_IMAGE="$ECR_REGISTRY/siargaotradingroad-development-frontend:$IMAGE_TAG"
+            API_IMAGE="$ECR_REGISTRY/siargaotradingroad-development-api:$IMAGE_TAG"
+            
+            echo "🐳 Pulling frontend image..."
+            docker pull "$FRONTEND_IMAGE"
+            echo "🐳 Pulling API image..."
+            docker pull "$API_IMAGE"
+            echo "✅ Images pulled successfully"
+          EOF
+
+      - name: Update docker-compose.yml
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            cd ~/siargao-trading-road
+            
+            FRONTEND_IMAGE="$ECR_REGISTRY/siargaotradingroad-development-frontend:$IMAGE_TAG"
+            API_IMAGE="$ECR_REGISTRY/siargaotradingroad-development-api:$IMAGE_TAG"
+            
+            echo "📝 Updating docker-compose.yml with image tags..."
+            printf 'version: '\''3.8'\''\n\nservices:\n  api:\n    image: %s\n    container_name: siargao-api\n    ports:\n      - "3020:3020"\n    env_file:\n      - .env\n    environment:\n      - PORT=3020\n      - GIN_MODE=release\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\n  frontend:\n    image: %s\n    container_name: siargao-frontend\n    ports:\n      - "3021:3021"\n    env_file:\n      - .env\n    environment:\n      - PORT=3021\n      - NODE_ENV=production\n      - NEXT_PUBLIC_API_URL=\${NEXT_PUBLIC_API_URL:-http://localhost:3020/api}\n    depends_on:\n      - api\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\nnetworks:\n  siargao-network:\n    driver: bridge\n' "$API_IMAGE" "$FRONTEND_IMAGE" > docker-compose.yml
+            echo "✅ docker-compose.yml updated"
+          EOF
+
+      - name: Stop existing containers
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            cd ~/siargao-trading-road
+            
             echo "🛑 Stopping existing containers..."
             docker compose down || true
+            echo "✅ Containers stopped"
+          EOF
+
+      - name: Start containers
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            cd ~/siargao-trading-road
             
-            # Start containers with docker-compose
             echo "🚀 Starting containers with docker-compose..."
             docker compose up -d
+            echo "✅ Containers started"
+          EOF
+
+      - name: Verify deployment
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            cd ~/siargao-trading-road
             
-            echo "✅ Deployment complete!"
             echo "📊 Container status:"
             docker compose ps
+            echo "✅ Deployment complete!"
           EOF
 
