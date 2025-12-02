@@ -43,21 +43,31 @@ jobs:
             fi
           done
 
-      - name: Build and push Docker images
+      - name: Setup Docker Buildx
+        run: |
+          docker buildx create --use || true
+
+      - name: Build and push frontend image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: siargaotradingroad-development
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🐳 Building Next.js frontend image..."
-          docker buildx create --use || true
           docker buildx build --platform linux/amd64 \
             -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG \
             -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:latest \
             --push \
             -f Dockerfile \
             .
-          
+          echo "✅ Frontend image pushed: $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG"
+
+      - name: Build and push API image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
           echo "🐳 Building Go API image..."
           docker buildx build --platform linux/amd64 \
             -t $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG \
@@ -65,17 +75,31 @@ jobs:
             --push \
             -f Dockerfile.go \
             .
-          
-          echo "✅ Images pushed:"
-          echo "  - $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG"
-          echo "  - $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG"
-          
-          # Verify images exist
-          if aws ecr describe-images --repository-name $ECR_REPOSITORY-frontend --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null && \
-             aws ecr describe-images --repository-name $ECR_REPOSITORY-api --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
-            echo "✅ Images pushed and verified"
+          echo "✅ API image pushed: $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG"
+
+      - name: Verify frontend image in ECR
+        env:
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "🔍 Verifying frontend image in ECR..."
+          if aws ecr describe-images --repository-name $ECR_REPOSITORY-frontend --image-ids imageTag=$IMAGE_TAG --region us-east-1; then
+            echo "✅ Frontend image verified in ECR"
           else
-            echo "❌ Failed to verify images in ECR"
+            echo "❌ Frontend image not found in ECR"
+            exit 1
+          fi
+
+      - name: Verify API image in ECR
+        env:
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "🔍 Verifying API image in ECR..."
+          if aws ecr describe-images --repository-name $ECR_REPOSITORY-api --image-ids imageTag=$IMAGE_TAG --region us-east-1; then
+            echo "✅ API image verified in ECR"
+          else
+            echo "❌ API image not found in ECR"
             exit 1
           fi
 
