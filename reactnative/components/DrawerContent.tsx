@@ -38,13 +38,13 @@ export default function DrawerContent() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        {user?.banner_url ? (
+        {user?.banner_url && user.banner_url.trim() !== '' ? (
           <Image source={{ uri: user.banner_url }} style={styles.banner} resizeMode="cover" />
         ) : (
           <View style={styles.bannerPlaceholder} />
         )}
         <View style={styles.avatarContainer}>
-          {user?.logo_url ? (
+          {user?.logo_url && user.logo_url.trim() !== '' ? (
             <Image source={{ uri: user.logo_url }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>

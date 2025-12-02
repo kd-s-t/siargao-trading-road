@@ -20,12 +20,16 @@ export interface Order {
     id: number;
     name: string;
     email: string;
+    logo_url?: string;
+    banner_url?: string;
   };
   supplier_id: number;
   supplier?: {
     id: number;
     name: string;
     email: string;
+    logo_url?: string;
+    banner_url?: string;
   };
   status: 'draft' | 'preparing' | 'in_transit' | 'delivered' | 'cancelled';
   total_amount: number;

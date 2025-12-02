@@ -73,6 +73,7 @@ func main() {
 			protected.DELETE("/orders/items/:item_id", handlers.RemoveOrderItem)
 			protected.GET("/suppliers", handlers.GetSuppliers)
 			protected.GET("/suppliers/:id/products", handlers.GetSupplierProducts)
+			protected.GET("/stores", handlers.GetStores)
 			protected.GET("/users", handlers.GetUsers)
 			protected.GET("/users/:id", handlers.GetUser)
 			protected.GET("/users/:id/analytics", handlers.GetUserAnalytics)

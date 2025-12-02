@@ -95,7 +95,7 @@ export default function SuppliersScreen() {
               style={styles.supplierCard}
               onPress={() => handleSupplierPress(supplier)}
             >
-              {supplier.banner_url ? (
+              {supplier.banner_url && supplier.banner_url.trim() !== '' ? (
                 <Image
                   source={{ uri: supplier.banner_url }}
                   style={styles.bannerImage}
@@ -104,15 +104,15 @@ export default function SuppliersScreen() {
               ) : null}
               <Card.Content>
                 <View style={styles.headerRow}>
-                  {supplier.logo_url ? (
+                  {supplier.logo_url && supplier.logo_url.trim() !== '' ? (
                     <Avatar.Image
-                      size={60}
+                      size={80}
                       source={{ uri: supplier.logo_url }}
                       style={styles.logo}
                     />
                   ) : (
                     <Avatar.Text
-                      size={60}
+                      size={80}
                       label={supplier.name.charAt(0).toUpperCase()}
                       style={styles.logo}
                     />
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   bannerImage: {
     width: '100%',
-    height: 150,
+    height: 180,
     backgroundColor: '#e0e0e0',
   },
   headerRow: {
@@ -209,7 +209,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   logo: {
-    marginRight: 12,
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
   },
   nameContainer: {
     flex: 1,

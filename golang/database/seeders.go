@@ -120,6 +120,13 @@ func SeedStores() error {
 	for _, s := range stores {
 		var existing models.User
 		if err := DB.Where("email = ?", s.email).First(&existing).Error; err == nil {
+			existing.Name = s.name
+			existing.Phone = s.phone
+			existing.LogoURL = s.logoURL
+			existing.BannerURL = s.bannerURL
+			if err := DB.Save(&existing).Error; err != nil {
+				return err
+			}
 			continue
 		}
 
