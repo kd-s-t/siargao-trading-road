@@ -43,6 +43,13 @@ dist/
 build/
 *.tsbuildinfo
 
+# Mobile app builds
+*.apk
+*.ipa
+*.aab
+reactnative/builds/
+builds/
+
 # Temporary files
 tmp/
 temp/

@@ -35,14 +35,38 @@ The database is automatically seeded when the server starts.
 - Password: `admin123`
 
 **Suppliers:**
-- `supplier1@example.com` / `supplier123` (Fresh Produce Co)
-- `supplier2@example.com` / `supplier123` (Meat & Seafood Supply)
-- `supplier3@example.com` / `supplier123` (Beverage Distributors)
+- `nike@example.com` / `supplier123` (Nike)
+- `toms@example.com` / `supplier123` (Toms)
+- `711@example.com` / `supplier123` (7-Eleven)
+- `walmart@example.com` / `supplier123` (Walmart)
 
 **Stores:**
-- `store1@example.com` / `store123` (Supermarket Chain)
-- `store2@example.com` / `store123` (Convenience Store)
-- `store3@example.com` / `store123` (Restaurant Supply)
+- `ervies@example.com` / `store123` (Ervies)
+- `sarisari@example.com` / `store123` (Sarisari)
+- `kicks@example.com` / `store123` (Kicks)
+
+### Reseeding Database
+
+To reset and reseed the database, use the reseed script:
+
+**Local:**
+```bash
+cd golang
+./reseed.sh local
+```
+
+**Production:**
+```bash
+cd golang
+./reseed.sh production
+```
+
+The script will prompt for production database credentials (host, port, user, password, database name).
+
+Alternatively, you can run the seed command directly:
+```bash
+go run cmd/seed/main.go reset
+```
 
 ### Customizing Admin Credentials
 
