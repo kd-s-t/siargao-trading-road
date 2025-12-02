@@ -60,10 +60,10 @@ func SeedSuppliers() error {
 		logoURL   string
 		bannerURL string
 	}{
-		{"nike@example.com", "Nike", "09123456781", fmt.Sprintf("%s/nikelogo.png", s3BaseURL), fmt.Sprintf("%s/nikebanner.jpg", s3BaseURL)},
-		{"toms@example.com", "Toms", "09123456782", fmt.Sprintf("%s/tomslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/tomsbanner.jpg", s3BaseURL)},
-		{"711@example.com", "7-Eleven", "09123456783", fmt.Sprintf("%s/711logo.png", s3BaseURL), fmt.Sprintf("%s/711banner.webp", s3BaseURL)},
-		{"walmart@example.com", "Walmart", "09123456784", fmt.Sprintf("%s/walmartlogo.png", s3BaseURL), fmt.Sprintf("%s/walmartbanner.jpg", s3BaseURL)},
+		{"nike@example.com", "Nike", "09123456781", fmt.Sprintf("%s/assets/nikelogo.png", s3BaseURL), fmt.Sprintf("%s/assets/nikebanner.jpg", s3BaseURL)},
+		{"toms@example.com", "Toms", "09123456782", fmt.Sprintf("%s/assets/tomslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/tomsbanner.jpg", s3BaseURL)},
+		{"711@example.com", "7-Eleven", "09123456783", fmt.Sprintf("%s/assets/711logo.png", s3BaseURL), fmt.Sprintf("%s/assets/711banner.webp", s3BaseURL)},
+		{"walmart@example.com", "Walmart", "09123456784", fmt.Sprintf("%s/assets/walmartlogo.png", s3BaseURL), fmt.Sprintf("%s/assets/walmartbanner.jpg", s3BaseURL)},
 	}
 
 	for _, s := range suppliers {
@@ -96,14 +96,18 @@ func SeedSuppliers() error {
 }
 
 func SeedStores() error {
+	const s3BaseURL = "https://siargaotradingroad-user-uploads-development.s3.us-east-1.amazonaws.com"
+
 	stores := []struct {
-		email string
-		name  string
-		phone string
+		email     string
+		name      string
+		phone     string
+		logoURL   string
+		bannerURL string
 	}{
-		{"store1@example.com", "Supermarket Chain", "09223456781"},
-		{"store2@example.com", "Convenience Store", "09223456782"},
-		{"store3@example.com", "Restaurant Supply", "09223456783"},
+		{"ervies@example.com", "Ervies", "09223456781", fmt.Sprintf("%s/assets/ervieslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/ervieslogobanner.jpeg", s3BaseURL)},
+		{"sarisari@example.com", "Sarisari", "09223456782", fmt.Sprintf("%s/assets/sarisarilogo.png", s3BaseURL), fmt.Sprintf("%s/assets/sarisarilogobanner.png", s3BaseURL)},
+		{"kicks@example.com", "Kicks", "09223456783", fmt.Sprintf("%s/assets/kickslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/kicksbanner.jpeg", s3BaseURL)},
 	}
 
 	for _, s := range stores {
@@ -118,11 +122,13 @@ func SeedStores() error {
 		}
 
 		store := models.User{
-			Email:    s.email,
-			Password: string(hashedPassword),
-			Name:     s.name,
-			Phone:    s.phone,
-			Role:     models.RoleStore,
+			Email:     s.email,
+			Password:  string(hashedPassword),
+			Name:      s.name,
+			Phone:     s.phone,
+			LogoURL:   s.logoURL,
+			BannerURL: s.bannerURL,
+			Role:      models.RoleStore,
 		}
 
 		if err := DB.Create(&store).Error; err != nil {
