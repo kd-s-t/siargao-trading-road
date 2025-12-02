@@ -13,12 +13,17 @@ import (
 var DB *gorm.DB
 
 func Connect(cfg *config.Config) error {
+	sslMode := "require"
+	if cfg.DBHost == "localhost" || cfg.DBHost == "127.0.0.1" {
+		sslMode = "disable"
+	}
+
 	dsn := "host=" + cfg.DBHost +
 		" user=" + cfg.DBUser +
 		" password=" + cfg.DBPassword +
 		" dbname=" + cfg.DBName +
 		" port=" + cfg.DBPort +
-		" sslmode=require TimeZone=Asia/Manila"
+		" sslmode=" + sslMode + " TimeZone=Asia/Manila"
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
