@@ -4,7 +4,7 @@
 
 # Siargao Trading Road
 
-Wholesale marketplace app connecting suppliers and stores in Siargao.
+Siargao Trading Road marketplace app connecting suppliers and stores in Siargao.
 
 <div align="center"> 
 	<img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" /> 
@@ -36,6 +36,9 @@ Wholesale marketplace app connecting suppliers and stores in Siargao.
 <div align="center">
   <h3>Landing Page</h3>
   <img src="./landingpage.png" alt="Siargao Trading Road Landing Page" width="100%" />
+  
+  <h3>Mobile App - Login Screen</h3>
+  <img src="./login.png" alt="Mobile App Login Screen" width="100%" />
 </div>
 
 ---
@@ -43,7 +46,7 @@ Wholesale marketplace app connecting suppliers and stores in Siargao.
 ## Features
 
 - **Supplier Management**: Register, add products via Excel/JSON/manual entry
-- **Store Management**: Register, browse suppliers, purchase wholesale
+- **Store Management**: Register, browse suppliers, purchase products
 - **Product Management**: Full CRUD operations with soft delete and restore
 - **Authentication**: JWT-based secure authentication system
 - **Multi-Platform**: React Native mobile app (suppliers & stores) and Next.js web admin panel (admin only)
@@ -125,7 +128,7 @@ siargaotradingroad/
 ## User Types
 
 - **Supplier**: Register, add items (Excel/JSON/manual)
-- **Store**: Register, select supplier, buy wholesale
+- **Store**: Register, select supplier, buy products
 - **Admin**: Manage users, products, orders via web panel
 
 ## Storybook
