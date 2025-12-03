@@ -151,6 +151,45 @@ export function StatCards({ analytics }: StatCardsProps) {
           </motion.div>
         </Box>
       </Box>
+
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 2 }}>
+        <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(50% - 12px)' } }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+          >
+            <Card>
+              <CardContent>
+                <Typography color="text.secondary" gutterBottom variant="body2">
+                  Users Registered (Last 30 Days)
+                </Typography>
+                <Typography variant="h4">
+                  {analytics.users_registered_last_30_days ?? 0}
+                </Typography>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </Box>
+        <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(50% - 12px)' } }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.8 }}
+          >
+            <Card>
+              <CardContent>
+                <Typography color="text.secondary" gutterBottom variant="body2">
+                  Users Logged In (Last 30 Days)
+                </Typography>
+                <Typography variant="h4">
+                  {analytics.users_logged_in_last_30_days ?? 0}
+                </Typography>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </Box>
+      </Box>
     </>
   );
 }

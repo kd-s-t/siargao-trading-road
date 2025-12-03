@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Image, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Image, Alert, Linking, TouchableOpacity } from 'react-native';
 import {
   Text,
   Surface,
@@ -8,7 +8,9 @@ import {
   Divider,
   TextInput,
   ActivityIndicator,
+  IconButton,
 } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../lib/auth';
@@ -26,6 +28,10 @@ export default function ProfileScreen() {
     logo_url: user?.logo_url || '',
     banner_url: user?.banner_url || '',
   });
+
+  useEffect(() => {
+    refreshUser();
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -67,23 +73,23 @@ export default function ProfileScreen() {
   const uploadImage = async (uri: string, imageType: 'logo' | 'banner') => {
     setUploading(imageType);
     try {
-      const formData = new FormData();
+      const uploadFormData = new FormData();
       const filename = uri.split('/').pop() || 'image.jpg';
       const match = /\.(\w+)$/.exec(filename);
       const mimeType = match ? `image/${match[1]}` : `image/jpeg`;
 
-      formData.append('file', {
+      uploadFormData.append('file', {
         uri,
         name: filename,
         type: mimeType,
       } as any);
 
-      const response = await authService.uploadImage(formData);
+      const response = await authService.uploadImage(uploadFormData);
       
       if (imageType === 'logo') {
-        setFormData({ ...formData, logo_url: response.url });
+        setFormData((prev) => ({ ...prev, logo_url: response.url }));
       } else {
-        setFormData({ ...formData, banner_url: response.url });
+        setFormData((prev) => ({ ...prev, banner_url: response.url }));
       }
 
       Alert.alert('Success', 'Image uploaded successfully');
@@ -209,6 +215,66 @@ export default function ProfileScreen() {
               <Text variant="bodyMedium" style={styles.role}>
                 {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </Text>
+              {(user.facebook || user.instagram || user.twitter || user.linkedin || user.youtube || user.tiktok || user.website) && (
+                <View style={styles.socialLinks}>
+                  {user.facebook && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(user.facebook!)}
+                      style={styles.socialButton}
+                    >
+                      <MaterialCommunityIcons name="facebook" size={24} color="#1877F2" />
+                    </TouchableOpacity>
+                  )}
+                  {user.instagram && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(user.instagram!)}
+                      style={styles.socialButton}
+                    >
+                      <MaterialCommunityIcons name="instagram" size={24} color="#E4405F" />
+                    </TouchableOpacity>
+                  )}
+                  {user.twitter && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(user.twitter!)}
+                      style={styles.socialButton}
+                    >
+                      <MaterialCommunityIcons name="twitter" size={24} color="#000000" />
+                    </TouchableOpacity>
+                  )}
+                  {user.linkedin && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(user.linkedin!)}
+                      style={styles.socialButton}
+                    >
+                      <MaterialCommunityIcons name="linkedin" size={24} color="#0077B5" />
+                    </TouchableOpacity>
+                  )}
+                  {user.youtube && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(user.youtube!)}
+                      style={styles.socialButton}
+                    >
+                      <MaterialCommunityIcons name="youtube" size={24} color="#FF0000" />
+                    </TouchableOpacity>
+                  )}
+                  {user.tiktok && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(user.tiktok!)}
+                      style={styles.socialButton}
+                    >
+                      <Text style={styles.tiktokText}>TT</Text>
+                    </TouchableOpacity>
+                  )}
+                  {user.website && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(user.website!)}
+                      style={styles.socialButton}
+                    >
+                      <MaterialCommunityIcons name="web" size={24} color="#1976d2" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             </View>
           </Card.Content>
         </Card>
@@ -377,6 +443,23 @@ const styles = StyleSheet.create({
   role: {
     opacity: 0.7,
     textTransform: 'capitalize',
+    marginTop: 8,
+  },
+  socialLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  socialButton: {
+    padding: 8,
+  },
+  tiktokText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000000',
   },
   input: {
     marginBottom: 16,

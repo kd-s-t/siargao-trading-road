@@ -6,6 +6,13 @@ export interface UserFormData {
   role: 'supplier' | 'store';
   logo_url?: string;
   banner_url?: string;
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  youtube?: string;
+  tiktok?: string;
+  website?: string;
 }
 
 export type UserRole = 'supplier' | 'store';

@@ -15,6 +15,18 @@ Base user table for both suppliers and stores.
 | password | VARCHAR | NOT NULL | Bcrypt hashed password |
 | name | VARCHAR | NOT NULL | User's full name |
 | phone | VARCHAR | | Contact phone number |
+| address | VARCHAR | | Delivery/warehouse address |
+| latitude | DECIMAL(10,8) | | GPS latitude coordinate (nullable) |
+| longitude | DECIMAL(11,8) | | GPS longitude coordinate (nullable) |
+| logo_url | VARCHAR | | Logo image URL (nullable) |
+| banner_url | VARCHAR | | Banner image URL (nullable) |
+| facebook | VARCHAR | | Facebook profile URL (nullable) |
+| instagram | VARCHAR | | Instagram profile URL (nullable) |
+| twitter | VARCHAR | | Twitter/X profile URL (nullable) |
+| linkedin | VARCHAR | | LinkedIn profile URL (nullable) |
+| youtube | VARCHAR | | YouTube channel URL (nullable) |
+| tiktok | VARCHAR | | TikTok profile URL (nullable) |
+| website | VARCHAR | | Website URL (nullable) |
 | role | VARCHAR(20) | NOT NULL | User role: 'supplier' or 'store' |
 | created_at | TIMESTAMP | | Record creation timestamp |
 | updated_at | TIMESTAMP | | Record update timestamp |
@@ -23,6 +35,7 @@ Base user table for both suppliers and stores.
 **Indexes:**
 - `email` (unique)
 - `deleted_at` (for soft delete queries)
+- `(latitude, longitude)` (composite index for location-based queries)
 
 **User Roles:**
 - `supplier`: Business supplying products
@@ -30,12 +43,10 @@ Base user table for both suppliers and stores.
 
 **Supplier-specific fields** (stored in users table when role='supplier'):
 - `business_name`: Name of supplier business
-- `address`: Business address
 - `tax_id`: Tax identification number (optional)
 
 **Store-specific fields** (stored in users table when role='store'):
 - `store_name`: Name of the store
-- `address`: Store address
 - `business_license`: Business license number (optional)
 
 ## Future Tables (Planned)
@@ -128,6 +139,26 @@ Payment transactions for orders.
 - `transaction_date`
 - `deleted_at`
 
+### messages
+Chat messages between stores and suppliers for orders.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | SERIAL | PRIMARY KEY | Message ID |
+| order_id | INTEGER | FOREIGN KEY, NOT NULL | Reference to orders.id |
+| sender_id | INTEGER | FOREIGN KEY, NOT NULL | Reference to users.id (who sent the message) |
+| content | TEXT | NOT NULL | Message content |
+| read_at | TIMESTAMP | INDEX | Timestamp when message was read (nullable) |
+| created_at | TIMESTAMP | | Record creation timestamp |
+| updated_at | TIMESTAMP | | Record update timestamp |
+| deleted_at | TIMESTAMP | INDEX | Soft delete timestamp |
+
+**Indexes:**
+- `order_id`
+- `sender_id`
+- `read_at`
+- `deleted_at`
+
 ## Relationships
 
 ```
@@ -136,11 +167,16 @@ users (supplier)
         └── order_items (one-to-many)
               └── orders (many-to-one)
                     └── transactions (one-to-many)
+                    └── messages (one-to-many)
 
 users (store)
   └── orders (one-to-many)
         └── order_items (one-to-many)
               └── products (many-to-one)
+        └── messages (one-to-many)
+
+orders
+  └── messages (one-to-many)
 ```
 
 ## Notes

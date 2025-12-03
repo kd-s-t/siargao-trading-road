@@ -164,7 +164,7 @@ export default function TruckScreen() {
                     {item.product.name}
                   </Text>
                   <Text variant="bodySmall" style={styles.itemPrice}>
-                    ₱{item.unit_price.toFixed(2)} each
+                    ₱{item.unit_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} each
                   </Text>
                 </View>
                 <IconButton
@@ -197,7 +197,7 @@ export default function TruckScreen() {
                   />
                 </View>
                 <Text variant="titleMedium" style={styles.subtotal}>
-                  ₱{item.subtotal.toFixed(2)}
+                  ₱{item.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Text>
               </View>
             </Card.Content>
@@ -211,7 +211,7 @@ export default function TruckScreen() {
                 Total:
               </Text>
               <Text variant="titleLarge" style={styles.totalAmount}>
-                ₱{draftOrder.total_amount.toFixed(2)}
+                ₱{draftOrder.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
             </View>
           </Card.Content>

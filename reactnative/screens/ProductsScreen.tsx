@@ -217,7 +217,7 @@ export default function ProductsScreen() {
                           isDeleted && styles.deletedText,
                         ]}
                       >
-                        ₱{product.price.toFixed(2)}
+                        ₱{product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Text>
                     </View>
                     <View style={styles.priceStockItem}>

@@ -218,6 +218,55 @@ export function RegisterUserDialog({
             onChange={(e) => onFormDataChange({ ...formData, phone: e.target.value })}
             required
           />
+          <TextField
+            fullWidth
+            label="Facebook"
+            type="url"
+            value={formData.facebook || ''}
+            onChange={(e) => onFormDataChange({ ...formData, facebook: e.target.value || undefined })}
+          />
+          <TextField
+            fullWidth
+            label="Instagram"
+            type="url"
+            value={formData.instagram || ''}
+            onChange={(e) => onFormDataChange({ ...formData, instagram: e.target.value || undefined })}
+          />
+          <TextField
+            fullWidth
+            label="Twitter/X"
+            type="url"
+            value={formData.twitter || ''}
+            onChange={(e) => onFormDataChange({ ...formData, twitter: e.target.value || undefined })}
+          />
+          <TextField
+            fullWidth
+            label="LinkedIn"
+            type="url"
+            value={formData.linkedin || ''}
+            onChange={(e) => onFormDataChange({ ...formData, linkedin: e.target.value || undefined })}
+          />
+          <TextField
+            fullWidth
+            label="YouTube"
+            type="url"
+            value={formData.youtube || ''}
+            onChange={(e) => onFormDataChange({ ...formData, youtube: e.target.value || undefined })}
+          />
+          <TextField
+            fullWidth
+            label="TikTok"
+            type="url"
+            value={formData.tiktok || ''}
+            onChange={(e) => onFormDataChange({ ...formData, tiktok: e.target.value || undefined })}
+          />
+          <TextField
+            fullWidth
+            label="Website"
+            type="url"
+            value={formData.website || ''}
+            onChange={(e) => onFormDataChange({ ...formData, website: e.target.value || undefined })}
+          />
 
           <Box>
             <Typography variant="body2" sx={{ mb: 1 }}>

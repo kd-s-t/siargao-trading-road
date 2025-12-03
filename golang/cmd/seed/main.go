@@ -18,13 +18,32 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	if len(os.Args) > 1 && os.Args[1] == "reset" {
-		log.Println("Resetting database and re-seeding...")
-		err = database.ResetAndSeed()
-		if err != nil {
-			log.Fatal("Failed to reset and seed:", err)
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "reset":
+			log.Println("Resetting database and re-seeding...")
+			err = database.ResetAndSeed()
+			if err != nil {
+				log.Fatal("Failed to reset and seed:", err)
+			}
+			log.Println("Database reset and seeders completed successfully")
+		case "migrate":
+			log.Println("Running database migrations...")
+			err = database.Migrate()
+			if err != nil {
+				log.Fatal("Failed to migrate:", err)
+			}
+			log.Println("Database migrations completed successfully")
+		case "update-locations":
+			log.Println("Updating user locations...")
+			err = database.UpdateUserLocations()
+			if err != nil {
+				log.Fatal("Failed to update locations:", err)
+			}
+			log.Println("User locations updated successfully")
+		default:
+			log.Println("Seeders completed successfully")
 		}
-		log.Println("Database reset and seeders completed successfully")
 	} else {
 		log.Println("Seeders completed successfully")
 	}
