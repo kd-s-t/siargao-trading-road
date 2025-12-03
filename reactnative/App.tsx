@@ -74,6 +74,7 @@ function StoreDrawer() {
     >
       <Drawer.Screen name="Suppliers" component={SuppliersScreen} />
       <Drawer.Screen name="SupplierProducts" component={SupplierProductsScreen} />
+      <Drawer.Screen name="Orders" component={OrdersScreen} />
       <Drawer.Screen name="Truck" component={TruckScreen} />
       <Drawer.Screen name="Profile" component={ProfileScreen} />
     </Drawer.Navigator>

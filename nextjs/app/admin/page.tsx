@@ -1,20 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { CircularProgress, Box } from '@mui/material';
+import { AdminRedirectContent } from '@/app_modules/admins/components';
 
 export default function AdminRedirectPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace('/admins');
-  }, [router]);
-
-  return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-      <CircularProgress />
-    </Box>
-  );
+  return <AdminRedirectContent />;
 }
 

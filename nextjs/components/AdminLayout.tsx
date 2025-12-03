@@ -23,6 +23,7 @@ import {
   Inventory as InventoryIcon,
   ShoppingCart as ShoppingCartIcon,
   Logout as LogoutIcon,
+  PhoneAndroid as PhoneAndroidIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -46,6 +47,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     ...(isLevel1 ? [{ text: 'Admins', icon: <AdminIcon />, path: '/admins' }] : []),
     { text: 'Orders', icon: <ShoppingCartIcon />, path: '/orders' },
     { text: 'Products', icon: <InventoryIcon />, path: '/products' },
+    { text: 'Simulate', icon: <PhoneAndroidIcon />, path: '/simulate' },
   ].filter(Boolean);
 
   return (

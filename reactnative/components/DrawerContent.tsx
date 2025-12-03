@@ -15,6 +15,7 @@ export default function DrawerContent() {
 
   const menuItems = user?.role === 'store' ? [
     { label: 'Suppliers', icon: 'store', screen: 'Suppliers' },
+    { label: 'Orders', icon: 'cart', screen: 'Orders' },
     { label: 'Profile', icon: 'account', screen: 'Profile' },
   ] : user?.role === 'supplier' ? [
     { label: 'Products', icon: 'package-variant', screen: 'SupplierMain' },

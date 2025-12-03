@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"siargao-trading-road/database"
@@ -18,6 +19,7 @@ type CreateProductRequest struct {
 	Unit          string  `json:"unit"`
 	Category      string  `json:"category"`
 	ImageURL      string  `json:"image_url"`
+	SupplierID    *uint   `json:"supplier_id"`
 }
 
 type UpdateProductRequest struct {
@@ -79,14 +81,28 @@ func CreateProduct(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 	role, _ := c.Get("role")
 
-	if role != "supplier" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers can create products"})
-		return
-	}
-
 	var req CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var supplierID uint
+	if role == "admin" {
+		if req.SupplierID == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "supplier_id is required when creating product as admin"})
+			return
+		}
+		var supplier models.User
+		if err := database.DB.Where("id = ? AND role = ?", *req.SupplierID, "supplier").First(&supplier).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid supplier_id"})
+			return
+		}
+		supplierID = *req.SupplierID
+	} else if role == "supplier" {
+		supplierID = userID.(uint)
+	} else {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers and admins can create products"})
 		return
 	}
 
@@ -97,7 +113,7 @@ func CreateProduct(c *gin.Context) {
 	}
 
 	product := models.Product{
-		SupplierID:    userID.(uint),
+		SupplierID:    supplierID,
 		Name:          req.Name,
 		Description:   req.Description,
 		SKU:           req.SKU,
@@ -110,6 +126,11 @@ func CreateProduct(c *gin.Context) {
 
 	if err := database.DB.Create(&product).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create product"})
+		return
+	}
+
+	if err := database.DB.Preload("Supplier").First(&product, product.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load created product"})
 		return
 	}
 
@@ -226,4 +247,96 @@ func RestoreProduct(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, product)
+}
+
+func BulkCreateProducts(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	role, _ := c.Get("role")
+
+	var req []CreateProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if len(req) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no products provided"})
+		return
+	}
+
+	var createdProducts []models.Product
+	var errors []string
+
+	for i, productReq := range req {
+		var supplierID uint
+		if role == "admin" {
+			if productReq.SupplierID == nil {
+				errors = append(errors, fmt.Sprintf("Product %d: supplier_id is required", i+1))
+				continue
+			}
+			var supplier models.User
+			if err := database.DB.Where("id = ? AND role = ?", *productReq.SupplierID, "supplier").First(&supplier).Error; err != nil {
+				errors = append(errors, fmt.Sprintf("Product %d: invalid supplier_id", i+1))
+				continue
+			}
+			supplierID = *productReq.SupplierID
+		} else if role == "supplier" {
+			supplierID = userID.(uint)
+		} else {
+			errors = append(errors, fmt.Sprintf("Product %d: only suppliers and admins can create products", i+1))
+			continue
+		}
+
+		var existingProduct models.Product
+		if err := database.DB.Where("sku = ?", productReq.SKU).First(&existingProduct).Error; err == nil {
+			errors = append(errors, fmt.Sprintf("Product %d: SKU %s already exists", i+1, productReq.SKU))
+			continue
+		}
+
+		product := models.Product{
+			SupplierID:    supplierID,
+			Name:          productReq.Name,
+			Description:   productReq.Description,
+			SKU:           productReq.SKU,
+			Price:         productReq.Price,
+			StockQuantity: productReq.StockQuantity,
+			Unit:          productReq.Unit,
+			Category:      productReq.Category,
+			ImageURL:      productReq.ImageURL,
+		}
+
+		if err := database.DB.Create(&product).Error; err != nil {
+			errors = append(errors, fmt.Sprintf("Product %d: failed to create - %v", i+1, err))
+			continue
+		}
+
+		if err := database.DB.Preload("Supplier").First(&product, product.ID).Error; err != nil {
+			errors = append(errors, fmt.Sprintf("Product %d: failed to load created product", i+1))
+			continue
+		}
+
+		createdProducts = append(createdProducts, product)
+	}
+
+	if len(errors) > 0 && len(createdProducts) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "failed to create any products",
+			"details": errors,
+		})
+		return
+	}
+
+	response := gin.H{
+		"created":  len(createdProducts),
+		"failed":   len(errors),
+		"products": createdProducts,
+	}
+
+	if len(errors) > 0 {
+		response["errors"] = errors
+		c.JSON(http.StatusPartialContent, response)
+		return
+	}
+
+	c.JSON(http.StatusCreated, response)
 }

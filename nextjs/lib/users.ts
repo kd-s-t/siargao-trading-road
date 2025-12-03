@@ -103,6 +103,8 @@ export const usersService = {
     phone?: string;
     role: 'supplier' | 'store' | 'admin';
     admin_level?: number;
+    logo_url?: string;
+    banner_url?: string;
   }): Promise<User> => {
     const { data } = await api.post<User>('/users/register', userData);
     return data;
@@ -162,6 +164,11 @@ export const productsService = {
 
   createProduct: async (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> => {
     const { data } = await api.post<Product>('/products', product);
+    return data;
+  },
+
+  bulkCreateProducts: async (products: Omit<Product, 'id' | 'created_at' | 'updated_at'>[]): Promise<{ created: number; failed: number; products: Product[]; errors?: string[] }> => {
+    const { data } = await api.post<{ created: number; failed: number; products: Product[]; errors?: string[] }>('/products/bulk', products);
     return data;
   },
 

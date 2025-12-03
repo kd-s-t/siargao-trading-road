@@ -13,8 +13,8 @@ import (
 func GetSuppliers(c *gin.Context) {
 	role, _ := c.Get("role")
 
-	if role != "store" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only stores can view suppliers"})
+	if role != "store" && role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only stores and admins can view suppliers"})
 		return
 	}
 
@@ -64,8 +64,8 @@ func GetSupplierProducts(c *gin.Context) {
 	supplierID := c.Param("id")
 	role, _ := c.Get("role")
 
-	if role != "store" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only stores can view supplier products"})
+	if role != "store" && role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only stores and admins can view supplier products"})
 		return
 	}
 
@@ -87,8 +87,8 @@ func GetSupplierProducts(c *gin.Context) {
 func GetStores(c *gin.Context) {
 	role, _ := c.Get("role")
 
-	if role != "supplier" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers can view stores"})
+	if role != "supplier" && role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers and admins can view stores"})
 		return
 	}
 

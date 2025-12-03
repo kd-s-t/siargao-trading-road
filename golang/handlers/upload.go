@@ -78,7 +78,14 @@ func UploadImage(c *gin.Context) {
 	svc := s3.New(sess)
 
 	role, _ := c.Get("role")
-	key := fmt.Sprintf("uploads/%s/%d/%s", role, userID, fmt.Sprintf("%d%s", time.Now().Unix(), ext))
+	folderType := c.Query("type")
+
+	var key string
+	if folderType == "product" {
+		key = fmt.Sprintf("products/%d/%s", userID, fmt.Sprintf("%d%s", time.Now().Unix(), ext))
+	} else {
+		key = fmt.Sprintf("uploads/%s/%d/%s", role, userID, fmt.Sprintf("%d%s", time.Now().Unix(), ext))
+	}
 
 	_, err = svc.PutObject(&s3.PutObjectInput{
 		Bucket:      aws.String(config.S3Bucket),

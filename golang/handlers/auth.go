@@ -17,9 +17,11 @@ type RegisterRequest struct {
 	Email      string `json:"email" binding:"required,email"`
 	Password   string `json:"password" binding:"required,min=6"`
 	Name       string `json:"name" binding:"required"`
-	Phone      string `json:"phone"`
+	Phone      string `json:"phone" binding:"required"`
 	Role       string `json:"role" binding:"required"`
 	AdminLevel *int   `json:"admin_level,omitempty"`
+	LogoURL    string `json:"logo_url,omitempty"`
+	BannerURL  string `json:"banner_url,omitempty"`
 
 	BusinessName    string `json:"business_name,omitempty"`
 	Address         string `json:"address,omitempty"`
@@ -63,11 +65,13 @@ func Register(c *gin.Context) {
 	}
 
 	user := models.User{
-		Email:    req.Email,
-		Password: string(hashedPassword),
-		Name:     req.Name,
-		Phone:    req.Phone,
-		Role:     models.UserRole(req.Role),
+		Email:     req.Email,
+		Password:  string(hashedPassword),
+		Name:      req.Name,
+		Phone:     req.Phone,
+		Role:      models.UserRole(req.Role),
+		LogoURL:   req.LogoURL,
+		BannerURL: req.BannerURL,
 	}
 
 	if err := database.DB.Create(&user).Error; err != nil {
@@ -154,11 +158,13 @@ func AdminRegisterUser(c *gin.Context) {
 	}
 
 	user := models.User{
-		Email:    req.Email,
-		Password: string(hashedPassword),
-		Name:     req.Name,
-		Phone:    req.Phone,
-		Role:     models.UserRole(req.Role),
+		Email:     req.Email,
+		Password:  string(hashedPassword),
+		Name:      req.Name,
+		Phone:     req.Phone,
+		Role:      models.UserRole(req.Role),
+		LogoURL:   req.LogoURL,
+		BannerURL: req.BannerURL,
 	}
 	if req.Role == string(models.RoleAdmin) && req.AdminLevel != nil {
 		user.AdminLevel = req.AdminLevel
