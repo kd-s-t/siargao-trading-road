@@ -11,6 +11,10 @@ resource "aws_eip" "siargaotradingroad_eip" {
     Project = "SiargaoTradingRoad"
     Environment = var.environment
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_instance" "siargaotradingroad_server" {
@@ -19,6 +23,7 @@ resource "aws_instance" "siargaotradingroad_server" {
   key_name              = var.key_pair_name
   vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = var.instance_profile_name
+  disable_api_termination = true
 
   root_block_device {
     volume_size = 30
@@ -30,6 +35,10 @@ resource "aws_instance" "siargaotradingroad_server" {
     Name = "siargao-trading-road-server-${var.environment}"
     Project = "SiargaoTradingRoad"
     Environment = var.environment
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 
   provisioner "remote-exec" {
