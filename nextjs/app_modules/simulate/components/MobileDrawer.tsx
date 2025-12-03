@@ -1,6 +1,5 @@
 'use client';
 
-import { useRef } from 'react';
 import {
   Box,
   List,
@@ -11,7 +10,6 @@ import {
   Typography,
   Avatar,
   Divider,
-  CircularProgress,
   Badge,
 } from '@mui/material';
 import {
@@ -19,12 +17,9 @@ import {
   Store as StoreIcon,
   ShoppingCart as ShoppingCartIcon,
   AccountCircle as AccountIcon,
-  Edit as EditIcon,
-  Image as ImageIcon,
 } from '@mui/icons-material';
 import { User } from '@/lib/auth';
 import { Order } from '@/lib/users';
-import { mobileAuthService } from '../services/mobileApi';
 
 type ViewType = 'suppliers' | 'stores' | 'orders' | 'supplier-products' | 'truck' | 'order-detail' | 'profile';
 
@@ -32,23 +27,17 @@ interface MobileDrawerProps {
   mobileUser: User;
   orders: Order[];
   activeView: ViewType;
-  uploading: 'logo' | 'banner' | null;
   onViewChange: (view: ViewType) => void;
   onLogout: () => void;
-  onImageSelect: (event: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner') => void;
 }
 
 export function MobileDrawer({
   mobileUser,
   orders,
   activeView,
-  uploading,
   onViewChange,
   onLogout,
-  onImageSelect,
 }: MobileDrawerProps) {
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
   const nonDeliveredCount = orders.filter(order => order.status !== 'delivered').length;
 
   const menuItems = [
@@ -68,209 +57,56 @@ export function MobileDrawer({
 
   return (
     <Box sx={{ pt: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <input
-        type="file"
-        accept="image/*"
-        ref={bannerInputRef}
-        style={{ display: 'none' }}
-        onChange={(e) => onImageSelect(e, 'banner')}
-      />
-      <input
-        type="file"
-        accept="image/*"
-        ref={logoInputRef}
-        style={{ display: 'none' }}
-        onChange={(e) => onImageSelect(e, 'logo')}
-      />
       <Box
-        onClick={() => bannerInputRef.current?.click()}
         sx={{
           position: 'relative',
           height: 150,
           bgcolor: '#e0e0e0',
           mb: 8,
-          cursor: 'pointer',
-          '&:hover .edit-overlay': {
-            opacity: 1,
-          },
         }}
       >
         {mobileUser?.banner_url && mobileUser.banner_url.trim() !== '' ? (
-          <>
-            <Box
-              component="img"
-              src={mobileUser.banner_url}
-              alt="Banner"
-              sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-            />
-            {uploading === 'banner' ? (
-              <Box
-                className="edit-overlay"
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  bgcolor: 'rgba(0, 0, 0, 0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 1,
-                }}
-              >
-                <CircularProgress size={24} sx={{ color: 'white' }} />
-              </Box>
-            ) : (
-              <Box
-                className="edit-overlay"
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  bgcolor: 'rgba(0, 0, 0, 0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0,
-                  transition: 'opacity 0.2s',
-                }}
-              >
-                <EditIcon sx={{ color: 'white', fontSize: 24 }} />
-              </Box>
-            )}
-          </>
-        ) : (
           <Box
+            component="img"
+            src={mobileUser.banner_url}
+            alt="Banner"
             sx={{
               width: '100%',
               height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              objectFit: 'cover',
             }}
-          >
-            {uploading === 'banner' ? (
-              <CircularProgress size={24} />
-            ) : (
-              <ImageIcon sx={{ fontSize: 40, color: '#999' }} />
-            )}
-          </Box>
-        )}
+          />
+        ) : null}
         <Box
-          onClick={(e) => {
-            e.stopPropagation();
-            logoInputRef.current?.click();
-          }}
           sx={{
             position: 'absolute',
             bottom: -40,
             left: '50%',
             transform: 'translateX(-50%)',
-            cursor: 'pointer',
-            '&:hover .avatar-edit-overlay': {
-              opacity: 1,
-            },
           }}
         >
           {mobileUser?.logo_url && mobileUser.logo_url.trim() !== '' ? (
-            <Box sx={{ position: 'relative' }}>
-              <Avatar
-                src={mobileUser.logo_url}
-                sx={{
-                  width: 80,
-                  height: 80,
-                  border: '3px solid white',
-                }}
-              />
-              {uploading === 'logo' ? (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    borderRadius: '50%',
-                    bgcolor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '3px solid white',
-                  }}
-                >
-                  <CircularProgress size={20} sx={{ color: 'white' }} />
-                </Box>
-              ) : (
-                <Box
-                  className="avatar-edit-overlay"
-                  sx={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    bgcolor: '#1976d2',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '2px solid white',
-                    opacity: 0,
-                    transition: 'opacity 0.2s',
-                  }}
-                >
-                  <EditIcon sx={{ color: 'white', fontSize: 14 }} />
-                </Box>
-              )}
-            </Box>
+            <Avatar
+              src={mobileUser.logo_url}
+              sx={{
+                width: 80,
+                height: 80,
+                border: '3px solid white',
+              }}
+            />
           ) : (
-            <Box sx={{ position: 'relative' }}>
-              <Avatar
-                sx={{
-                  width: 80,
-                  height: 80,
-                  border: '3px solid white',
-                  bgcolor: '#1976d2',
-                }}
-              >
-                {uploading === 'logo' ? (
-                  <CircularProgress size={20} sx={{ color: 'white' }} />
-                ) : (
-                  <>
-                    <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                      {mobileUser?.name?.charAt(0).toUpperCase() || 'U'}
-                    </Typography>
-                    <Box
-                      className="avatar-edit-overlay"
-                      sx={{
-                        position: 'absolute',
-                        bottom: 0,
-                        right: 0,
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        bgcolor: '#1976d2',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: '2px solid white',
-                        opacity: 0,
-                        transition: 'opacity 0.2s',
-                      }}
-                    >
-                      <EditIcon sx={{ color: 'white', fontSize: 14 }} />
-                    </Box>
-                  </>
-                )}
-              </Avatar>
-            </Box>
+            <Avatar
+              sx={{
+                width: 80,
+                height: 80,
+                border: '3px solid white',
+                bgcolor: '#1976d2',
+              }}
+            >
+              <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
+                {mobileUser?.name?.charAt(0).toUpperCase() || 'U'}
+              </Typography>
+            </Avatar>
           )}
         </Box>
       </Box>

@@ -27,11 +27,36 @@ export default function ProfileScreen() {
     phone: user?.phone || '',
     logo_url: user?.logo_url || '',
     banner_url: user?.banner_url || '',
+    facebook: user?.facebook || '',
+    instagram: user?.instagram || '',
+    twitter: user?.twitter || '',
+    linkedin: user?.linkedin || '',
+    youtube: user?.youtube || '',
+    tiktok: user?.tiktok || '',
+    website: user?.website || '',
   });
 
   useEffect(() => {
     refreshUser();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name,
+        phone: user.phone || '',
+        logo_url: user.logo_url || '',
+        banner_url: user.banner_url || '',
+        facebook: user.facebook || '',
+        instagram: user.instagram || '',
+        twitter: user.twitter || '',
+        linkedin: user.linkedin || '',
+        youtube: user.youtube || '',
+        tiktok: user.tiktok || '',
+        website: user.website || '',
+      });
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -86,10 +111,16 @@ export default function ProfileScreen() {
 
       const response = await authService.uploadImage(uploadFormData);
       
-      if (imageType === 'logo') {
-        setFormData((prev) => ({ ...prev, logo_url: response.url }));
-      } else {
-        setFormData((prev) => ({ ...prev, banner_url: response.url }));
+      const updatedFormData = {
+        ...formData,
+        ...(imageType === 'logo' ? { logo_url: response.url } : { banner_url: response.url }),
+      };
+      
+      setFormData(updatedFormData);
+
+      if (!editing) {
+        await authService.updateMe(updatedFormData);
+        await refreshUser();
       }
 
       Alert.alert('Success', 'Image uploaded successfully');
@@ -137,6 +168,13 @@ export default function ProfileScreen() {
                     phone: user.phone || '',
                     logo_url: user.logo_url || '',
                     banner_url: user.banner_url || '',
+                    facebook: user.facebook || '',
+                    instagram: user.instagram || '',
+                    twitter: user.twitter || '',
+                    linkedin: user.linkedin || '',
+                    youtube: user.youtube || '',
+                    tiktok: user.tiktok || '',
+                    website: user.website || '',
                   });
                 }}>
                   Cancel
@@ -160,45 +198,87 @@ export default function ProfileScreen() {
       </Surface>
 
       <ScrollView style={styles.content}>
-        {displayData.banner_url ? (
-          <Image source={{ uri: displayData.banner_url }} style={styles.banner} />
-        ) : editing ? (
-          <View style={styles.bannerPlaceholder}>
-            <Button
-              mode="outlined"
+        <View style={styles.bannerContainer}>
+          <TouchableOpacity 
               onPress={() => pickImage('banner')}
               disabled={uploading === 'banner'}
-              loading={uploading === 'banner'}
-            >
-              {uploading === 'banner' ? 'Uploading...' : 'Add Banner'}
-            </Button>
+            activeOpacity={0.8}
+          >
+            {displayData.banner_url ? (
+              <>
+                <Image source={{ uri: displayData.banner_url }} style={styles.banner} />
+                {uploading === 'banner' ? (
+                  <View style={styles.bannerEditOverlay}>
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  </View>
+                ) : (
+                  <View style={styles.bannerEditOverlay}>
+                    <MaterialCommunityIcons name="pencil" size={20} color="#ffffff" />
+                  </View>
+                )}
+              </>
+            ) : (
+              <View style={styles.bannerPlaceholder}>
+                {uploading === 'banner' ? (
+                  <ActivityIndicator size="small" color="#666666" />
+                ) : (
+                  <MaterialCommunityIcons name="image-plus" size={48} color="#999999" />
+                )}
+              </View>
+            )}
+          </TouchableOpacity>
           </View>
-        ) : null}
 
+        <View style={styles.profileCardWrapper}>
+          {!editing && (
+            <View style={styles.editButtonContainer}>
+              <IconButton
+                icon="pencil"
+                size={24}
+                iconColor="#1976d2"
+                onPress={() => setEditing(true)}
+                style={styles.editIconButton}
+              />
+            </View>
+          )}
         <Card style={styles.profileCard}>
           <Card.Content>
             <View style={styles.avatarContainer}>
+              <TouchableOpacity 
+                onPress={() => pickImage('logo')}
+                disabled={uploading === 'logo'}
+                activeOpacity={0.7}
+              >
               {displayData.logo_url ? (
+                  <View style={styles.logoWrapper}>
                 <Image source={{ uri: displayData.logo_url }} style={styles.avatarImage} />
+                    {uploading === 'logo' ? (
+                      <View style={styles.logoEditOverlay}>
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      </View>
+                    ) : (
+                      <View style={styles.logoEditOverlay}>
+                        <MaterialCommunityIcons name="pencil" size={16} color="#ffffff" />
+                      </View>
+                    )}
+                  </View>
               ) : (
                 <View style={styles.avatar}>
+                    {uploading === 'logo' ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <>
                   <Text variant="headlineMedium" style={styles.avatarText}>
                     {displayData.name.charAt(0).toUpperCase()}
                   </Text>
+                        <View style={styles.avatarEditIcon}>
+                          <MaterialCommunityIcons name="pencil" size={14} color="#ffffff" />
+                        </View>
+                      </>
+                    )}
                 </View>
               )}
-              {editing && (
-                <Button
-                  mode="outlined"
-                  compact
-                  onPress={() => pickImage('logo')}
-                  disabled={uploading === 'logo'}
-                  loading={uploading === 'logo'}
-                  style={styles.uploadLogoButton}
-                >
-                  {uploading === 'logo' ? 'Uploading...' : 'Change Logo'}
-                </Button>
-              )}
+              </TouchableOpacity>
               {editing ? (
                 <TextInput
                   label="Name"
@@ -281,9 +361,23 @@ export default function ProfileScreen() {
 
         <Card style={styles.detailsCard}>
           <Card.Content>
+            <View style={styles.sectionHeader}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
               Account Details
             </Text>
+              {!editing && (
+                <Button
+                  mode="text"
+                  icon="pencil"
+                  onPress={() => setEditing(true)}
+                  textColor="#1976d2"
+                  compact
+                  style={styles.sectionEditButton}
+                >
+                  Edit
+                </Button>
+              )}
+            </View>
             <Divider style={styles.divider} />
 
             <View style={styles.detailRow}>
@@ -345,6 +439,85 @@ export default function ProfileScreen() {
                 {formatDate(user.updated_at)}
               </Text>
             </View>
+
+            {editing && (
+              <>
+                <Divider style={styles.divider} />
+                <Text variant="titleSmall" style={styles.subsectionTitle}>
+                  Social Media Links
+                </Text>
+                <TextInput
+                  label="Facebook"
+                  value={formData.facebook}
+                  onChangeText={(text) => setFormData({ ...formData, facebook: text })}
+                  mode="outlined"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  style={styles.input}
+                  placeholder="https://facebook.com/..."
+                />
+                <TextInput
+                  label="Instagram"
+                  value={formData.instagram}
+                  onChangeText={(text) => setFormData({ ...formData, instagram: text })}
+                  mode="outlined"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  style={styles.input}
+                  placeholder="https://instagram.com/..."
+                />
+                <TextInput
+                  label="Twitter/X"
+                  value={formData.twitter}
+                  onChangeText={(text) => setFormData({ ...formData, twitter: text })}
+                  mode="outlined"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  style={styles.input}
+                  placeholder="https://twitter.com/..."
+                />
+                <TextInput
+                  label="LinkedIn"
+                  value={formData.linkedin}
+                  onChangeText={(text) => setFormData({ ...formData, linkedin: text })}
+                  mode="outlined"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  style={styles.input}
+                  placeholder="https://linkedin.com/..."
+                />
+                <TextInput
+                  label="YouTube"
+                  value={formData.youtube}
+                  onChangeText={(text) => setFormData({ ...formData, youtube: text })}
+                  mode="outlined"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  style={styles.input}
+                  placeholder="https://youtube.com/..."
+                />
+                <TextInput
+                  label="TikTok"
+                  value={formData.tiktok}
+                  onChangeText={(text) => setFormData({ ...formData, tiktok: text })}
+                  mode="outlined"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  style={styles.input}
+                  placeholder="https://tiktok.com/..."
+                />
+                <TextInput
+                  label="Website"
+                  value={formData.website}
+                  onChangeText={(text) => setFormData({ ...formData, website: text })}
+                  mode="outlined"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  style={styles.input}
+                  placeholder="https://example.com"
+                />
+              </>
+            )}
           </Card.Content>
         </Card>
 
@@ -392,10 +565,26 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  bannerContainer: {
+    position: 'relative',
+    width: '100%',
+  },
   banner: {
     width: '100%',
     height: 200,
     resizeMode: 'cover',
+  },
+  bannerEditOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
   },
   bannerPlaceholder: {
     width: '100%',
@@ -404,15 +593,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  profileCard: {
+  profileCardWrapper: {
     marginTop: -40,
     marginHorizontal: 16,
     marginBottom: 16,
+    position: 'relative',
     zIndex: 1,
+  },
+  profileCard: {
+    width: '100%',
   },
   avatarContainer: {
     alignItems: 'center',
     paddingVertical: 16,
+  },
+  editButtonContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 10,
+  },
+  editIconButton: {
+    backgroundColor: '#ffffff',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  logoWrapper: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  logoEditOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
   },
   avatar: {
     width: 80,
@@ -422,6 +645,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    position: 'relative',
   },
   avatarImage: {
     width: 80,
@@ -429,8 +653,16 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     marginBottom: 16,
   },
-  uploadLogoButton: {
-    marginBottom: 16,
+  avatarEditIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 16,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   avatarText: {
     color: '#ffffff',
@@ -469,9 +701,24 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   sectionTitle: {
     fontWeight: 'bold',
-    marginBottom: 8,
+    flex: 1,
+  },
+  sectionEditButton: {
+    margin: 0,
+    marginLeft: 8,
+  },
+  subsectionTitle: {
+    fontWeight: '600',
+    marginTop: 8,
+    marginBottom: 12,
   },
   divider: {
     marginVertical: 12,

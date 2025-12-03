@@ -297,13 +297,11 @@ export function SimulateContent() {
           mobileUser={mobileUser}
           orders={orders}
           activeView={activeView}
-          uploading={uploading}
           onViewChange={(view) => {
             setActiveView(view);
             setDrawerOpen(false);
           }}
           onLogout={handleMobileLogout}
-          onImageSelect={handleImageSelect}
         />
       </Drawer>
 
