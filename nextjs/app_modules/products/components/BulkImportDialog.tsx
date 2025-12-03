@@ -233,7 +233,7 @@ export function BulkImportDialog({ open, onClose, onSuccess, suppliers }: BulkIm
             name: String(row.name || row.Name || row.NAME || ''),
             description: String(row.description || row.Description || row.DESCRIPTION || ''),
             sku: String(row.sku || row.SKU || row.Sku || ''),
-            price: parseFloat(row.price || row.Price || row.PRICE || 0),
+            price: parseFloat(String(row.price || row.Price || row.PRICE || 0)),
             stock_quantity: row.stock_quantity || row['stock quantity'] || row['Stock Quantity'] || row['STOCK_QUANTITY'] || 0,
             unit: row.unit || row.Unit || row.UNIT || '',
             category: row.category || row.Category || row.CATEGORY || '',
