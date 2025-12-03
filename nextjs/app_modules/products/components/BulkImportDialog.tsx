@@ -243,7 +243,7 @@ export function BulkImportDialog({ open, onClose, onSuccess, suppliers }: BulkIm
           };
 
           if (row.supplier_id || row['supplier id'] || row['Supplier ID'] || row['SUPPLIER_ID']) {
-            product.supplier_id = parseInt(row.supplier_id || row['supplier id'] || row['Supplier ID'] || row['SUPPLIER_ID'] || '0');
+            product.supplier_id = parseInt(String(row.supplier_id || row['supplier id'] || row['Supplier ID'] || row['SUPPLIER_ID'] || '0'));
           } else if (product.supplier_email) {
             const supplier = suppliers.find(s => s.email === product.supplier_email);
             if (supplier) {
