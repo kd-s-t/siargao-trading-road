@@ -38,7 +38,19 @@ export const mobileAuthService = {
     const { data } = await mobileApi.get<User>('/me');
     return data;
   },
-  updateMe: async (updates: { name?: string; phone?: string; logo_url?: string; banner_url?: string }): Promise<User> => {
+  updateMe: async (updates: { 
+    name?: string; 
+    phone?: string; 
+    logo_url?: string; 
+    banner_url?: string;
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    linkedin?: string;
+    youtube?: string;
+    tiktok?: string;
+    website?: string;
+  }): Promise<User> => {
     const { data } = await mobileApi.put<User>('/me', updates);
     return data;
   },
