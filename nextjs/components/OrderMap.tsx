@@ -139,9 +139,6 @@ export function OrderMap({ store, supplier, status, height = 250 }: OrderMapProp
         .leaflet-control-attribution {
           display: none !important;
         }
-        .leaflet-control-zoom {
-          display: none !important;
-        }
         .leaflet-container {
           margin: 0 !important;
           padding: 0 !important;
@@ -279,10 +276,10 @@ export function OrderMap({ store, supplier, status, height = 250 }: OrderMapProp
         center={center}
         zoom={storeLocation && supplierLocation ? undefined : 13}
         bounds={bounds || undefined}
-        boundsOptions={{ padding: [18, 18] }}
+        boundsOptions={bounds ? { padding: [5, 20] } : undefined}
         style={{ height: '100%', width: '100%', zIndex: 0, margin: 0, padding: 0, border: 'none' }}
         scrollWheelZoom={false}
-        zoomControl={false}
+        zoomControl={true}
       >
         <TileLayer
           attribution=""
