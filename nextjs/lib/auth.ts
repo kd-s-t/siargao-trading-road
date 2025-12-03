@@ -9,6 +9,13 @@ export interface User {
   admin_level?: number;
   logo_url?: string;
   banner_url?: string;
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  youtube?: string;
+  tiktok?: string;
+  website?: string;
   created_at: string;
   updated_at: string;
 }

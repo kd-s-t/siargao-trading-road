@@ -33,7 +33,6 @@ export function useLogin() {
     } catch (err) {
       const error = err as Error & { response?: { data?: { error?: string } } };
       setError(error.message || error.response?.data?.error || 'Login failed');
-    } finally {
       setLoading(false);
     }
   };

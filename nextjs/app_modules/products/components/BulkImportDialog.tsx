@@ -503,7 +503,7 @@ export function BulkImportDialog({ open, onClose, onSuccess, suppliers }: BulkIm
                     <TableRow key={index}>
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.sku}</TableCell>
-                      <TableCell>₱{product.price.toFixed(2)}</TableCell>
+                      <TableCell>₱{product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       <TableCell>
                         {suppliers.find(s => s.id === product.supplier_id)?.name || 'Invalid'}
                       </TableCell>

@@ -7,6 +7,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func floatPtr(f float64) *float64 {
+	return &f
+}
+
 func ResetAndSeed() error {
 	if err := ResetDatabase(); err != nil {
 		return err
@@ -50,6 +54,57 @@ func SeedAll() error {
 	return nil
 }
 
+func UpdateUserLocations() error {
+	const s3BaseURL = "https://siargaotradingroad-user-uploads-development.s3.us-east-1.amazonaws.com"
+
+	supplierLocations := map[string]struct {
+		address   string
+		latitude  *float64
+		longitude *float64
+	}{
+		"nike@example.com":    {"Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772)},
+		"toms@example.com":    {"Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8430472), floatPtr(126.1347197)},
+		"711@example.com":     {"National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574)},
+		"walmart@example.com": {"Del Carmen Road, Del Carmen, Surigao del Norte", floatPtr(9.7739032), floatPtr(126.1304724)},
+	}
+
+	storeLocations := map[string]struct {
+		address   string
+		latitude  *float64
+		longitude *float64
+	}{
+		"ervies@example.com":   {"Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772)},
+		"sarisari@example.com": {"National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574)},
+		"kicks@example.com":    {"Del Carmen Road, Del Carmen, Surigao del Norte", floatPtr(9.7739032), floatPtr(126.1304724)},
+	}
+
+	for email, location := range supplierLocations {
+		var user models.User
+		if err := DB.Where("email = ? AND role = ?", email, "supplier").First(&user).Error; err == nil {
+			user.Address = location.address
+			user.Latitude = location.latitude
+			user.Longitude = location.longitude
+			if err := DB.Save(&user).Error; err != nil {
+				return fmt.Errorf("failed to update supplier %s: %w", email, err)
+			}
+		}
+	}
+
+	for email, location := range storeLocations {
+		var user models.User
+		if err := DB.Where("email = ? AND role = ?", email, "store").First(&user).Error; err == nil {
+			user.Address = location.address
+			user.Latitude = location.latitude
+			user.Longitude = location.longitude
+			if err := DB.Save(&user).Error; err != nil {
+				return fmt.Errorf("failed to update store %s: %w", email, err)
+			}
+		}
+	}
+
+	return nil
+}
+
 func SeedSuppliers() error {
 	const s3BaseURL = "https://siargaotradingroad-user-uploads-development.s3.us-east-1.amazonaws.com"
 
@@ -59,11 +114,21 @@ func SeedSuppliers() error {
 		phone     string
 		logoURL   string
 		bannerURL string
+		address   string
+		latitude  *float64
+		longitude *float64
+		facebook  string
+		instagram string
+		twitter   string
+		linkedin  string
+		youtube   string
+		tiktok    string
+		website   string
 	}{
-		{"nike@example.com", "Nike", "09123456781", fmt.Sprintf("%s/assets/nikelogo.png", s3BaseURL), fmt.Sprintf("%s/assets/nikebanner.jpg", s3BaseURL)},
-		{"toms@example.com", "Toms and Toms Coffee Shop", "09123456782", fmt.Sprintf("%s/assets/tomslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/tomsbanner.jpg", s3BaseURL)},
-		{"711@example.com", "7-Eleven", "09123456783", fmt.Sprintf("%s/assets/711logo.png", s3BaseURL), fmt.Sprintf("%s/assets/711banner.webp", s3BaseURL)},
-		{"walmart@example.com", "Walmart", "09123456784", fmt.Sprintf("%s/assets/walmartlogo.png", s3BaseURL), fmt.Sprintf("%s/assets/walmartbanner.jpg", s3BaseURL)},
+		{"nike@example.com", "Nike", "09123456781", fmt.Sprintf("%s/assets/nikelogo.png", s3BaseURL), fmt.Sprintf("%s/assets/nikebanner.jpg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772), "https://facebook.com/nike", "https://instagram.com/nike", "https://twitter.com/nike", "https://linkedin.com/company/nike", "https://youtube.com/nike", "https://tiktok.com/@nike", "https://nike.com"},
+		{"toms@example.com", "Toms and Toms Coffee Shop", "09123456782", fmt.Sprintf("%s/assets/tomslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/tomsbanner.jpg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8430472), floatPtr(126.1347197), "https://facebook.com/tomscoffee", "https://instagram.com/tomscoffee", "", "", "", "https://tiktok.com/@tomscoffee", "https://tomscoffee.com"},
+		{"711@example.com", "7-Eleven", "09123456783", fmt.Sprintf("%s/assets/711logo.png", s3BaseURL), fmt.Sprintf("%s/assets/711banner.webp", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "https://facebook.com/7eleven", "https://instagram.com/7eleven", "https://twitter.com/7eleven", "", "", "", "https://7-eleven.com"},
+		{"walmart@example.com", "Walmart", "09123456784", fmt.Sprintf("%s/assets/walmartlogo.png", s3BaseURL), fmt.Sprintf("%s/assets/walmartbanner.jpg", s3BaseURL), "Del Carmen Road, Del Carmen, Surigao del Norte", floatPtr(9.7739032), floatPtr(126.1304724), "https://facebook.com/walmart", "https://instagram.com/walmart", "https://twitter.com/walmart", "https://linkedin.com/company/walmart", "https://youtube.com/walmart", "", "https://walmart.com"},
 	}
 
 	for _, s := range suppliers {
@@ -73,6 +138,16 @@ func SeedSuppliers() error {
 			existing.Phone = s.phone
 			existing.LogoURL = s.logoURL
 			existing.BannerURL = s.bannerURL
+			existing.Address = s.address
+			existing.Latitude = s.latitude
+			existing.Longitude = s.longitude
+			existing.Facebook = s.facebook
+			existing.Instagram = s.instagram
+			existing.Twitter = s.twitter
+			existing.LinkedIn = s.linkedin
+			existing.YouTube = s.youtube
+			existing.TikTok = s.tiktok
+			existing.Website = s.website
 			if err := DB.Save(&existing).Error; err != nil {
 				return err
 			}
@@ -89,8 +164,18 @@ func SeedSuppliers() error {
 			Password:  string(hashedPassword),
 			Name:      s.name,
 			Phone:     s.phone,
+			Address:   s.address,
+			Latitude:  s.latitude,
+			Longitude: s.longitude,
 			LogoURL:   s.logoURL,
 			BannerURL: s.bannerURL,
+			Facebook:  s.facebook,
+			Instagram: s.instagram,
+			Twitter:   s.twitter,
+			LinkedIn:  s.linkedin,
+			YouTube:   s.youtube,
+			TikTok:    s.tiktok,
+			Website:   s.website,
 			Role:      models.RoleSupplier,
 		}
 
@@ -111,10 +196,20 @@ func SeedStores() error {
 		phone     string
 		logoURL   string
 		bannerURL string
+		address   string
+		latitude  *float64
+		longitude *float64
+		facebook  string
+		instagram string
+		twitter   string
+		linkedin  string
+		youtube   string
+		tiktok    string
+		website   string
 	}{
-		{"ervies@example.com", "Ervies", "09223456781", fmt.Sprintf("%s/assets/ervieslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/ervieslogobanner.jpeg", s3BaseURL)},
-		{"sarisari@example.com", "Sarisari", "09223456782", fmt.Sprintf("%s/assets/sarisarilogo.png", s3BaseURL), fmt.Sprintf("%s/assets/sarisarilogobanner.png", s3BaseURL)},
-		{"kicks@example.com", "Kicks", "09223456783", fmt.Sprintf("%s/assets/kickslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/kicksbanner.jpeg", s3BaseURL)},
+		{"ervies@example.com", "Ervies", "09223456781", fmt.Sprintf("%s/assets/ervieslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/ervieslogobanner.jpeg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772), "https://facebook.com/ervies", "https://instagram.com/ervies", "", "", "", "https://tiktok.com/@ervies", ""},
+		{"sarisari@example.com", "Sarisari", "09223456782", fmt.Sprintf("%s/assets/sarisarilogo.png", s3BaseURL), fmt.Sprintf("%s/assets/sarisarilogobanner.png", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "https://facebook.com/sarisari", "https://instagram.com/sarisari", "", "", "", "", ""},
+		{"kicks@example.com", "Kicks", "09223456783", fmt.Sprintf("%s/assets/kickslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/kicksbanner.jpeg", s3BaseURL), "Del Carmen Road, Del Carmen, Surigao del Norte", floatPtr(9.7739032), floatPtr(126.1304724), "https://facebook.com/kicks", "https://instagram.com/kicks", "https://twitter.com/kicks", "", "", "https://tiktok.com/@kicks", "https://kicks.com"},
 	}
 
 	for _, s := range stores {
@@ -124,6 +219,16 @@ func SeedStores() error {
 			existing.Phone = s.phone
 			existing.LogoURL = s.logoURL
 			existing.BannerURL = s.bannerURL
+			existing.Address = s.address
+			existing.Latitude = s.latitude
+			existing.Longitude = s.longitude
+			existing.Facebook = s.facebook
+			existing.Instagram = s.instagram
+			existing.Twitter = s.twitter
+			existing.LinkedIn = s.linkedin
+			existing.YouTube = s.youtube
+			existing.TikTok = s.tiktok
+			existing.Website = s.website
 			if err := DB.Save(&existing).Error; err != nil {
 				return err
 			}
@@ -140,8 +245,18 @@ func SeedStores() error {
 			Password:  string(hashedPassword),
 			Name:      s.name,
 			Phone:     s.phone,
+			Address:   s.address,
+			Latitude:  s.latitude,
+			Longitude: s.longitude,
 			LogoURL:   s.logoURL,
 			BannerURL: s.bannerURL,
+			Facebook:  s.facebook,
+			Instagram: s.instagram,
+			Twitter:   s.twitter,
+			LinkedIn:  s.linkedin,
+			YouTube:   s.youtube,
+			TikTok:    s.tiktok,
+			Website:   s.website,
 			Role:      models.RoleStore,
 		}
 

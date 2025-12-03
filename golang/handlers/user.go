@@ -41,10 +41,20 @@ func UpdateMe(c *gin.Context) {
 	}
 
 	var req struct {
-		Name      string `json:"name"`
-		Phone     string `json:"phone"`
-		LogoURL   string `json:"logo_url"`
-		BannerURL string `json:"banner_url"`
+		Name      string   `json:"name"`
+		Phone     string   `json:"phone"`
+		Address   string   `json:"address"`
+		Latitude  *float64 `json:"latitude"`
+		Longitude *float64 `json:"longitude"`
+		LogoURL   string   `json:"logo_url"`
+		BannerURL string   `json:"banner_url"`
+		Facebook  string   `json:"facebook"`
+		Instagram string   `json:"instagram"`
+		Twitter   string   `json:"twitter"`
+		LinkedIn  string   `json:"linkedin"`
+		YouTube   string   `json:"youtube"`
+		TikTok    string   `json:"tiktok"`
+		Website   string   `json:"website"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -58,11 +68,41 @@ func UpdateMe(c *gin.Context) {
 	if req.Phone != "" {
 		user.Phone = req.Phone
 	}
+	if req.Address != "" {
+		user.Address = req.Address
+	}
+	if req.Latitude != nil {
+		user.Latitude = req.Latitude
+	}
+	if req.Longitude != nil {
+		user.Longitude = req.Longitude
+	}
 	if req.LogoURL != "" {
 		user.LogoURL = req.LogoURL
 	}
 	if req.BannerURL != "" {
 		user.BannerURL = req.BannerURL
+	}
+	if req.Facebook != "" {
+		user.Facebook = req.Facebook
+	}
+	if req.Instagram != "" {
+		user.Instagram = req.Instagram
+	}
+	if req.Twitter != "" {
+		user.Twitter = req.Twitter
+	}
+	if req.LinkedIn != "" {
+		user.LinkedIn = req.LinkedIn
+	}
+	if req.YouTube != "" {
+		user.YouTube = req.YouTube
+	}
+	if req.TikTok != "" {
+		user.TikTok = req.TikTok
+	}
+	if req.Website != "" {
+		user.Website = req.Website
 	}
 
 	if err := database.DB.Save(&user).Error; err != nil {
@@ -422,13 +462,26 @@ func GetDashboardAnalytics(c *gin.Context) {
 		})
 	}
 
+	var usersRegisteredLast30Days int64
+	var usersLoggedInLast30Days int64
+
+	database.DB.Model(&models.User{}).
+		Where("created_at >= ?", thirtyDaysAgo).
+		Count(&usersRegisteredLast30Days)
+
+	database.DB.Model(&models.User{}).
+		Where("last_login >= ?", thirtyDaysAgo).
+		Count(&usersLoggedInLast30Days)
+
 	c.JSON(http.StatusOK, gin.H{
-		"total_users":     totalUsers,
-		"total_suppliers": totalSuppliers,
-		"total_stores":    totalStores,
-		"total_orders":    totalOrders,
-		"total_earnings":  totalEarnings,
-		"recent_orders":   orders,
-		"daily_stats":     dailyStats,
+		"total_users":                   totalUsers,
+		"total_suppliers":               totalSuppliers,
+		"total_stores":                  totalStores,
+		"total_orders":                  totalOrders,
+		"total_earnings":                totalEarnings,
+		"users_registered_last_30_days": usersRegisteredLast30Days,
+		"users_logged_in_last_30_days":  usersLoggedInLast30Days,
+		"recent_orders":                 orders,
+		"daily_stats":                   dailyStats,
 	})
 }

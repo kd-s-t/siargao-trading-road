@@ -14,17 +14,26 @@ import (
 )
 
 type RegisterRequest struct {
-	Email      string `json:"email" binding:"required,email"`
-	Password   string `json:"password" binding:"required,min=6"`
-	Name       string `json:"name" binding:"required"`
-	Phone      string `json:"phone" binding:"required"`
-	Role       string `json:"role" binding:"required"`
-	AdminLevel *int   `json:"admin_level,omitempty"`
-	LogoURL    string `json:"logo_url,omitempty"`
-	BannerURL  string `json:"banner_url,omitempty"`
+	Email      string   `json:"email" binding:"required,email"`
+	Password   string   `json:"password" binding:"required,min=6"`
+	Name       string   `json:"name" binding:"required"`
+	Phone      string   `json:"phone" binding:"required"`
+	Role       string   `json:"role" binding:"required"`
+	AdminLevel *int     `json:"admin_level,omitempty"`
+	LogoURL    string   `json:"logo_url,omitempty"`
+	BannerURL  string   `json:"banner_url,omitempty"`
+	Address    string   `json:"address,omitempty"`
+	Latitude   *float64 `json:"latitude,omitempty"`
+	Longitude  *float64 `json:"longitude,omitempty"`
+	Facebook   string   `json:"facebook,omitempty"`
+	Instagram  string   `json:"instagram,omitempty"`
+	Twitter    string   `json:"twitter,omitempty"`
+	LinkedIn   string   `json:"linkedin,omitempty"`
+	YouTube    string   `json:"youtube,omitempty"`
+	TikTok     string   `json:"tiktok,omitempty"`
+	Website    string   `json:"website,omitempty"`
 
 	BusinessName    string `json:"business_name,omitempty"`
-	Address         string `json:"address,omitempty"`
 	TaxID           string `json:"tax_id,omitempty"`
 	StoreName       string `json:"store_name,omitempty"`
 	BusinessLicense string `json:"business_license,omitempty"`
@@ -72,6 +81,16 @@ func Register(c *gin.Context) {
 		Role:      models.UserRole(req.Role),
 		LogoURL:   req.LogoURL,
 		BannerURL: req.BannerURL,
+		Address:   req.Address,
+		Latitude:  req.Latitude,
+		Longitude: req.Longitude,
+		Facebook:  req.Facebook,
+		Instagram: req.Instagram,
+		Twitter:   req.Twitter,
+		LinkedIn:  req.LinkedIn,
+		YouTube:   req.YouTube,
+		TikTok:    req.TikTok,
+		Website:   req.Website,
 	}
 
 	if err := database.DB.Create(&user).Error; err != nil {
@@ -165,6 +184,16 @@ func AdminRegisterUser(c *gin.Context) {
 		Role:      models.UserRole(req.Role),
 		LogoURL:   req.LogoURL,
 		BannerURL: req.BannerURL,
+		Address:   req.Address,
+		Latitude:  req.Latitude,
+		Longitude: req.Longitude,
+		Facebook:  req.Facebook,
+		Instagram: req.Instagram,
+		Twitter:   req.Twitter,
+		LinkedIn:  req.LinkedIn,
+		YouTube:   req.YouTube,
+		TikTok:    req.TikTok,
+		Website:   req.Website,
 	}
 	if req.Role == string(models.RoleAdmin) && req.AdminLevel != nil {
 		user.AdminLevel = req.AdminLevel
@@ -194,6 +223,13 @@ func Login(c *gin.Context) {
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
+		return
+	}
+
+	now := time.Now()
+	user.LastLogin = &now
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update last login"})
 		return
 	}
 

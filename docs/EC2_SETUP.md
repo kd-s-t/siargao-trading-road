@@ -89,3 +89,112 @@ aws --version
 aws ecr describe-repositories --region us-east-1
 ```
 
+## EC2 Instance Protection
+
+The EC2 instance is configured with deletion protection to prevent accidental termination:
+
+- **AWS Termination Protection**: `disable_api_termination = true` - Prevents termination via AWS API/Console/CLI
+- **Terraform Lifecycle Protection**: `prevent_destroy = true` - Prevents Terraform from destroying the instance
+
+If you need to destroy the instance, you must:
+1. Temporarily remove `prevent_destroy = true` from the Terraform configuration
+2. Set `disable_api_termination = false` on the instance
+3. Then run `terraform destroy`
+
+## Troubleshooting
+
+### 502 Bad Gateway on HTTPS
+
+**Problem:**
+- HTTPS requests to the domain return `502 Bad Gateway`
+- HTTP requests via IP address work fine
+- Nginx error logs show: `upstream prematurely closed connection while reading response header from upstream`
+- Frontend container responds correctly when tested directly
+
+**Root Cause:**
+- Corrupted nginx configuration file with:
+  - Duplicate `proxy_http_version` directives
+  - Invalid upstream reference (`frontend_backend` that doesn't exist)
+  - Multiple conflicting `Connection` header settings
+  - Broken directives from previous configuration attempts
+
+**Solution:**
+
+1. **SSH into the server:**
+   ```bash
+   ssh -i infrastructure/terraform/modules/security/splitsafe-key-development.pem ubuntu@34.204.178.33
+   ```
+
+2. **Remove the corrupted config and create a clean one:**
+   ```bash
+   sudo rm -f /etc/nginx/sites-enabled/ssl-domains
+   sudo tee /etc/nginx/sites-available/ssl-domains > /dev/null << 'NGINX_CONFIG'
+   server {
+       listen 443 ssl http2;
+       server_name siargaotradingroad.com www.siargaotradingroad.com;
+       
+       ssl_certificate /etc/letsencrypt/live/siargaotradingroad.com/fullchain.pem;
+       ssl_certificate_key /etc/letsencrypt/live/siargaotradingroad.com/privkey.pem;
+       include /etc/letsencrypt/options-ssl-nginx.conf;
+       ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+       
+       location /api {
+           proxy_pass http://127.0.0.1:3020/api;
+           proxy_http_version 1.1;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+       
+       location / {
+           proxy_pass http://127.0.0.1:3021;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+           proxy_cache_bypass $http_upgrade;
+       }
+       
+       location /health {
+           access_log off;
+           return 200 "healthy\n";
+           add_header Content-Type text/plain;
+       }
+   }
+   
+   server {
+       listen 80;
+       server_name siargaotradingroad.com www.siargaotradingroad.com;
+       return 301 https://$host$request_uri;
+   }
+   NGINX_CONFIG
+   
+   sudo ln -sf /etc/nginx/sites-available/ssl-domains /etc/nginx/sites-enabled/ssl-domains
+   ```
+
+3. **Test and reload nginx:**
+   ```bash
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
+4. **Verify it works:**
+   ```bash
+   curl -I https://siargaotradingroad.com/
+   ```
+
+**Key Points:**
+- Always use `127.0.0.1` instead of `localhost` in proxy_pass directives
+- Avoid duplicate directives in nginx config
+- Test nginx config with `sudo nginx -t` before reloading
+- Keep the configuration simple and clean
+
+**Prevention:**
+- When modifying nginx config, always test with `sudo nginx -t` first
+- Keep a backup of working configurations
+- Avoid making multiple rapid changes that can corrupt the config
+

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"os"
 	"siargao-trading-road/config"
 	"siargao-trading-road/models"
@@ -31,12 +32,25 @@ func Connect(cfg *config.Config) error {
 		return err
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{})
+	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{})
 	if err != nil {
 		return err
 	}
 
 	err = SeedAll()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Migrate() error {
+	if DB == nil {
+		return fmt.Errorf("database connection not initialized")
+	}
+
+	err := DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{})
 	if err != nil {
 		return err
 	}

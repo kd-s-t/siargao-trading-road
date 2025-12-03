@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
@@ -37,7 +38,7 @@ func GetOrders(c *gin.Context) {
 	role, _ := c.Get("role")
 
 	var orders []models.Order
-	query := database.DB.Preload("Store").Preload("OrderItems").Preload("OrderItems.Product").
+	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").
 		Where("status != ?", "draft")
 
 	if role == "supplier" {
@@ -60,7 +61,7 @@ func GetOrder(c *gin.Context) {
 	role, _ := c.Get("role")
 
 	var order models.Order
-	query := database.DB.Preload("Store").Preload("OrderItems").Preload("OrderItems.Product").Where("id = ?", id)
+	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").Where("id = ?", id)
 
 	if role == "supplier" {
 		query = query.Where("supplier_id = ?", userID)
@@ -439,4 +440,122 @@ func SendInvoiceEmail(c *gin.Context) {
 		"message": "Invoice email sent successfully",
 		"to":      order.Store.Email,
 	})
+}
+
+func GetOrderMessages(c *gin.Context) {
+	orderIDStr := c.Param("id")
+	var orderID uint
+	if _, err := fmt.Sscanf(orderIDStr, "%d", &orderID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order ID"})
+		return
+	}
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	role, _ := c.Get("role")
+
+	var order models.Order
+	query := database.DB.Where("id = ?", orderID)
+
+	if role == "supplier" {
+		query = query.Where("supplier_id = ?", userID)
+	} else if role == "store" {
+		query = query.Where("store_id = ?", userID)
+	} else {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers and stores can view messages"})
+		return
+	}
+
+	if err := query.First(&order).Error; err != nil {
+		log.Printf("GetOrderMessages: order not found or access denied. orderID=%d, userID=%d, role=%s, error=%v", orderID, userID, role, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
+		return
+	}
+
+	var messages []models.Message
+	if err := database.DB.Preload("Sender").
+		Where("order_id = ?", orderID).
+		Order("created_at ASC").
+		Find(&messages).Error; err != nil {
+		log.Printf("GetOrderMessages: failed to fetch messages. orderID=%d, error=%v", orderID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch messages"})
+		return
+	}
+
+	log.Printf("GetOrderMessages: found %d messages for orderID=%d", len(messages), orderID)
+	c.JSON(http.StatusOK, messages)
+}
+
+func CreateOrderMessage(c *gin.Context) {
+	orderID := c.Param("id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	role, _ := c.Get("role")
+
+	var order models.Order
+	query := database.DB.Where("id = ?", orderID)
+
+	if role == "supplier" {
+		query = query.Where("supplier_id = ?", userID)
+	} else if role == "store" {
+		query = query.Where("store_id = ?", userID)
+	} else {
+		log.Printf("CreateOrderMessage: invalid role. orderID=%s, userID=%d, role=%s", orderID, userID, role)
+		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers and stores can send messages"})
+		return
+	}
+
+	if err := query.First(&order).Error; err != nil {
+		log.Printf("CreateOrderMessage: order not found or access denied. orderID=%s, userID=%d, role=%s, error=%v", orderID, userID, role, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "order not found or access denied"})
+		return
+	}
+
+	if order.Status == models.OrderStatusDelivered {
+		now := time.Now()
+		hoursSinceDelivery := now.Sub(order.UpdatedAt).Hours()
+		if hoursSinceDelivery >= 12 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "messaging is closed. order was delivered more than 12 hours ago"})
+			return
+		}
+	}
+
+	var req struct {
+		Content string `json:"content" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if len(req.Content) == 0 || len(req.Content) > 5000 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "message content must be between 1 and 5000 characters"})
+		return
+	}
+
+	message := models.Message{
+		OrderID:  order.ID,
+		SenderID: userID,
+		Content:  req.Content,
+	}
+
+	if err := database.DB.Create(&message).Error; err != nil {
+		log.Printf("CreateOrderMessage: failed to create message. orderID=%s, userID=%d, error=%v", orderID, userID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create message", "details": err.Error()})
+		return
+	}
+
+	if err := database.DB.Preload("Sender").First(&message, message.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load created message"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, message)
 }

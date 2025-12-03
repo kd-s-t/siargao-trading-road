@@ -150,7 +150,7 @@ export default function SupplierProductsScreen() {
                       {product.name}
                     </Text>
                     <Text variant="titleLarge" style={styles.productPrice}>
-                      ₱{product.price.toFixed(2)}
+                      ₱{product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </Text>
                   </View>
                 </View>

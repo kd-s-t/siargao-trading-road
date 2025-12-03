@@ -168,7 +168,7 @@ export default function OrdersScreen() {
                       Total Amount:
                     </Text>
                     <Text variant="titleMedium" style={styles.totalAmount}>
-                      ₱{order.total_amount.toFixed(2)}
+                      ₱{order.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </Text>
                   </View>
                   <View style={styles.infoRow}>
@@ -226,8 +226,8 @@ export default function OrdersScreen() {
                           {item.product.name}
                         </Text>
                         <Text variant="bodySmall" style={styles.itemDetails}>
-                          {item.quantity} x ₱{item.unit_price.toFixed(2)} = ₱
-                          {item.subtotal.toFixed(2)}
+                          {item.quantity} x ₱{item.unit_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} = ₱
+                          {item.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Text>
                       </View>
                     </View>

@@ -8,6 +8,13 @@ export interface User {
   phone?: string;
   logo_url?: string;
   banner_url?: string;
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  youtube?: string;
+  tiktok?: string;
+  website?: string;
   role: 'supplier' | 'store' | 'admin';
   created_at: string;
   updated_at: string;

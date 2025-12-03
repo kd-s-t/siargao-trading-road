@@ -54,6 +54,13 @@ export function useUserForm() {
       role: 'supplier',
       logo_url: undefined,
       banner_url: undefined,
+      facebook: undefined,
+      instagram: undefined,
+      twitter: undefined,
+      linkedin: undefined,
+      youtube: undefined,
+      tiktok: undefined,
+      website: undefined,
     });
   };
 
@@ -79,6 +86,13 @@ export function useUserForm() {
         role: formData.role,
         logo_url: formData.logo_url,
         banner_url: formData.banner_url,
+        facebook: formData.facebook,
+        instagram: formData.instagram,
+        twitter: formData.twitter,
+        linkedin: formData.linkedin,
+        youtube: formData.youtube,
+        tiktok: formData.tiktok,
+        website: formData.website,
       });
       handleCloseDialog();
       onSuccess();

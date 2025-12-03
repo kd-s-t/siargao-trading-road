@@ -5,10 +5,20 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
   role: 'supplier' | 'store' | 'admin';
   admin_level?: number;
   logo_url?: string;
   banner_url?: string;
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  youtube?: string;
+  tiktok?: string;
+  website?: string;
   created_at: string;
   updated_at: string;
 }
@@ -105,6 +115,13 @@ export const usersService = {
     admin_level?: number;
     logo_url?: string;
     banner_url?: string;
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    linkedin?: string;
+    youtube?: string;
+    tiktok?: string;
+    website?: string;
   }): Promise<User> => {
     const { data } = await api.post<User>('/users/register', userData);
     return data;
@@ -133,6 +150,8 @@ export interface DashboardAnalytics {
   total_stores: number;
   total_orders: number;
   total_earnings: number;
+  users_registered_last_30_days: number;
+  users_logged_in_last_30_days: number;
   recent_orders: Order[];
   daily_stats: DailyStat[];
 }
