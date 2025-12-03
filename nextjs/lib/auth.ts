@@ -7,6 +7,8 @@ export interface User {
   phone?: string;
   role: 'supplier' | 'store' | 'admin';
   admin_level?: number;
+  logo_url?: string;
+  banner_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +32,18 @@ export const authService = {
   logout: () => {
     localStorage.removeItem('token');
     window.location.href = '/login';
+  },
+
+  uploadImage: async (file: File, type?: 'product' | 'user'): Promise<{ url: string; key: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const params = type ? `?type=${type}` : '';
+    const { data } = await api.post<{ url: string; key: string }>(`/upload${params}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return data;
   },
 };
 

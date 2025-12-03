@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
+	"log"
 	"net/http"
 
 	"siargao-trading-road/database"
@@ -8,6 +11,26 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func getUserID(c *gin.Context) (uint, error) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		return 0, errors.New("user not authenticated")
+	}
+
+	switch v := userIDVal.(type) {
+	case uint:
+		return v, nil
+	case float64:
+		return uint(v), nil
+	case int:
+		return uint(v), nil
+	case int64:
+		return uint(v), nil
+	default:
+		return 0, fmt.Errorf("invalid user ID type: %T", v)
+	}
+}
 
 func GetOrders(c *gin.Context) {
 	userID, _ := c.Get("user_id")
@@ -107,7 +130,12 @@ func UpdateOrderStatus(c *gin.Context) {
 }
 
 func CreateDraftOrder(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
 	role, _ := c.Get("role")
 
 	if role != "store" {
@@ -130,26 +158,47 @@ func CreateDraftOrder(c *gin.Context) {
 		return
 	}
 
+	var existingOrder models.Order
+	if err := database.DB.Where("store_id = ? AND supplier_id = ? AND status = ?", userID, req.SupplierID, "draft").First(&existingOrder).Error; err == nil {
+		database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").First(&existingOrder, existingOrder.ID)
+		c.JSON(http.StatusOK, existingOrder)
+		return
+	}
+
 	order := models.Order{
-		StoreID:     userID.(uint),
+		StoreID:     userID,
 		SupplierID:  req.SupplierID,
 		Status:      models.OrderStatusDraft,
 		TotalAmount: 0,
 	}
 
+	log.Printf("Creating draft order: store_id=%d, supplier_id=%d", userID, req.SupplierID)
+
 	if err := database.DB.Create(&order).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create order"})
+		log.Printf("Error creating order: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create order", "details": err.Error()})
 		return
 	}
 
-	database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").First(&order, order.ID)
+	log.Printf("Order created successfully: id=%d", order.ID)
+
+	if err := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").First(&order, order.ID).Error; err != nil {
+		log.Printf("Error loading order details: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load order details", "details": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusCreated, order)
 }
 
 func AddOrderItem(c *gin.Context) {
 	orderID := c.Param("id")
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
 	role, _ := c.Get("role")
 
 	if role != "store" {
@@ -251,7 +300,12 @@ func UpdateOrderItem(c *gin.Context) {
 
 func RemoveOrderItem(c *gin.Context) {
 	itemID := c.Param("item_id")
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
 	role, _ := c.Get("role")
 
 	if role != "store" {
@@ -265,7 +319,7 @@ func RemoveOrderItem(c *gin.Context) {
 		return
 	}
 
-	if orderItem.Order.StoreID != userID.(uint) || orderItem.Order.Status != "draft" {
+	if orderItem.Order.StoreID != userID || orderItem.Order.Status != "draft" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "cannot remove this order item"})
 		return
 	}
@@ -281,8 +335,58 @@ func RemoveOrderItem(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "item removed"})
 }
 
+func SubmitOrder(c *gin.Context) {
+	orderID := c.Param("id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	role, _ := c.Get("role")
+
+	if role != "store" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only stores can submit orders"})
+		return
+	}
+
+	var order models.Order
+	if err := database.DB.Preload("OrderItems").Where("id = ? AND store_id = ? AND status = ?", orderID, userID, "draft").First(&order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "draft order not found"})
+		return
+	}
+
+	if len(order.OrderItems) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot submit order with no items"})
+		return
+	}
+
+	order.Status = models.OrderStatusPreparing
+
+	if err := database.DB.Save(&order).Error; err != nil {
+		log.Printf("Error submitting order: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to submit order", "details": err.Error()})
+		return
+	}
+
+	log.Printf("Order submitted successfully: id=%d", order.ID)
+
+	if err := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").First(&order, order.ID).Error; err != nil {
+		log.Printf("Error loading order details: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load order details", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, order)
+}
+
 func GetDraftOrder(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
 	role, _ := c.Get("role")
 	supplierID := c.Query("supplier_id")
 

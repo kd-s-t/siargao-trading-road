@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
@@ -23,6 +25,16 @@ func main() {
 	}
 
 	r := gin.Default()
+
+	// Recovery middleware to catch panics
+	r.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
+		log.Printf("Panic recovered: %v", recovered)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "internal server error",
+			"details": fmt.Sprintf("%v", recovered),
+		})
+		c.Abort()
+	}))
 
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -59,6 +71,7 @@ func main() {
 			protected.GET("/products", handlers.GetProducts)
 			protected.GET("/products/:id", handlers.GetProduct)
 			protected.POST("/products", handlers.CreateProduct)
+			protected.POST("/products/bulk", handlers.BulkCreateProducts)
 			protected.PUT("/products/:id", handlers.UpdateProduct)
 			protected.DELETE("/products/:id", handlers.DeleteProduct)
 			protected.POST("/products/:id/restore", handlers.RestoreProduct)
@@ -68,6 +81,7 @@ func main() {
 			protected.POST("/orders/:id/send-invoice", handlers.SendInvoiceEmail)
 			protected.GET("/orders/draft", handlers.GetDraftOrder)
 			protected.POST("/orders/draft", handlers.CreateDraftOrder)
+			protected.POST("/orders/:id/submit", handlers.SubmitOrder)
 			protected.POST("/orders/:id/items", handlers.AddOrderItem)
 			protected.PUT("/orders/items/:item_id", handlers.UpdateOrderItem)
 			protected.DELETE("/orders/items/:item_id", handlers.RemoveOrderItem)

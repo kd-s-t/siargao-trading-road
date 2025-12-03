@@ -3,12 +3,12 @@ import { View, StyleSheet, ScrollView, RefreshControl, Image } from 'react-nativ
 import {
   Text,
   Surface,
-  Button,
   Card,
   ActivityIndicator,
   Divider,
   Chip,
   Avatar,
+  IconButton,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { orderService, Order } from '../lib/orders';
@@ -29,7 +29,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function OrdersScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigation = useNavigation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,8 +56,8 @@ export default function OrdersScreen() {
     loadOrders();
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const openDrawer = () => {
+    (navigation as any).openDrawer();
   };
 
   const getStatusColor = (status: string) => {
@@ -80,12 +80,16 @@ export default function OrdersScreen() {
     <View style={styles.container}>
       <Surface style={styles.header} elevation={2}>
         <View style={styles.headerContent}>
+          <IconButton
+            icon="menu"
+            size={24}
+            onPress={() => (navigation as any).openDrawer()}
+            style={styles.menuButton}
+          />
           <Text variant="headlineSmall" style={styles.headerTitle}>
             Orders
           </Text>
-          <Button mode="text" onPress={handleLogout}>
-            Logout
-          </Button>
+          <View style={styles.headerSpacer} />
         </View>
       </Surface>
 
@@ -104,11 +108,18 @@ export default function OrdersScreen() {
             </Card.Content>
           </Card>
         ) : (
-          orders.map((order) => (
+          orders.map((order) => {
+            const isStore = user?.role === 'store';
+            const entity = isStore ? order.supplier : order.store;
+            const entityName = isStore ? 'Supplier' : 'Store';
+            
+            if (!entity) return null;
+
+            return (
             <Card key={order.id} style={styles.orderCard}>
-              {order.store.banner_url && order.store.banner_url.trim() !== '' ? (
+              {entity.banner_url && entity.banner_url.trim() !== '' ? (
                 <Image
-                  source={{ uri: order.store.banner_url }}
+                  source={{ uri: entity.banner_url }}
                   style={styles.bannerImage}
                   resizeMode="cover"
                 />
@@ -116,16 +127,16 @@ export default function OrdersScreen() {
               <Card.Content>
                 <View style={styles.orderHeader}>
                   <View style={styles.storeInfo}>
-                    {order.store.logo_url && order.store.logo_url.trim() !== '' ? (
+                    {entity.logo_url && entity.logo_url.trim() !== '' ? (
                       <Avatar.Image
                         size={50}
-                        source={{ uri: order.store.logo_url }}
+                        source={{ uri: entity.logo_url }}
                         style={styles.storeLogo}
                       />
                     ) : (
                       <Avatar.Text
                         size={50}
-                        label={order.store.name.charAt(0).toUpperCase()}
+                        label={entity.name.charAt(0).toUpperCase()}
                         style={styles.storeLogo}
                       />
                     )}
@@ -134,7 +145,7 @@ export default function OrdersScreen() {
                         Order #{order.id}
                       </Text>
                       <Text variant="bodySmall" style={styles.storeName}>
-                        {order.store.name}
+                        {entity.name}
                       </Text>
                     </View>
                   </View>
@@ -224,7 +235,8 @@ export default function OrdersScreen() {
                 </View>
               </Card.Content>
             </Card>
-          ))
+            );
+          })
         )}
       </ScrollView>
     </View>
@@ -248,8 +260,13 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  menuButton: {
+    margin: 0,
+  },
+  headerSpacer: {
+    width: 48,
   },
   headerTitle: {
     fontWeight: 'bold',
