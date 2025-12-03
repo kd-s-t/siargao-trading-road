@@ -231,7 +231,7 @@ export function BulkImportDialog({ open, onClose, onSuccess, suppliers }: BulkIm
         jsonData.forEach((row, index) => {
           const product: ParsedProduct = {
             name: String(row.name || row.Name || row.NAME || ''),
-            description: row.description || row.Description || row.DESCRIPTION || '',
+            description: String(row.description || row.Description || row.DESCRIPTION || ''),
             sku: String(row.sku || row.SKU || row.Sku || ''),
             price: parseFloat(row.price || row.Price || row.PRICE || 0),
             stock_quantity: row.stock_quantity || row['stock quantity'] || row['Stock Quantity'] || row['STOCK_QUANTITY'] || 0,
