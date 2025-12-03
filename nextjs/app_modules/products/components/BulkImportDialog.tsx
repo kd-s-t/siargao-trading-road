@@ -239,7 +239,7 @@ export function BulkImportDialog({ open, onClose, onSuccess, suppliers }: BulkIm
             category: String(row.category || row.Category || row.CATEGORY || ''),
             image_url: String(row.image_url || row['image url'] || row['Image URL'] || row['IMAGE_URL'] || ''),
             supplier_id: 0,
-            supplier_email: row.supplier_email || row['supplier email'] || row['Supplier Email'] || row['SUPPLIER_EMAIL'] || '',
+            supplier_email: String(row.supplier_email || row['supplier email'] || row['Supplier Email'] || row['SUPPLIER_EMAIL'] || ''),
           };
 
           if (row.supplier_id || row['supplier id'] || row['Supplier ID'] || row['SUPPLIER_ID']) {
