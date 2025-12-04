@@ -91,7 +91,8 @@ func GetMyRatings(c *gin.Context) {
 	if err := database.DB.
 		Preload("Rater").
 		Preload("Rated").
-		Preload("Order").
+		Preload("Order.Store").
+		Preload("Order.Supplier").
 		Where("rated_id = ?", userID).
 		Order("created_at DESC").
 		Find(&ratings).Error; err != nil {

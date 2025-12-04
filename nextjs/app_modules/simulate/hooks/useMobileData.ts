@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Supplier } from '@/lib/suppliers';
 import { Store } from '@/lib/stores';
 import { Product } from '@/lib/users';
@@ -7,8 +7,11 @@ import mobileApi from '../services/mobileApi';
 export function useSuppliers() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
 
   const loadSuppliers = async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     try {
       setLoading(true);
       const { data } = await mobileApi.get<Supplier[]>('/suppliers');
@@ -17,6 +20,7 @@ export function useSuppliers() {
       console.error('Failed to load suppliers:', error);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
   };
 
@@ -26,8 +30,11 @@ export function useSuppliers() {
 export function useStores() {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
 
   const loadStores = async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     try {
       setLoading(true);
       const { data } = await mobileApi.get<Store[]>('/stores');
@@ -36,6 +43,7 @@ export function useStores() {
       console.error('Failed to load stores:', error);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
   };
 

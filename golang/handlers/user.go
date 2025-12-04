@@ -24,6 +24,64 @@ func GetMe(c *gin.Context) {
 	}
 
 	user.Password = ""
+
+	role, exists := c.Get("role")
+	if !exists {
+		c.JSON(http.StatusOK, user)
+		return
+	}
+
+	roleStr, ok := role.(string)
+	if !ok {
+		c.JSON(http.StatusOK, user)
+		return
+	}
+
+	if roleStr == "store" || roleStr == "supplier" {
+		var ratingStats struct {
+			AverageRating float64
+			RatingCount   int64
+		}
+		database.DB.Model(&models.Rating{}).
+			Where("rated_id = ?", userID).
+			Select("COALESCE(AVG(rating), 0) as average_rating, COUNT(*) as rating_count").
+			Scan(&ratingStats)
+
+		var averageRating *float64
+		if ratingStats.RatingCount > 0 {
+			averageRating = &ratingStats.AverageRating
+		}
+
+		response := map[string]interface{}{
+			"id":             user.ID,
+			"email":          user.Email,
+			"name":           user.Name,
+			"phone":          user.Phone,
+			"address":        user.Address,
+			"latitude":       user.Latitude,
+			"longitude":      user.Longitude,
+			"logo_url":       user.LogoURL,
+			"banner_url":     user.BannerURL,
+			"facebook":       user.Facebook,
+			"instagram":      user.Instagram,
+			"twitter":        user.Twitter,
+			"linkedin":       user.LinkedIn,
+			"youtube":        user.YouTube,
+			"tiktok":         user.TikTok,
+			"website":        user.Website,
+			"role":           user.Role,
+			"admin_level":    user.AdminLevel,
+			"created_at":     user.CreatedAt,
+			"updated_at":     user.UpdatedAt,
+			"last_login":     user.LastLogin,
+			"average_rating": averageRating,
+			"rating_count":   ratingStats.RatingCount,
+		}
+
+		c.JSON(http.StatusOK, response)
+		return
+	}
+
 	c.JSON(http.StatusOK, user)
 }
 

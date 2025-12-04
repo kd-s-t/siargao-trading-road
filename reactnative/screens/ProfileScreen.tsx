@@ -15,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../lib/auth';
 import { useNavigation } from '@react-navigation/native';
-import { ratingService, UserAnalytics } from '../lib/ratings';
+import { ratingService } from '../lib/ratings';
 
 export default function ProfileScreen() {
   const { user, logout, refreshUser } = useAuth();
@@ -23,8 +23,6 @@ export default function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
-  const [analytics, setAnalytics] = useState<UserAnalytics | null>(null);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
@@ -41,23 +39,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     refreshUser();
-    if (user && (user.role === 'store' || user.role === 'supplier')) {
-      loadAnalytics();
-    }
   }, [user?.id]);
-
-  const loadAnalytics = async () => {
-    if (!user || (user.role !== 'store' && user.role !== 'supplier')) return;
-    try {
-      setLoadingAnalytics(true);
-      const data = await ratingService.getMyAnalytics();
-      setAnalytics(data);
-    } catch (error: any) {
-      console.error('Failed to load analytics:', error);
-    } finally {
-      setLoadingAnalytics(false);
-    }
-  };
 
   useEffect(() => {
     if (user) {
@@ -310,22 +292,20 @@ export default function ProfileScreen() {
                   }}
                   style={styles.ratingContainer}
                 >
-                  {loadingAnalytics ? (
-                    <ActivityIndicator size="small" />
-                  ) : analytics && analytics.rating_count > 0 ? (
+                  {user.rating_count && user.rating_count > 0 ? (
                     <View style={styles.ratingContent}>
                       <View style={styles.ratingStars}>
                         {[1, 2, 3, 4, 5].map((star) => (
                           <MaterialCommunityIcons
                             key={star}
-                            name={star <= Math.round(analytics.average_rating || 0) ? 'star' : 'star-outline'}
+                            name={star <= Math.round(user.average_rating || 0) ? 'star' : 'star-outline'}
                             size={20}
                             color="#FFD700"
                           />
                         ))}
                       </View>
                       <Text variant="bodyMedium" style={styles.ratingText}>
-                        {analytics.average_rating?.toFixed(1) || '0.0'} ({analytics.rating_count} {analytics.rating_count === 1 ? 'rating' : 'ratings'})
+                        {user.average_rating?.toFixed(1) || '0.0'} ({user.rating_count} {user.rating_count === 1 ? 'rating' : 'ratings'})
                       </Text>
                     </View>
                   ) : (

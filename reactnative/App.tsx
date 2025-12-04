@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -20,13 +20,41 @@ import TruckScreen from './screens/TruckScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import RatingsListScreen from './screens/RatingsListScreen';
 import DrawerContent from './components/DrawerContent';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { orderService, Order } from './lib/orders';
+import { bugReportService } from './lib/bug_reports';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    bugReportService.reportError(error, 'React Error Boundary');
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Text>Something went wrong. The error has been reported.</Text>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function OrdersStack() {
   return (
@@ -203,14 +231,44 @@ function AppNavigator() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const rejectionHandler = (event: PromiseRejectionEvent) => {
+      const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+      bugReportService.reportError(error, 'Unhandled Promise Rejection');
+    };
+
+    if (typeof global !== 'undefined' && (global as any).ErrorUtils) {
+      const ErrorUtils = (global as any).ErrorUtils;
+      const originalError = ErrorUtils.getGlobalHandler();
+      ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
+        bugReportService.reportError(error, 'Global Error Handler');
+        if (originalError) {
+          originalError(error, isFatal);
+        }
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('unhandledrejection', rejectionHandler);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('unhandledrejection', rejectionHandler);
+      }
+    };
+  }, []);
+
   return (
-    <SafeAreaProvider>
-      <PaperProvider>
-        <AuthProvider>
-          <AppNavigator />
-        </AuthProvider>
-      </PaperProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <PaperProvider>
+          <AuthProvider>
+            <AppNavigator />
+          </AuthProvider>
+        </PaperProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 

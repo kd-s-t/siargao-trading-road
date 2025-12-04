@@ -196,6 +196,10 @@ export const mobileOrderService = {
     const { data } = await mobileApi.get<Order[]>('/orders');
     return data;
   },
+  getOrder: async (id: number): Promise<Order> => {
+    const { data } = await mobileApi.get<Order>(`/orders/${id}`);
+    return data;
+  },
   updateOrderStatus: async (id: number, status: string): Promise<Order> => {
     const { data } = await mobileApi.put<Order>(`/orders/${id}/status`, { status });
     return data;

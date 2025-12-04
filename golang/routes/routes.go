@@ -69,6 +69,12 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 			protected.GET("/ratings/orders", handlers.GetOrdersWithRatings)
 
 			protected.POST("/orders/:id/rating", handlers.CreateRating)
+
+			protected.POST("/bug-reports", handlers.CreateBugReport)
+			protected.GET("/bug-reports", handlers.GetBugReports)
+			protected.GET("/bug-reports/:id", handlers.GetBugReport)
+			protected.PUT("/bug-reports/:id", handlers.UpdateBugReport)
+			protected.DELETE("/bug-reports/:id", handlers.DeleteBugReport)
 		}
 	}
 }

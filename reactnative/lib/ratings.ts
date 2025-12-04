@@ -16,23 +16,30 @@ export interface OrderRating {
   rating: number;
   comment?: string;
   created_at: string;
-}
-
-export interface UserAnalytics {
-  total_orders: number;
-  total_earnings: number;
-  total_products_bought: number;
-  orders: any[];
-  products_bought: any[];
-  recent_orders: any[];
-  average_rating?: number;
-  rating_count: number;
+  order?: {
+    id: number;
+    store_id: number;
+    supplier_id: number;
+    store?: {
+      id: number;
+      name: string;
+      email: string;
+    };
+    supplier?: {
+      id: number;
+      name: string;
+      email: string;
+    };
+    status: string;
+    total_amount: number;
+    created_at: string;
+  };
 }
 
 export const ratingService = {
   getMyRatings: async (): Promise<OrderRating[]> => {
-    const { data } = await api.get<OrderRating[]>('/me/ratings');
-    return data;
+    const { data } = await api.get<{ ratings: OrderRating[] }>('/me/ratings');
+    return data.ratings;
   },
 
   createRating: async (orderId: number, ratedId: number, rating: number, comment?: string): Promise<OrderRating> => {
@@ -41,11 +48,6 @@ export const ratingService = {
       rating,
       comment,
     });
-    return data;
-  },
-
-  getMyAnalytics: async (): Promise<UserAnalytics> => {
-    const { data } = await api.get<UserAnalytics>('/me/analytics');
     return data;
   },
 };
