@@ -10,12 +10,14 @@ import {
   IconButton,
   TextInput,
   Avatar,
+  Badge,
+  Snackbar,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { supplierService, Supplier } from '../lib/suppliers';
 import { productService, Product } from '../lib/products';
-import { orderService } from '../lib/orders';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { orderService, Order } from '../lib/orders';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 
 export default function SupplierProductsScreen() {
   const navigation = useNavigation();
@@ -28,22 +30,46 @@ export default function SupplierProductsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [addingToTruck, setAddingToTruck] = useState<number | null>(null);
   const [quantities, setQuantities] = useState<Record<number, string>>({});
+  const [draftOrder, setDraftOrder] = useState<Order | null>(null);
+  const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string }>({
+    visible: false,
+    message: '',
+  });
 
   const loadProducts = async () => {
     try {
       const data = await supplierService.getSupplierProducts(supplier.id);
       setProducts(data);
-    } catch (error) {
+      setSnackbar({ visible: false, message: '' });
+    } catch (error: any) {
       console.error('Failed to load products:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to load products';
+      setSnackbar({ visible: true, message: errorMessage });
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  const loadDraftOrder = async () => {
+    try {
+      const order = await orderService.getDraftOrder(supplier.id);
+      setDraftOrder(order);
+    } catch (error) {
+      console.error('Failed to load draft order:', error);
+    }
+  };
+
   useEffect(() => {
     loadProducts();
+    loadDraftOrder();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadDraftOrder();
+    }, [])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -51,6 +77,21 @@ export default function SupplierProductsScreen() {
   };
 
   const handleAddToTruck = async (product: Product) => {
+    const quantity = parseInt(quantities[product.id] || '1', 10);
+
+    if (quantity <= 0) {
+      Alert.alert('Error', 'Quantity must be greater than 0');
+      return;
+    }
+
+    if (quantity > product.stock_quantity) {
+      Alert.alert(
+        'Insufficient Stock',
+        `Only ${product.stock_quantity} ${product.unit || 'units'} available in stock`
+      );
+      return;
+    }
+
     setAddingToTruck(product.id);
 
     try {
@@ -60,8 +101,27 @@ export default function SupplierProductsScreen() {
         draftOrder = await orderService.createDraftOrder(supplier.id);
       }
 
-      const quantity = parseInt(quantities[product.id] || '1', 10);
-      await orderService.addOrderItem(draftOrder.id, product.id, quantity);
+      const existingItem = draftOrder.order_items?.find(
+        (item) => item.product_id === product.id
+      );
+
+      if (existingItem) {
+        const totalQuantity = existingItem.quantity + quantity;
+        if (totalQuantity > product.stock_quantity) {
+          const available = product.stock_quantity - existingItem.quantity;
+          Alert.alert(
+            'Insufficient Stock',
+            `You already have ${existingItem.quantity} ${product.unit || 'units'} in truck. Only ${available} ${product.unit || 'units'} more available.`
+          );
+          setAddingToTruck(null);
+          return;
+        }
+      }
+
+      const updatedOrder = await orderService.addOrderItem(draftOrder.id, product.id, quantity);
+      setDraftOrder(updatedOrder);
+
+      await loadProducts();
 
       setQuantities({ ...quantities, [product.id]: '' });
       Alert.alert('Success', 'Item added to truck');
@@ -84,13 +144,6 @@ export default function SupplierProductsScreen() {
 
   return (
     <View style={styles.container}>
-      {supplier.banner_url && supplier.banner_url.trim() !== '' ? (
-        <Image
-          source={{ uri: supplier.banner_url }}
-          style={styles.bannerImage}
-          resizeMode="cover"
-        />
-      ) : null}
       <Surface style={styles.header} elevation={2}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
@@ -112,17 +165,28 @@ export default function SupplierProductsScreen() {
                 style={styles.logo}
               />
             )}
-            <Text variant="headlineSmall" style={styles.headerTitle}>
+            <Text 
+              variant="headlineSmall" 
+              style={styles.headerTitle}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
               {supplier.name}
             </Text>
           </View>
-          <Button
-            mode="contained"
-            icon="truck"
-            onPress={() => (navigation as any).navigate('Truck', { supplierId: supplier.id })}
-          >
-            Truck
-          </Button>
+          <View style={styles.truckButtonContainer}>
+            <IconButton
+              icon="truck"
+              mode="contained"
+              size={24}
+              onPress={() => (navigation as any).navigate('Truck', { supplierId: supplier.id })}
+            />
+            {draftOrder && draftOrder.order_items && draftOrder.order_items.length > 0 && (
+              <Badge style={styles.badge} size={20}>
+                {draftOrder.order_items.reduce((sum, item) => sum + item.quantity, 0)}
+              </Badge>
+            )}
+          </View>
         </View>
       </Surface>
 
@@ -187,7 +251,7 @@ export default function SupplierProductsScreen() {
                       Stock:
                     </Text>
                     <Text variant="bodySmall">
-                      {product.stock_quantity} {product.unit || 'units'}
+                      {product.stock_quantity}{product.unit ? ` ${product.unit}` : ' units'}
                     </Text>
                   </View>
                   {product.category ? (
@@ -202,7 +266,7 @@ export default function SupplierProductsScreen() {
                 <View style={styles.addToTruckContainer}>
                   <TextInput
                     label="Quantity"
-                    value={quantities[product.id] || '1'}
+                    value={quantities[product.id] ?? ''}
                     onChangeText={(text) =>
                       setQuantities({ ...quantities, [product.id]: text })
                     }
@@ -210,6 +274,7 @@ export default function SupplierProductsScreen() {
                     mode="outlined"
                     style={styles.quantityInput}
                     disabled={addingToTruck === product.id}
+                    placeholder="1"
                   />
                   <Button
                     mode="contained"
@@ -227,6 +292,17 @@ export default function SupplierProductsScreen() {
           ))
         )}
       </ScrollView>
+      <Snackbar
+        visible={snackbar.visible}
+        onDismiss={() => setSnackbar({ ...snackbar, visible: false })}
+        duration={4000}
+        action={{
+          label: 'Dismiss',
+          onPress: () => setSnackbar({ ...snackbar, visible: false }),
+        }}
+      >
+        {snackbar.message}
+      </Snackbar>
     </View>
   );
 }
@@ -240,11 +316,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  bannerImage: {
-    width: '100%',
-    height: 150,
-    backgroundColor: '#e0e0e0',
   },
   header: {
     paddingTop: 50,
@@ -260,6 +331,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
   },
   logo: {
     marginRight: 8,
@@ -270,6 +342,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontWeight: 'bold',
     marginLeft: 8,
+    flex: 1,
+    flexShrink: 1,
+  },
+  truckButtonContainer: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 20,
+    height: 20,
   },
   content: {
     flex: 1,

@@ -254,6 +254,20 @@ func AddOrderItem(c *gin.Context) {
 	}
 
 	var existingItem models.OrderItem
+	var totalQuantity int
+	if err := database.DB.Where("order_id = ? AND product_id = ?", orderID, req.ProductID).First(&existingItem).Error; err == nil {
+		totalQuantity = existingItem.Quantity + req.Quantity
+	} else {
+		totalQuantity = req.Quantity
+	}
+
+	if totalQuantity > product.StockQuantity {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("insufficient stock: only %d %s available", product.StockQuantity, product.Unit),
+		})
+		return
+	}
+
 	if err := database.DB.Where("order_id = ? AND product_id = ?", orderID, req.ProductID).First(&existingItem).Error; err == nil {
 		existingItem.Quantity += req.Quantity
 		existingItem.Subtotal = float64(existingItem.Quantity) * existingItem.UnitPrice
@@ -267,6 +281,12 @@ func AddOrderItem(c *gin.Context) {
 			Subtotal:  product.Price * float64(req.Quantity),
 		}
 		database.DB.Create(&orderItem)
+	}
+
+	product.StockQuantity -= req.Quantity
+	if err := database.DB.Save(&product).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update product stock"})
+		return
 	}
 
 	var totalAmount float64
@@ -309,6 +329,28 @@ func UpdateOrderItem(c *gin.Context) {
 		return
 	}
 
+	var product models.Product
+	if err := database.DB.First(&product, orderItem.ProductID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "product not found"})
+		return
+	}
+
+	quantityDiff := req.Quantity - orderItem.Quantity
+	newStock := product.StockQuantity - quantityDiff
+
+	if newStock < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("insufficient stock: only %d %s available", product.StockQuantity+orderItem.Quantity, product.Unit),
+		})
+		return
+	}
+
+	product.StockQuantity = newStock
+	if err := database.DB.Save(&product).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update product stock"})
+		return
+	}
+
 	orderItem.Quantity = req.Quantity
 	orderItem.Subtotal = orderItem.UnitPrice * float64(req.Quantity)
 	database.DB.Save(&orderItem)
@@ -346,6 +388,18 @@ func RemoveOrderItem(c *gin.Context) {
 
 	if orderItem.Order.StoreID != userID || orderItem.Order.Status != "draft" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "cannot remove this order item"})
+		return
+	}
+
+	var product models.Product
+	if err := database.DB.First(&product, orderItem.ProductID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "product not found"})
+		return
+	}
+
+	product.StockQuantity += orderItem.Quantity
+	if err := database.DB.Save(&product).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to restore product stock"})
 		return
 	}
 

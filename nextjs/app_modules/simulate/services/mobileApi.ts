@@ -1,6 +1,6 @@
 import axios, { AxiosRequestConfig, AxiosError } from 'axios';
 import { User, LoginResponse } from '@/lib/auth';
-import { Order, OrderRating } from '@/lib/users';
+import { Order, OrderRating, Product } from '@/lib/users';
 
 interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
   __logId?: string;
@@ -98,6 +98,22 @@ mobileApi.interceptors.response.use(
 export const mobileAuthService = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
     const { data } = await mobileApi.post<LoginResponse>('/login', { email, password });
+    return data;
+  },
+  register: async (
+    email: string,
+    password: string,
+    name: string,
+    phone: string,
+    role: 'supplier' | 'store'
+  ): Promise<LoginResponse> => {
+    const { data } = await mobileApi.post<LoginResponse>('/register', {
+      email,
+      password,
+      name,
+      phone,
+      role,
+    });
     return data;
   },
   getMe: async (): Promise<User> => {
@@ -223,6 +239,38 @@ export const mobileOrderService = {
   getMyRatings: async (): Promise<OrderRating[]> => {
     const { data } = await mobileApi.get<{ ratings: OrderRating[] }>('/me/ratings');
     return data.ratings;
+  },
+};
+
+export const mobileProductService = {
+  createProduct: async (product: {
+    name: string;
+    description?: string;
+    sku: string;
+    price: number;
+    stock_quantity?: number;
+    unit?: string;
+    category?: string;
+    image_url?: string;
+  }): Promise<Product> => {
+    const { data } = await mobileApi.post<Product>('/products', product);
+    return data;
+  },
+  updateProduct: async (id: number, product: {
+    name?: string;
+    description?: string;
+    sku?: string;
+    price?: number;
+    stock_quantity?: number;
+    unit?: string;
+    category?: string;
+    image_url?: string;
+  }): Promise<Product> => {
+    const { data } = await mobileApi.put<Product>(`/products/${id}`, product);
+    return data;
+  },
+  deleteProduct: async (id: number): Promise<void> => {
+    await mobileApi.delete(`/products/${id}`);
   },
 };
 

@@ -8,6 +8,7 @@ import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginScreen from './screens/LoginScreen';
+import RegisterScreen from './screens/RegisterScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import ProductsScreen from './screens/ProductsScreen';
 import AddProductScreen from './screens/AddProductScreen';
@@ -119,7 +120,7 @@ function SupplierTabs() {
         options={{
           tabBarLabel: 'Orders',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cart" size={size} color={color} />
+            <MaterialCommunityIcons name="clipboard-list" size={size} color={color} />
           ),
           tabBarBadge: nonDeliveredCount > 0 ? nonDeliveredCount : undefined,
         }}
@@ -223,7 +224,10 @@ function AppNavigator() {
             )}
           </>
         ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

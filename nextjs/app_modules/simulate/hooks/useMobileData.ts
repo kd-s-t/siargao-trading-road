@@ -75,3 +75,26 @@ export function useSupplierProducts(supplierId: number | null) {
   return { products, loading, loadProducts };
 }
 
+export function useMyProducts() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
+
+  const loadProducts = async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    try {
+      setLoading(true);
+      const { data } = await mobileApi.get<Product[]>('/products');
+      setProducts(data);
+    } catch (error) {
+      console.error('Failed to load my products:', error);
+    } finally {
+      setLoading(false);
+      loadingRef.current = false;
+    }
+  };
+
+  return { products, loading, loadProducts };
+}
+

@@ -8,6 +8,7 @@ import {
   Button,
   Typography,
   CircularProgress,
+  Link,
 } from '@mui/material';
 import Image from 'next/image';
 import { mobileAuthService } from '../services/mobileApi';
@@ -15,9 +16,10 @@ import { LoginResponse, User } from '@/lib/auth';
 
 interface MobileLoginProps {
   onLoginSuccess: (response: LoginResponse) => void;
+  onSwitchToRegister?: () => void;
 }
 
-export function MobileLogin({ onLoginSuccess }: MobileLoginProps) {
+export function MobileLogin({ onLoginSuccess, onSwitchToRegister }: MobileLoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -137,6 +139,22 @@ export function MobileLogin({ onLoginSuccess }: MobileLoginProps) {
             {loading ? <CircularProgress size={24} /> : 'Sign In'}
           </Button>
         </form>
+
+        {onSwitchToRegister && (
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Don&apos;t have an account?{' '}
+              <Link
+                component="button"
+                variant="body2"
+                onClick={onSwitchToRegister}
+                sx={{ cursor: 'pointer' }}
+              >
+                Register
+              </Link>
+            </Typography>
+          </Box>
+        )}
       </Paper>
     </Box>
   );

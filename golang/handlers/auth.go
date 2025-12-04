@@ -67,6 +67,13 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	if req.Phone != "" {
+		if err := database.DB.Where("phone = ?", req.Phone).First(&existingUser).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "phone already exists"})
+			return
+		}
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
@@ -168,6 +175,13 @@ func AdminRegisterUser(c *gin.Context) {
 	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "email already exists"})
 		return
+	}
+
+	if req.Phone != "" {
+		if err := database.DB.Where("phone = ?", req.Phone).First(&existingUser).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "phone already exists"})
+			return
+		}
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)

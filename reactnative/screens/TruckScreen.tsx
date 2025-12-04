@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Alert, Image } from 'react-native';
 import {
   Text,
   Surface,
@@ -9,6 +9,7 @@ import {
   Divider,
   IconButton,
   TextInput,
+  Avatar,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { orderService, Order } from '../lib/orders';
@@ -24,6 +25,7 @@ export default function TruckScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updating, setUpdating] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const loadDraftOrder = async () => {
     try {
@@ -78,6 +80,43 @@ export default function TruckScreen() {
               await loadDraftOrder();
             } catch (error: any) {
               Alert.alert('Error', error.response?.data?.error || 'Failed to remove item');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSubmitOrder = async () => {
+    if (!draftOrder) return;
+
+    Alert.alert(
+      'Submit Order',
+      `Are you sure you want to submit this order for ₱${draftOrder.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Submit',
+          onPress: async () => {
+            setSubmitting(true);
+            try {
+              await orderService.submitOrder(draftOrder.id);
+              Alert.alert(
+                'Success',
+                'Order submitted successfully!',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      navigation.goBack();
+                    },
+                  },
+                ]
+              );
+            } catch (error: any) {
+              Alert.alert('Error', error.response?.data?.error || 'Failed to submit order');
+            } finally {
+              setSubmitting(false);
             }
           },
         },
@@ -149,9 +188,24 @@ export default function TruckScreen() {
       >
         <Card style={styles.supplierCard}>
           <Card.Content>
-            <Text variant="titleMedium" style={styles.supplierName}>
-              {draftOrder.supplier?.name || 'Supplier'}
-            </Text>
+            <View style={styles.supplierContent}>
+              {draftOrder.supplier?.logo_url && draftOrder.supplier.logo_url.trim() !== '' ? (
+                <Avatar.Image
+                  size={50}
+                  source={{ uri: draftOrder.supplier.logo_url }}
+                  style={styles.supplierLogo}
+                />
+              ) : (
+                <Avatar.Text
+                  size={50}
+                  label={draftOrder.supplier?.name?.charAt(0).toUpperCase() || 'S'}
+                  style={styles.supplierLogo}
+                />
+              )}
+              <Text variant="titleMedium" style={styles.supplierName}>
+                {draftOrder.supplier?.name || 'Supplier'}
+              </Text>
+            </View>
           </Card.Content>
         </Card>
 
@@ -216,6 +270,17 @@ export default function TruckScreen() {
             </View>
           </Card.Content>
         </Card>
+
+        <Button
+          mode="contained"
+          onPress={handleSubmitOrder}
+          loading={submitting}
+          disabled={submitting}
+          style={styles.submitButton}
+          contentStyle={styles.submitButtonContent}
+        >
+          Submit Order
+        </Button>
       </ScrollView>
     </View>
   );
@@ -261,8 +326,18 @@ const styles = StyleSheet.create({
   supplierCard: {
     marginBottom: 16,
   },
+  supplierContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  supplierLogo: {
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+  },
   supplierName: {
     fontWeight: 'bold',
+    flex: 1,
   },
   itemCard: {
     marginBottom: 16,
@@ -325,6 +400,14 @@ const styles = StyleSheet.create({
   totalAmount: {
     fontWeight: 'bold',
     color: '#1976d2',
+  },
+  submitButton: {
+    marginTop: 16,
+    marginBottom: 32,
+    marginHorizontal: 16,
+  },
+  submitButtonContent: {
+    paddingVertical: 8,
   },
 });
 

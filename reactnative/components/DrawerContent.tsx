@@ -36,11 +36,11 @@ export default function DrawerContent(props: DrawerContentComponentProps) {
   const menuItems = user?.role === 'store' ? [
     { label: 'Profile', icon: 'account', screen: 'Profile' },
     { label: 'Suppliers', icon: 'store', screen: 'Suppliers' },
-    { label: 'Orders', icon: 'cart', screen: 'Orders', badge: nonDeliveredCount },
+    { label: 'Orders', icon: 'clipboard-list', screen: 'Orders', badge: nonDeliveredCount },
   ] : user?.role === 'supplier' ? [
     { label: 'Profile', icon: 'account', screen: 'Profile' },
     { label: 'Products', icon: 'package-variant', screen: 'SupplierMain', params: { screen: 'ProductsTab' } },
-    { label: 'Orders', icon: 'cart', screen: 'SupplierMain', params: { screen: 'OrdersTab' }, badge: nonDeliveredCount },
+    { label: 'Orders', icon: 'clipboard-list', screen: 'SupplierMain', params: { screen: 'OrdersTab' }, badge: nonDeliveredCount },
   ] : [
     { label: 'Profile', icon: 'account', screen: 'Profile' },
     { label: 'Dashboard', icon: 'view-dashboard', screen: 'Dashboard' },
