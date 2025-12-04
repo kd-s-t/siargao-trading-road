@@ -6,13 +6,13 @@ on:
       - main
       - develop
     paths:
-      - 'mobile/**'
+      - 'reactnative/**'
       - '.github/workflows/mobile-build.yml'
   pull_request:
     branches:
       - main
     paths:
-      - 'mobile/**'
+      - 'reactnative/**'
   workflow_dispatch:
     inputs:
       platform:
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./mobile
+        working-directory: ./reactnative
 
     steps:
       - name: Checkout code
@@ -48,7 +48,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: mobile/package-lock.json
+          cache-dependency-path: reactnative/package-lock.json
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8

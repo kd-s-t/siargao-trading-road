@@ -42,12 +42,18 @@ export default function LoginScreen() {
   const navigation = useNavigation();
 
   const animatedValue = useSharedValue(0);
+  const shineValue = useSharedValue(0);
 
   useEffect(() => {
     animatedValue.value = withRepeat(
       withTiming(1, { duration: 4000 }),
       -1,
       true
+    );
+    shineValue.value = withRepeat(
+      withTiming(1, { duration: 2000 }),
+      -1,
+      false
     );
   }, []);
 
@@ -69,6 +75,18 @@ export default function LoginScreen() {
       'clamp'
     );
     return { opacity };
+  });
+
+  const shineStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(
+      shineValue.value,
+      [0, 1],
+      [-200, 200],
+      'clamp'
+    );
+    return {
+      transform: [{ translateX }],
+    };
   });
 
   const handleSubmit = async () => {
@@ -164,16 +182,26 @@ export default function LoginScreen() {
             disabled={loading}
           />
 
-          <Button
-            mode="contained"
-            onPress={handleSubmit}
-            style={[styles.button, { backgroundColor: THEME_COLORS.primary.main }]}
-            disabled={loading}
-            loading={loading}
-            buttonColor={THEME_COLORS.primary.main}
-          >
-            Sign In
-          </Button>
+          <View style={styles.buttonContainer}>
+            <Button
+              mode="contained"
+              onPress={handleSubmit}
+              style={[styles.button, { backgroundColor: THEME_COLORS.primary.main }]}
+              disabled={loading}
+              loading={loading}
+              buttonColor={THEME_COLORS.primary.main}
+            >
+              Sign In
+            </Button>
+            <Animated.View style={[styles.shineOverlay, shineStyle]} pointerEvents="none">
+              <LinearGradient
+                colors={['transparent', 'rgba(255, 255, 255, 0.4)', 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.shineGradient}
+              />
+            </Animated.View>
+          </View>
 
           <View style={styles.switchContainer}>
             <Text variant="bodyMedium" style={styles.switchText}>
@@ -241,9 +269,27 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 16,
   },
-  button: {
+  buttonContainer: {
     marginTop: 8,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 4,
+  },
+  button: {
     paddingVertical: 4,
+  },
+  shineOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: 100,
+    height: '100%',
+  },
+  shineGradient: {
+    flex: 1,
+    width: '100%',
   },
   switchContainer: {
     flexDirection: 'row',
