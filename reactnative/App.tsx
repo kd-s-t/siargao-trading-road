@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,6 +13,7 @@ import ProductsScreen from './screens/ProductsScreen';
 import AddProductScreen from './screens/AddProductScreen';
 import EditProductScreen from './screens/EditProductScreen';
 import OrdersScreen from './screens/OrdersScreen';
+import OrderDetailScreen from './screens/OrderDetailScreen';
 import SuppliersScreen from './screens/SuppliersScreen';
 import SupplierProductsScreen from './screens/SupplierProductsScreen';
 import TruckScreen from './screens/TruckScreen';
@@ -20,12 +21,42 @@ import ProfileScreen from './screens/ProfileScreen';
 import DrawerContent from './components/DrawerContent';
 import { ActivityIndicator, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { orderService, Order } from './lib/orders';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
 
+function OrdersStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="OrdersList" component={OrdersScreen} />
+      <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+    </Stack.Navigator>
+  );
+}
+
 function SupplierTabs() {
+  const { user } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    if (user && (user.role === 'supplier' || user.role === 'store')) {
+      loadOrders();
+    }
+  }, [user?.id]);
+
+  const loadOrders = async () => {
+    try {
+      const data = await orderService.getOrders();
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Failed to load orders for badge:', error);
+    }
+  };
+
+  const nonDeliveredCount = orders.filter(order => order.status !== 'delivered').length;
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -46,12 +77,18 @@ function SupplierTabs() {
       />
       <Tab.Screen
         name="OrdersTab"
-        component={OrdersScreen}
+        component={OrdersStack}
         options={{
           tabBarLabel: 'Orders',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="cart" size={size} color={color} />
           ),
+          tabBarBadge: nonDeliveredCount > 0 ? nonDeliveredCount : undefined,
+        }}
+        listeners={{
+          tabPress: () => {
+            loadOrders();
+          },
         }}
       />
     </Tab.Navigator>
@@ -74,7 +111,7 @@ function StoreDrawer() {
     >
       <Drawer.Screen name="Suppliers" component={SuppliersScreen} />
       <Drawer.Screen name="SupplierProducts" component={SupplierProductsScreen} />
-      <Drawer.Screen name="Orders" component={OrdersScreen} />
+      <Drawer.Screen name="Orders" component={OrdersStack} />
       <Drawer.Screen name="Truck" component={TruckScreen} />
       <Drawer.Screen name="Profile" component={ProfileScreen} />
     </Drawer.Navigator>

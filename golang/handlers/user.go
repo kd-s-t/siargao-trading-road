@@ -236,6 +236,20 @@ func GetMyAnalytics(c *gin.Context) {
 			Find(&recentOrders)
 	}
 
+	var ratingStats struct {
+		AverageRating float64
+		RatingCount   int64
+	}
+	database.DB.Model(&models.Rating{}).
+		Where("rated_id = ?", userID).
+		Select("COALESCE(AVG(rating), 0) as average_rating, COUNT(*) as rating_count").
+		Scan(&ratingStats)
+
+	var averageRating *float64
+	if ratingStats.RatingCount > 0 {
+		averageRating = &ratingStats.AverageRating
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"total_orders":          totalOrders,
 		"total_earnings":        totalEarnings,
@@ -243,6 +257,8 @@ func GetMyAnalytics(c *gin.Context) {
 		"orders":                orders,
 		"products_bought":       productsBought,
 		"recent_orders":         recentOrders,
+		"average_rating":        averageRating,
+		"rating_count":          ratingStats.RatingCount,
 	})
 }
 
@@ -399,6 +415,20 @@ func GetUserAnalytics(c *gin.Context) {
 			Find(&recentOrders)
 	}
 
+	var ratingStats struct {
+		AverageRating float64
+		RatingCount   int64
+	}
+	database.DB.Model(&models.Rating{}).
+		Where("rated_id = ?", userID).
+		Select("COALESCE(AVG(rating), 0) as average_rating, COUNT(*) as rating_count").
+		Scan(&ratingStats)
+
+	var averageRating *float64
+	if ratingStats.RatingCount > 0 {
+		averageRating = &ratingStats.AverageRating
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"total_orders":          totalOrders,
 		"total_earnings":        totalEarnings,
@@ -406,6 +436,8 @@ func GetUserAnalytics(c *gin.Context) {
 		"orders":                orders,
 		"products_bought":       productsBought,
 		"recent_orders":         recentOrders,
+		"average_rating":        averageRating,
+		"rating_count":          ratingStats.RatingCount,
 	})
 }
 

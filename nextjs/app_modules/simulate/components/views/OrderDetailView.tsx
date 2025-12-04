@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -22,12 +22,14 @@ import {
   Phone as PhoneIcon,
   ChatBubbleOutline as ChatIcon,
   ExpandMore as ExpandMoreIcon,
+  Star as StarIcon,
 } from '@mui/icons-material';
-import { Order } from '@/lib/users';
+import { Order, OrderRating } from '@/lib/users';
 import { User } from '@/lib/auth';
-import { Message } from '../../services/mobileApi';
+import { Message, mobileOrderService } from '../../services/mobileApi';
 import { OrderMap } from '@/components/OrderMap';
 import { downloadInvoice } from '../../utils/invoice';
+import { Rating, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 
 interface OrderDetailViewProps {
   order: Order;
@@ -54,6 +56,16 @@ export function OrderDetailView({
 }: OrderDetailViewProps) {
   const [chatMessage, setChatMessage] = useState('');
   const [orderItemsExpanded, setOrderItemsExpanded] = useState(false);
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [ratingValue, setRatingValue] = useState<number | null>(5);
+  const [ratingComment, setRatingComment] = useState('');
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [orderRatings, setOrderRatings] = useState<OrderRating[]>(order.ratings || []);
+
+  // Update ratings when order changes
+  useEffect(() => {
+    setOrderRatings(order.ratings || []);
+  }, [order.ratings]);
 
   const handleDownloadInvoice = async () => {
     await downloadInvoice(
@@ -87,6 +99,29 @@ export function OrderDetailView({
   const now = new Date();
   const hoursSinceDelivery = deliveredTime ? (now.getTime() - deliveredTime.getTime()) / (1000 * 60 * 60) : 0;
   const messagingClosed = isDelivered && hoursSinceDelivery >= 12;
+
+  // Check if user has already rated this order
+  const userRating = orderRatings.find(r => r.rater_id === mobileUser?.id);
+  const canRate = isDelivered && !userRating;
+
+  const handleSubmitRating = async () => {
+    if (!ratingValue || !mobileUser) return;
+
+    try {
+      setSubmittingRating(true);
+      const newRating = await mobileOrderService.createRating(order.id, ratingValue, ratingComment);
+      setOrderRatings([...orderRatings, newRating]);
+      setRatingDialogOpen(false);
+      setRatingValue(5);
+      setRatingComment('');
+      onToast('Rating submitted successfully!', 'success');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      onToast(err.response?.data?.error || 'Failed to submit rating', 'error');
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
 
   return (
     <Box>
@@ -534,6 +569,42 @@ export function OrderDetailView({
         </Card>
       )}
 
+      {orderRatings && orderRatings.length > 0 && (
+        <Card sx={{ mt: 3, mb: 2 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+              Ratings
+            </Typography>
+            {orderRatings.map((rating) => (
+              <Box key={rating.id} sx={{ mb: 2, pb: 2, borderBottom: '1px solid #e0e0e0' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {rating.rater?.name || 'Unknown'} rated {rating.rated?.name || 'Unknown'}
+                  </Typography>
+                  <Rating
+                    value={rating.rating}
+                    readOnly
+                    size="small"
+                    emptyIcon={<StarIcon style={{ opacity: 0.55 }} fontSize="inherit" />}
+                  />
+                  <Typography variant="body2" fontWeight="bold">
+                    {rating.rating}/5
+                  </Typography>
+                </Box>
+                {rating.comment && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
+                    &quot;{rating.comment}&quot;
+                  </Typography>
+                )}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  {new Date(rating.created_at).toLocaleString()}
+                </Typography>
+              </Box>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <Card sx={{ mt: 3, mb: 2 }}>
         <CardContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -546,6 +617,19 @@ export function OrderDetailView({
             >
               Download Invoice
             </Button>
+
+            {canRate && (
+              <Button
+                variant="contained"
+                size="medium"
+                startIcon={<StarIcon />}
+                onClick={() => setRatingDialogOpen(true)}
+                fullWidth
+                sx={{ bgcolor: '#ff9800', '&:hover': { bgcolor: '#f57c00' } }}
+              >
+                Rate {mobileUser?.role === 'supplier' ? order.store?.name : order.supplier?.name}
+              </Button>
+            )}
             
             {mobileUser?.role === 'supplier' && order.status === 'preparing' && (
               <Box sx={{ display: 'flex', gap: 1 }}>
@@ -593,6 +677,49 @@ export function OrderDetailView({
           </Box>
         </CardContent>
       </Card>
+
+      <Dialog open={ratingDialogOpen} onClose={() => setRatingDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Rate {mobileUser?.role === 'supplier' ? order.store?.name : order.supplier?.name}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Rating
+              </Typography>
+              <Rating
+                value={ratingValue}
+                onChange={(_, newValue) => setRatingValue(newValue)}
+                size="large"
+                emptyIcon={<StarIcon style={{ opacity: 0.55 }} fontSize="inherit" />}
+              />
+            </Box>
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              label="Comment (optional)"
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              placeholder="Share your experience..."
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRatingDialogOpen(false)} disabled={submittingRating}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmitRating}
+            variant="contained"
+            disabled={!ratingValue || submittingRating}
+            sx={{ bgcolor: '#ff9800', '&:hover': { bgcolor: '#f57c00' } }}
+          >
+            {submittingRating ? 'Submitting...' : 'Submit Rating'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

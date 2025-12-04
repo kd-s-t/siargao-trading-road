@@ -17,21 +17,37 @@ export function DashboardContent() {
   const router = useRouter();
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hasSeenOnboarding = localStorage.getItem('admin_onboarding_completed');
+      return !hasSeenOnboarding;
+    }
+    return false;
+  });
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
     const redirect = !authLoading && (!user || user.role !== 'admin');
     
-    redirect && (user?.role === 'store' ? router.push('/store/dashboard') : user?.role === 'supplier' ? router.push('/supplier/dashboard') : router.push('/login'));
+    if (redirect) {
+      if (user?.role === 'store') {
+        router.push('/store/dashboard');
+      } else if (user?.role === 'supplier') {
+        router.push('/supplier/dashboard');
+      } else {
+        router.push('/login');
+      }
+    }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    user?.role === 'admin' && analyticsService.getDashboardAnalytics().then(setAnalytics).catch(console.error).finally(() => setLoading(false));
+    if (user?.role === 'admin') {
+      analyticsService.getDashboardAnalytics().then(setAnalytics).catch(console.error).finally(() => setLoading(false));
+    }
   }, [user]);
 
   return (
     <AdminLayout>
-      <OnboardingDialog />
+      {false && <OnboardingDialog />}
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         {(authLoading || loading) && (
           <Container maxWidth="lg" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>

@@ -30,6 +30,8 @@ export interface UserAnalytics {
   orders: Order[];
   products_bought: ProductBought[];
   recent_orders: Order[];
+  average_rating?: number;
+  rating_count: number;
 }
 
 export interface ProductBought {
@@ -44,6 +46,18 @@ export interface ProductBought {
   sku?: string;
 }
 
+export interface OrderRating {
+  id: number;
+  order_id: number;
+  rater_id: number;
+  rater?: User;
+  rated_id: number;
+  rated?: User;
+  rating: number;
+  comment?: string;
+  created_at: string;
+}
+
 export interface Order {
   id: number;
   store_id: number;
@@ -55,6 +69,7 @@ export interface Order {
   shipping_address?: string;
   notes?: string;
   order_items: OrderItem[];
+  ratings?: OrderRating[];
   created_at: string;
   updated_at: string;
 }

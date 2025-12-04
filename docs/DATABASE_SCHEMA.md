@@ -159,6 +159,66 @@ Chat messages between stores and suppliers for orders.
 - `read_at`
 - `deleted_at`
 
+### ratings
+Two-way ratings between stores and suppliers for delivered orders.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | SERIAL | PRIMARY KEY | Auto-incrementing rating ID |
+| order_id | INTEGER | FOREIGN KEY, NOT NULL | Reference to orders.id |
+| rater_id | INTEGER | FOREIGN KEY, NOT NULL | Reference to users.id (who gave the rating) |
+| rated_id | INTEGER | FOREIGN KEY, NOT NULL | Reference to users.id (who received the rating) |
+| rating | INTEGER | NOT NULL, CHECK (rating >= 1 AND rating <= 5) | Rating value (1-5 stars) |
+| comment | TEXT | | Optional text review |
+| created_at | TIMESTAMP | | Record creation timestamp |
+| updated_at | TIMESTAMP | | Record update timestamp |
+| deleted_at | TIMESTAMP | INDEX | Soft delete timestamp |
+
+**Indexes:**
+- `order_id`
+- `rater_id`
+- `rated_id`
+- `(order_id, rater_id)` (unique - prevents duplicate ratings from same rater for same order)
+- `deleted_at`
+
+**Notes:**
+- Each delivered order can have up to 2 ratings: one from store (rating supplier) and one from supplier (rating store)
+- Rating constraint ensures values are between 1 and 5
+
+### audit_logs
+Activity logs for all API calls to track user, admin, and employee actions.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | SERIAL | PRIMARY KEY | Auto-incrementing log ID |
+| user_id | INTEGER | FOREIGN KEY, INDEX | Reference to users.id (nullable for unauthenticated requests) |
+| user | User | FOREIGN KEY | User who performed the action |
+| role | VARCHAR(20) | INDEX | User role (admin, supplier, store) - nullable for unauthenticated requests |
+| action | VARCHAR(10) | NOT NULL | HTTP method + endpoint path |
+| endpoint | VARCHAR(255) | NOT NULL | API endpoint path |
+| method | VARCHAR(10) | NOT NULL | HTTP method (GET, POST, PUT, DELETE, etc.) |
+| status_code | INTEGER | NOT NULL | HTTP response status code |
+| ip_address | VARCHAR(45) | | Client IP address |
+| user_agent | TEXT | | Browser/client user agent string |
+| request_body | TEXT | | Request body content (truncated if > 10KB) |
+| response_body | TEXT | | Response body content (truncated if > 10KB) |
+| duration_ms | BIGINT | NOT NULL | Request processing time in milliseconds |
+| error_message | TEXT | | Error message if request failed |
+| created_at | TIMESTAMP | INDEX | Record creation timestamp |
+| deleted_at | TIMESTAMP | INDEX | Soft delete timestamp |
+
+**Indexes:**
+- `user_id`
+- `role`
+- `created_at`
+- `deleted_at`
+
+**Notes:**
+- Logs all API calls automatically via middleware
+- Request/response bodies truncated at 10KB to prevent excessive storage
+- Logs created asynchronously to avoid impacting API performance
+- User ID is nullable for unauthenticated endpoints (login, register)
+
 ## Relationships
 
 ```
@@ -177,6 +237,12 @@ users (store)
 
 orders
   └── messages (one-to-many)
+  └── ratings (one-to-many, max 2 per order)
+
+users (supplier/store)
+  └── ratings_given (one-to-many via rater_id)
+  └── ratings_received (one-to-many via rated_id)
+  └── audit_logs (one-to-many via user_id)
 ```
 
 ## Notes

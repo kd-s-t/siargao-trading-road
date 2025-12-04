@@ -10,6 +10,8 @@ export interface Supplier {
   product_count: number;
   logo_url?: string;
   banner_url?: string;
+  average_rating?: number;
+  rating_count: number;
 }
 
 export const suppliersService = {

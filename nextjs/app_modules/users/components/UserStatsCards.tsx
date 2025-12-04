@@ -1,8 +1,9 @@
 'use client';
 
-import { Box, Card, CardContent, Typography } from '@mui/material';
+import { Box, Card, CardContent, Typography, Rating } from '@mui/material';
 import { motion } from 'framer-motion';
 import { User, UserAnalytics } from '@/lib/users';
+import { Star as StarIcon } from '@mui/icons-material';
 
 interface UserStatsCardsProps {
   user: User;
@@ -31,6 +32,13 @@ export function UserStatsCards({ user, analytics }: UserStatsCardsProps) {
       value: analytics.products_bought.length,
       delay: 0.3,
     },
+    {
+      label: 'Average Rating',
+      value: analytics.average_rating ?? 0,
+      rating: true,
+      ratingCount: analytics.rating_count ?? 0,
+      delay: 0.4,
+    },
   ];
 
   return (
@@ -38,7 +46,7 @@ export function UserStatsCards({ user, analytics }: UserStatsCardsProps) {
       {stats.map((stat, index) => (
         <Box
           key={index}
-          sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' } }}
+          sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: stat.rating ? 'calc(25% - 18px)' : 'calc(25% - 18px)' } }}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -50,7 +58,35 @@ export function UserStatsCards({ user, analytics }: UserStatsCardsProps) {
                 <Typography color="text.secondary" gutterBottom>
                   {stat.label}
                 </Typography>
-                <Typography variant="h4">{stat.value}</Typography>
+                {stat.rating ? (
+                  <Box>
+                    {stat.ratingCount > 0 ? (
+                      <>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Rating
+                            value={stat.value as number}
+                            precision={0.1}
+                            readOnly
+                            size="large"
+                            emptyIcon={<StarIcon style={{ opacity: 0.55 }} fontSize="inherit" />}
+                          />
+                          <Typography variant="h5" component="span">
+                            {(stat.value as number).toFixed(1)}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          ({stat.ratingCount} {stat.ratingCount === 1 ? 'rating' : 'ratings'})
+                        </Typography>
+                      </>
+                    ) : (
+                      <Typography variant="body1" color="text.secondary">
+                        No ratings yet
+                      </Typography>
+                    )}
+                  </Box>
+                ) : (
+                  <Typography variant="h4">{stat.value}</Typography>
+                )}
               </CardContent>
             </Card>
           </motion.div>

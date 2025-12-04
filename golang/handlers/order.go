@@ -74,7 +74,31 @@ func GetOrder(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, order)
+	var ratings []models.Rating
+	if err := database.DB.Preload("Rater").Preload("Rated").Where("order_id = ?", order.ID).Find(&ratings).Error; err != nil {
+		log.Printf("Error fetching ratings for order %d: %v", order.ID, err)
+		ratings = []models.Rating{} // Ensure it's always an array, not nil
+	}
+
+	log.Printf("GetOrder: order %d has %d ratings", order.ID, len(ratings))
+
+	orderResponse := gin.H{
+		"id":               order.ID,
+		"store_id":         order.StoreID,
+		"supplier_id":      order.SupplierID,
+		"store":            order.Store,
+		"supplier":         order.Supplier,
+		"status":           order.Status,
+		"total_amount":     order.TotalAmount,
+		"shipping_address": order.ShippingAddress,
+		"notes":            order.Notes,
+		"order_items":      order.OrderItems,
+		"created_at":       order.CreatedAt,
+		"updated_at":       order.UpdatedAt,
+		"ratings":          ratings,
+	}
+
+	c.JSON(http.StatusOK, orderResponse)
 }
 
 func UpdateOrderStatus(c *gin.Context) {
