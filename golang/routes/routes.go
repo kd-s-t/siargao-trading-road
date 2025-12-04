@@ -28,6 +28,7 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 			protected.PUT("/me", handlers.UpdateMe)
 			protected.POST("/upload", handlers.UploadImage)
 			protected.GET("/me/analytics", handlers.GetMyAnalytics)
+			protected.GET("/me/ratings", handlers.GetMyRatings)
 
 			protected.GET("/products", handlers.GetProducts)
 			protected.GET("/products/:id", handlers.GetProduct)

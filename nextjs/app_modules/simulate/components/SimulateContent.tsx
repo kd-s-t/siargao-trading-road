@@ -26,19 +26,19 @@ import AdminLayout from '@/components/AdminLayout';
 import { Supplier } from '@/lib/suppliers';
 import { User, LoginResponse } from '@/lib/auth';
 import { Order } from '@/lib/users';
-import { mobileAuthService, mobileOrderService } from '../services/mobileApi';
+import { mobileAuthService, mobileOrderService, setApiCallLogger, ApiCallLog } from '../services/mobileApi';
 import { MobileLogin } from './MobileLogin';
 import { MobileDrawer } from './MobileDrawer';
 import { useSuppliers, useStores, useSupplierProducts } from '../hooks/useMobileData';
 import { useMobileOrders, useDraftOrder } from '../hooks/useMobileOrders';
 import { useMessages } from '../hooks/useMessages';
-import { SuppliersView, StoresView, SupplierProductsView, TruckView, OrdersView, OrderDetailView, ProfileView } from './views';
+import { SuppliersView, StoresView, SupplierProductsView, TruckView, OrdersView, OrderDetailView, ProfileView, RatingsListView } from './views';
 
 export function SimulateContent() {
   const [mobileUser, setMobileUser] = useState<User | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [error, setError] = useState('');
-  const [activeView, setActiveView] = useState<'suppliers' | 'stores' | 'orders' | 'supplier-products' | 'truck' | 'order-detail' | 'profile'>('profile');
+  const [activeView, setActiveView] = useState<'suppliers' | 'stores' | 'orders' | 'supplier-products' | 'truck' | 'order-detail' | 'profile' | 'ratings-list'>('profile');
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
@@ -52,6 +52,7 @@ export function SimulateContent() {
   const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{ orderId: number; status: string } | null>(null);
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
   const { messages, loading: loadingMessages, loadMessages, sendMessage } = useMessages(selectedOrder?.id || null);
+  const [apiCalls, setApiCalls] = useState<ApiCallLog[]>([]);
 
   const handleLoginSuccess = (response: LoginResponse) => {
       setMobileUser(response.user);
@@ -65,6 +66,18 @@ export function SimulateContent() {
 
 
   useEffect(() => {
+    setApiCallLogger((log: ApiCallLog) => {
+      setApiCalls((prev) => {
+        const existingIndex = prev.findIndex((call) => call.id === log.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = log;
+          return updated;
+        }
+        return [log, ...prev].slice(0, 50);
+      });
+    });
+
     const mobileToken = sessionStorage.getItem('mobile_token');
     if (mobileToken) {
       mobileAuthService.getMe()
@@ -413,10 +426,18 @@ export function SimulateContent() {
             uploading={uploading}
             onImageSelect={handleImageSelect}
             onUserUpdate={setMobileUser}
+            onRatingsClick={() => setActiveView('ratings-list')}
             onToast={(message, type) => {
               setToast({ message, type });
               setTimeout(() => setToast(null), 3000);
             }}
+          />
+        )}
+
+        {activeView === 'ratings-list' && mobileUser && (
+          <RatingsListView
+            mobileUser={mobileUser}
+            onBack={() => setActiveView('profile')}
           />
         )}
       </Box>
@@ -434,14 +455,15 @@ export function SimulateContent() {
           overflow: 'hidden',
           boxSizing: 'border-box',
           pt: 1,
+          gap: 3,
         }}
       >
         <Box
           sx={{
             width: '100%',
             maxWidth: 420,
-              height: 'calc(100vh - 64px - 64px)',
-              maxHeight: 'calc(100vh - 64px - 64px)',
+              height: 'calc(100vh - 64px - 64px - 10px)',
+              maxHeight: 'calc(100vh - 64px - 64px - 10px)',
             bgcolor: '#000',
             borderRadius: 4,
             p: 2,
@@ -521,6 +543,155 @@ export function SimulateContent() {
               )}
         </Box>
       </Box>
+        {activeView === 'profile' && (
+          <Box
+            sx={{
+              width: 350,
+              maxHeight: 'calc(100vh - 64px - 64px - 10px)',
+              overflow: 'auto',
+              p: 2,
+            }}
+          >
+            <Paper elevation={2} sx={{ p: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                  API Calls
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => setApiCalls([])}
+                  sx={{ minWidth: 'auto', px: 1 }}
+                >
+                  Clear
+                </Button>
+              </Box>
+              {apiCalls.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                  No API calls yet
+                </Typography>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {apiCalls.map((call: ApiCallLog) => {
+                    const hasError = Boolean(call.error);
+                    const isSuccess = Boolean(call.status && call.status >= 200 && call.status < 300);
+                    return (
+                    <Box
+                      key={call.id}
+                      sx={{
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 1,
+                        p: 1.5,
+                        bgcolor: hasError ? '#ffebee' : isSuccess ? '#e8f5e9' : '#fff3e0',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: 'bold',
+                            color: call.error ? '#d32f2f' : call.status && call.status >= 200 && call.status < 300 ? '#2e7d32' : '#f57c00',
+                          }}
+                        >
+                          {call.method} {(() => {
+                            try {
+                              const urlObj = new URL(call.url);
+                              return urlObj.pathname + urlObj.search;
+                            } catch {
+                              return call.url.replace(/https?:\/\/[^/]+/, '');
+                            }
+                          })()}
+                        </Typography>
+                        {call.status && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontWeight: 'bold',
+                              color: call.status >= 200 && call.status < 300 ? '#2e7d32' : '#d32f2f',
+                            }}
+                          >
+                            {call.status}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                        {call.timestamp.toLocaleTimeString()}
+                      </Typography>
+                      {call.requestData !== undefined && call.requestData !== null && (
+                        <Box sx={{ mb: 1 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+                            Request:
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontFamily: 'monospace',
+                              bgcolor: '#f5f5f5',
+                              p: 1,
+                              borderRadius: 0.5,
+                              fontSize: '0.7rem',
+                              overflow: 'auto',
+                              maxHeight: 100,
+                            }}
+                          >
+                            {call.requestData instanceof FormData
+                              ? '[FormData]'
+                              : typeof call.requestData === 'string'
+                              ? call.requestData
+                              : JSON.stringify(call.requestData, null, 2) || ''}
+                          </Typography>
+                        </Box>
+                      )}
+                      {call.responseData !== undefined && call.responseData !== null && (
+                        <Box sx={{ mb: 1 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+                            Response:
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontFamily: 'monospace',
+                              bgcolor: '#f5f5f5',
+                              p: 1,
+                              borderRadius: 0.5,
+                              fontSize: '0.7rem',
+                              overflow: 'auto',
+                              maxHeight: 150,
+                            }}
+                          >
+                            {typeof call.responseData === 'string'
+                              ? call.responseData
+                              : JSON.stringify(call.responseData, null, 2) || ''}
+                          </Typography>
+                        </Box>
+                      )}
+                      {call.error !== undefined && call.error !== null && (
+                        <Box>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: '#d32f2f' }}>
+                            Error:
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontFamily: 'monospace',
+                              bgcolor: '#ffebee',
+                              p: 1,
+                              borderRadius: 0.5,
+                              fontSize: '0.7rem',
+                              color: '#d32f2f',
+                            }}
+                          >
+                            {typeof call.error === 'string' ? call.error : JSON.stringify(call.error) || 'Unknown error'}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                    );
+                  })}
+                </Box>
+              )}
+            </Paper>
+          </Box>
+        )}
       </Box>
 
       <Dialog

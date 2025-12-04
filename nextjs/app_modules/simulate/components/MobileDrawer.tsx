@@ -21,7 +21,7 @@ import {
 import { User } from '@/lib/auth';
 import { Order } from '@/lib/users';
 
-type ViewType = 'suppliers' | 'stores' | 'orders' | 'supplier-products' | 'truck' | 'order-detail' | 'profile';
+type ViewType = 'suppliers' | 'stores' | 'orders' | 'supplier-products' | 'truck' | 'order-detail' | 'profile' | 'ratings-list';
 
 interface MobileDrawerProps {
   mobileUser: User;

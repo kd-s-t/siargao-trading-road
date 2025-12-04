@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../lib/auth';
 import { useNavigation } from '@react-navigation/native';
+import { ratingService, UserAnalytics } from '../lib/ratings';
 
 export default function ProfileScreen() {
   const { user, logout, refreshUser } = useAuth();
@@ -22,6 +23,8 @@ export default function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
+  const [analytics, setAnalytics] = useState<UserAnalytics | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
@@ -38,7 +41,23 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     refreshUser();
-  }, []);
+    if (user && (user.role === 'store' || user.role === 'supplier')) {
+      loadAnalytics();
+    }
+  }, [user?.id]);
+
+  const loadAnalytics = async () => {
+    if (!user || (user.role !== 'store' && user.role !== 'supplier')) return;
+    try {
+      setLoadingAnalytics(true);
+      const data = await ratingService.getMyAnalytics();
+      setAnalytics(data);
+    } catch (error: any) {
+      console.error('Failed to load analytics:', error);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -284,6 +303,38 @@ export default function ProfileScreen() {
               <Text variant="bodyMedium" style={styles.role}>
                 {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </Text>
+              {!editing && (user.role === 'store' || user.role === 'supplier') && (
+                <TouchableOpacity
+                  onPress={() => {
+                    (navigation as any).navigate('RatingsList');
+                  }}
+                  style={styles.ratingContainer}
+                >
+                  {loadingAnalytics ? (
+                    <ActivityIndicator size="small" />
+                  ) : analytics && analytics.rating_count > 0 ? (
+                    <View style={styles.ratingContent}>
+                      <View style={styles.ratingStars}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <MaterialCommunityIcons
+                            key={star}
+                            name={star <= Math.round(analytics.average_rating || 0) ? 'star' : 'star-outline'}
+                            size={20}
+                            color="#FFD700"
+                          />
+                        ))}
+                      </View>
+                      <Text variant="bodyMedium" style={styles.ratingText}>
+                        {analytics.average_rating?.toFixed(1) || '0.0'} ({analytics.rating_count} {analytics.rating_count === 1 ? 'rating' : 'ratings'})
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text variant="bodySmall" style={styles.noRatingsText}>
+                      No ratings yet
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
               {(user.email || user.facebook || user.instagram || user.twitter || user.linkedin || user.youtube || user.tiktok || user.website) && (
                 <View style={styles.socialLinks}>
                   {user.email && (
@@ -660,6 +711,30 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     textTransform: 'capitalize',
     marginTop: 8,
+  },
+  ratingContainer: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+  },
+  ratingContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  ratingStars: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  ratingText: {
+    fontWeight: '600',
+  },
+  noRatingsText: {
+    opacity: 0.6,
+    textAlign: 'center',
   },
   socialLinks: {
     flexDirection: 'row',

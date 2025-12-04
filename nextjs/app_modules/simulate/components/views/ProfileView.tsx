@@ -37,6 +37,7 @@ interface ProfileViewProps {
   uploading: 'logo' | 'banner' | null;
   onImageSelect: (event: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner') => void;
   onUserUpdate: (user: User) => void;
+  onRatingsClick?: () => void;
   onToast: (message: string, type: 'success' | 'error') => void;
 }
 
@@ -45,6 +46,7 @@ export function ProfileView({
   uploading,
   onImageSelect,
   onUserUpdate,
+  onRatingsClick,
   onToast,
 }: ProfileViewProps) {
   const [editingProfile, setEditingProfile] = useState(false);
@@ -372,7 +374,18 @@ export function ProfileView({
                 <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                   {mobileUser.name}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center', mt: 1, minHeight: 24 }}>
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1, 
+                    justifyContent: 'center', 
+                    mt: 1, 
+                    minHeight: 24,
+                    ...(analytics && analytics.rating_count > 0 && onRatingsClick ? { cursor: 'pointer' } : {})
+                  }}
+                  onClick={analytics && analytics.rating_count > 0 && onRatingsClick ? onRatingsClick : undefined}
+                >
                   {loadingAnalytics ? (
                     <CircularProgress size={16} />
                   ) : analytics && analytics.rating_count > 0 ? (

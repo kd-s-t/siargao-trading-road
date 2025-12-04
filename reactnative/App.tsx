@@ -18,6 +18,7 @@ import SuppliersScreen from './screens/SuppliersScreen';
 import SupplierProductsScreen from './screens/SupplierProductsScreen';
 import TruckScreen from './screens/TruckScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import RatingsListScreen from './screens/RatingsListScreen';
 import DrawerContent from './components/DrawerContent';
 import { ActivityIndicator, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -32,6 +33,15 @@ function OrdersStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="OrdersList" component={OrdersScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function ProfileStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+      <Stack.Screen name="RatingsList" component={RatingsListScreen} />
     </Stack.Navigator>
   );
 }
@@ -113,7 +123,7 @@ function StoreDrawer() {
       <Drawer.Screen name="SupplierProducts" component={SupplierProductsScreen} />
       <Drawer.Screen name="Orders" component={OrdersStack} />
       <Drawer.Screen name="Truck" component={TruckScreen} />
-      <Drawer.Screen name="Profile" component={ProfileScreen} />
+      <Drawer.Screen name="Profile" component={ProfileStack} />
     </Drawer.Navigator>
   );
 }
@@ -135,7 +145,7 @@ function SupplierDrawer() {
       <Drawer.Screen name="SupplierMain" component={SupplierTabs} />
       <Drawer.Screen name="AddProduct" component={AddProductScreen} />
       <Drawer.Screen name="EditProduct" component={EditProductScreen} />
-      <Drawer.Screen name="Profile" component={ProfileScreen} />
+      <Drawer.Screen name="Profile" component={ProfileStack} />
     </Drawer.Navigator>
   );
 }
@@ -155,7 +165,7 @@ function AdminDrawer() {
       }}
     >
       <Drawer.Screen name="Dashboard" component={DashboardScreen} />
-      <Drawer.Screen name="Profile" component={ProfileScreen} />
+      <Drawer.Screen name="Profile" component={ProfileStack} />
     </Drawer.Navigator>
   );
 }

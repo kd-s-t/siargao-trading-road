@@ -1,6 +1,10 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig, AxiosError } from 'axios';
 import { User, LoginResponse } from '@/lib/auth';
-import { Order } from '@/lib/users';
+import { Order, OrderRating } from '@/lib/users';
+
+interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
+  __logId?: string;
+}
 
 export interface Message {
   id: number;
@@ -15,6 +19,23 @@ export interface Message {
   created_at: string;
 }
 
+export interface ApiCallLog {
+  id: string;
+  method: string;
+  url: string;
+  requestData?: unknown;
+  responseData?: unknown;
+  status?: number;
+  error?: unknown;
+  timestamp: Date;
+}
+
+let apiCallLogger: ((log: ApiCallLog) => void) | null = null;
+
+export const setApiCallLogger = (logger: (log: ApiCallLog) => void) => {
+  apiCallLogger = logger;
+};
+
 const mobileApi = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3020/api',
 });
@@ -26,8 +47,53 @@ mobileApi.interceptors.request.use((config) => {
   } else {
     delete config.headers.Authorization;
   }
+  if (apiCallLogger) {
+    const logId = `${Date.now()}-${Math.random()}`;
+    (config as ExtendedAxiosRequestConfig).__logId = logId;
+    const url = config.url || '';
+    const fullUrl = url.startsWith('http') ? url : `${config.baseURL}${url}`;
+    apiCallLogger({
+      id: logId,
+      method: (config.method || 'GET').toUpperCase(),
+      url: fullUrl,
+      requestData: config.data,
+      timestamp: new Date(),
+    });
+  }
   return config;
 });
+
+mobileApi.interceptors.response.use(
+  (response) => {
+    if (apiCallLogger && (response.config as ExtendedAxiosRequestConfig).__logId) {
+      apiCallLogger({
+        id: (response.config as ExtendedAxiosRequestConfig).__logId || '',
+        method: (response.config.method || 'GET').toUpperCase(),
+        url: response.config.url || '',
+        requestData: response.config.data,
+        responseData: response.data,
+        status: response.status,
+        timestamp: new Date(),
+      });
+    }
+    return response;
+  },
+  (error: AxiosError) => {
+    if (apiCallLogger && error.config && (error.config as ExtendedAxiosRequestConfig).__logId) {
+      apiCallLogger({
+        id: (error.config as ExtendedAxiosRequestConfig).__logId || '',
+        method: (error.config.method || 'GET').toUpperCase(),
+        url: error.config.url || '',
+        requestData: error.config.data,
+        responseData: error.response?.data,
+        status: error.response?.status,
+        error: error.message,
+        timestamp: new Date(),
+      });
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const mobileAuthService = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
@@ -149,6 +215,10 @@ export const mobileOrderService = {
   createRating: async (orderId: number, rating: number, comment?: string): Promise<{ id: number; order_id: number; rater_id: number; rated_id: number; rating: number; comment?: string; created_at: string }> => {
     const { data } = await mobileApi.post(`/orders/${orderId}/rating`, { rating, comment });
     return data;
+  },
+  getMyRatings: async (): Promise<OrderRating[]> => {
+    const { data } = await mobileApi.get<{ ratings: OrderRating[] }>('/me/ratings');
+    return data.ratings;
   },
 };
 
