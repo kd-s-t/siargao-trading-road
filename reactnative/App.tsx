@@ -232,11 +232,7 @@ function AppNavigator() {
 
 export default function App() {
   useEffect(() => {
-    const rejectionHandler = (event: PromiseRejectionEvent) => {
-      const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
-      bugReportService.reportError(error, 'Unhandled Promise Rejection');
-    };
-
+    // React Native error handling
     if (typeof global !== 'undefined' && (global as any).ErrorUtils) {
       const ErrorUtils = (global as any).ErrorUtils;
       const originalError = ErrorUtils.getGlobalHandler();
@@ -247,16 +243,8 @@ export default function App() {
         }
       });
     }
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('unhandledrejection', rejectionHandler);
-    }
-
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('unhandledrejection', rejectionHandler);
-      }
-    };
+    // Note: React Native doesn't have window object or PromiseRejectionEvent
+    // Unhandled promise rejections are handled by ErrorUtils above
   }, []);
 
   return (

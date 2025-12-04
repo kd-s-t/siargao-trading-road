@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -22,13 +22,12 @@ import {
   DialogActions,
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import { BugReport } from '@/lib/bugs';
 
 interface BugsTableProps {
   bugs: BugReport[];
-  onUpdate: (id: number, updates: { status?: string; notes?: string }) => Promise<void>;
+  onUpdate: (id: number, updates: { status?: 'open' | 'investigating' | 'fixed' | 'resolved' | 'closed'; notes?: string }) => Promise<void>;
 }
 
 function getStatusColor(status: string): 'success' | 'error' | 'warning' | 'info' | 'default' {
@@ -48,23 +47,18 @@ function getStatusColor(status: string): 'success' | 'error' | 'warning' | 'info
   }
 }
 
-function Row({ bug, onUpdate }: { bug: BugReport; onUpdate: (id: number, updates: { status?: string; notes?: string }) => Promise<void> }) {
+function Row({ bug, onUpdate }: { bug: BugReport; onUpdate: (id: number, updates: { status?: 'open' | 'investigating' | 'fixed' | 'resolved' | 'closed'; notes?: string }) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState(bug.status);
   const [notes, setNotes] = useState(bug.notes || '');
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
-  const prevBugRef = useRef(bug);
 
-  // Update state when bug prop changes
-  if (prevBugRef.current !== bug) {
-    prevBugRef.current = bug;
-    setStatus(bug.status);
-    setNotes(bug.notes || '');
-  }
+  // Update state when bug prop changes - use key prop instead to reset component
 
   const handleStatusChange = async (newStatus: string) => {
-    setStatus(newStatus as BugReport['status']);
-    await onUpdate(bug.id, { status: newStatus });
+    const statusValue = newStatus as 'open' | 'investigating' | 'fixed' | 'resolved' | 'closed';
+    setStatus(statusValue);
+    await onUpdate(bug.id, { status: statusValue });
   };
 
   const handleSaveNotes = async () => {
@@ -276,7 +270,7 @@ export function BugsTable({ bugs, onUpdate }: BugsTableProps) {
         </TableHead>
         <TableBody>
           {bugs.map((bug) => (
-            <Row key={bug.id} bug={bug} onUpdate={onUpdate} />
+            <Row key={`${bug.id}-${bug.status}-${bug.notes}`} bug={bug} onUpdate={onUpdate} />
           ))}
         </TableBody>
       </Table>

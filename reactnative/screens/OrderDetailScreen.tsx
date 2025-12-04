@@ -501,16 +501,26 @@ export default function OrderDetailScreen() {
           </Card>
         )}
 
-        {canRate(order) && (
+        {order?.status === 'delivered' && (
           <Card style={styles.orderCard}>
             <Card.Content>
               <Button
                 mode="contained"
                 icon="star"
-                onPress={() => setShowRatingDialog(true)}
-                style={styles.rateButton}
+                onPress={() => {
+                  if (hasRated(order)) {
+                    setSnackbar({ visible: true, message: 'You have already rated this order', type: 'error' });
+                    return;
+                  }
+                  setShowRatingDialog(true);
+                }}
+                disabled={hasRated(order)}
+                style={[
+                  styles.rateButton,
+                  hasRated(order) && styles.rateButtonDisabled
+                ]}
               >
-                Rate {user?.role === 'store' ? order.supplier?.name : order.store?.name}
+                {hasRated(order) ? 'Already Rated' : `Rate ${user?.role === 'store' ? order.supplier?.name : order.store?.name}`}
               </Button>
             </Card.Content>
           </Card>
@@ -674,7 +684,7 @@ export default function OrderDetailScreen() {
       </ScrollView>
 
       <Portal>
-        <Dialog visible={showRatingDialog} onDismiss={() => setShowRatingDialog(false)}>
+        <Dialog visible={showRatingDialog && !hasRated(order)} onDismiss={() => setShowRatingDialog(false)}>
           <Dialog.Title>Rate {user?.role === 'store' ? order.supplier?.name : order.store?.name}</Dialog.Title>
           <Dialog.Content>
             <View style={styles.ratingDialogContent}>
@@ -1049,6 +1059,9 @@ const styles = StyleSheet.create({
   },
   rateButton: {
     marginTop: 8,
+  },
+  rateButtonDisabled: {
+    backgroundColor: '#9e9e9e',
   },
   ratingDialogContent: {
     gap: 16,
