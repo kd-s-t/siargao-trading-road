@@ -1,14 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net/http"
 
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
-	"siargao-trading-road/handlers"
 	"siargao-trading-road/middleware"
+	"siargao-trading-road/routes"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,83 +24,10 @@ func main() {
 
 	r := gin.Default()
 
-	// Recovery middleware to catch panics
-	r.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
-		log.Printf("Panic recovered: %v", recovered)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "internal server error",
-			"details": fmt.Sprintf("%v", recovered),
-		})
-		c.Abort()
-	}))
+	r.Use(middleware.RecoveryMiddleware())
+	r.Use(middleware.CORSMiddleware())
 
-	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-
-		if c.Request.Method == "OPTIONS" {
-			c.Writer.WriteHeader(204)
-			c.Abort()
-			return
-		}
-
-		c.Next()
-	})
-
-	r.Use(func(c *gin.Context) {
-		c.Set("config", cfg)
-		c.Next()
-	})
-
-	api := r.Group("/api")
-	{
-		api.POST("/register", handlers.Register)
-		api.POST("/login", handlers.Login)
-
-		protected := api.Group("/")
-		protected.Use(middleware.AuthMiddleware(cfg))
-		{
-			protected.GET("/me", handlers.GetMe)
-			protected.PUT("/me", handlers.UpdateMe)
-			protected.POST("/upload", handlers.UploadImage)
-			protected.GET("/me/analytics", handlers.GetMyAnalytics)
-
-			protected.GET("/products", handlers.GetProducts)
-			protected.GET("/products/:id", handlers.GetProduct)
-			protected.POST("/products", handlers.CreateProduct)
-			protected.POST("/products/bulk", handlers.BulkCreateProducts)
-			protected.PUT("/products/:id", handlers.UpdateProduct)
-			protected.DELETE("/products/:id", handlers.DeleteProduct)
-			protected.POST("/products/:id/restore", handlers.RestoreProduct)
-
-			protected.GET("/orders", handlers.GetOrders)
-			protected.GET("/orders/draft", handlers.GetDraftOrder)
-			protected.POST("/orders/draft", handlers.CreateDraftOrder)
-			protected.GET("/orders/:id/messages", handlers.GetOrderMessages)
-			protected.POST("/orders/:id/messages", handlers.CreateOrderMessage)
-			protected.POST("/orders/:id/send-invoice", handlers.SendInvoiceEmail)
-			protected.POST("/orders/:id/submit", handlers.SubmitOrder)
-			protected.POST("/orders/:id/items", handlers.AddOrderItem)
-			protected.PUT("/orders/:id/status", handlers.UpdateOrderStatus)
-			protected.GET("/orders/:id", handlers.GetOrder)
-			protected.PUT("/orders/items/:item_id", handlers.UpdateOrderItem)
-			protected.DELETE("/orders/items/:item_id", handlers.RemoveOrderItem)
-
-			protected.GET("/suppliers", handlers.GetSuppliers)
-			protected.GET("/suppliers/:id/products", handlers.GetSupplierProducts)
-
-			protected.GET("/stores", handlers.GetStores)
-
-			protected.GET("/users", handlers.GetUsers)
-			protected.GET("/users/:id", handlers.GetUser)
-			protected.GET("/users/:id/analytics", handlers.GetUserAnalytics)
-			protected.POST("/users/register", handlers.AdminRegisterUser)
-
-			protected.GET("/dashboard/analytics", handlers.GetDashboardAnalytics)
-		}
-	}
+	routes.SetupRoutes(r, cfg)
 
 	log.Printf("Server starting on port %s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
 	"siargao-trading-road/middleware"
@@ -61,17 +60,6 @@ func setupOrderTest(t *testing.T) (*gin.Engine, *config.Config, models.User, mod
 	}
 
 	return r, cfg, supplier, store
-}
-
-func createTestToken(userID uint, role string, cfg *config.Config) string {
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"email":   "test@example.com",
-		"role":    role,
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString([]byte(cfg.JWTSecret))
-	return tokenString
 }
 
 func TestCreateDraftOrder(t *testing.T) {

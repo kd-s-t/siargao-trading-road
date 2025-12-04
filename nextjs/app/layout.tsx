@@ -7,8 +7,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Siargao Trading Road Admin",
-  description: "Siargao Trading Road Admin Panel",
+  title: "Siargao Trading Road",
+  description: "Siargao Trading Road",
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',

@@ -8,8 +8,9 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 
-export default function DrawerContent() {
+export default function DrawerContent(props: DrawerContentComponentProps) {
   const { user, logout } = useAuth();
   const navigation = useNavigation();
 
