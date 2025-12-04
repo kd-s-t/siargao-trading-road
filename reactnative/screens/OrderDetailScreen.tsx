@@ -1061,10 +1061,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: '#f44336',
   },
-  callButton: {
-    marginTop: 8,
-    backgroundColor: '#4caf50',
-  },
   actionsCard: {
     marginHorizontal: 16,
     marginBottom: 16,
