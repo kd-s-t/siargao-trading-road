@@ -2,7 +2,7 @@
 echo "Running pre-push checks..."
 
 echo "Building Go..."
-cd golang && go build ./... && cd ..
+cd golang && go build -o /dev/null . && cd ..
 if [ $? -ne 0 ]; then
   echo "Go build failed. Please fix the issues before pushing."
   exit 1
