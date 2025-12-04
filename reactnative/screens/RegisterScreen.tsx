@@ -196,8 +196,10 @@ export default function RegisterScreen() {
             keyboardType="phone-pad"
             style={styles.input}
             disabled={loading}
-            helperText="Philippine mobile number (e.g., 9606075119)"
           />
+          <Text variant="bodySmall" style={styles.helperText}>
+            Philippine mobile number (e.g., 9606075119)
+          </Text>
 
           <TextInput
             label="Password *"
@@ -209,8 +211,10 @@ export default function RegisterScreen() {
             autoComplete="password"
             style={styles.input}
             disabled={loading}
-            helperText="Must be at least 6 characters"
           />
+          <Text variant="bodySmall" style={styles.helperText}>
+            Must be at least 6 characters
+          </Text>
 
           <Menu
             visible={roleMenuVisible}
@@ -332,6 +336,12 @@ const styles = StyleSheet.create({
   },
   switchText: {
     opacity: 0.7,
+  },
+  helperText: {
+    marginTop: -12,
+    marginBottom: 12,
+    marginLeft: 12,
+    opacity: 0.6,
   },
 });
 
