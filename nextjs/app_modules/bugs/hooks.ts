@@ -57,7 +57,7 @@ export function useBugs() {
     setPage(1);
   };
 
-  const updateBug = async (id: number, updates: { status?: string; notes?: string }) => {
+  const updateBug = async (id: number, updates: { status?: 'open' | 'investigating' | 'fixed' | 'resolved' | 'closed'; notes?: string }) => {
     try {
       const updatedBug = await bugsService.updateBugReport(id, updates);
       setBugs((prevBugs) =>

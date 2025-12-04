@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { orderService, Order } from '../lib/orders';
 import { useNavigation } from '@react-navigation/native';
 import api from '../lib/api';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const statusColors: Record<string, string> = {
   preparing: '#ff9800',
@@ -381,6 +382,41 @@ export default function OrdersScreen() {
                   </>
                 ) : null}
 
+                {order.ratings && order.ratings.length > 0 && (
+                  <>
+                    <Divider style={styles.divider} />
+                    <View style={styles.ratingsContainer}>
+                      <Text variant="bodySmall" style={styles.label}>
+                        Ratings:
+                      </Text>
+                      {order.ratings.map((rating: any) => (
+                        <View key={rating.id} style={styles.ratingItem}>
+                          <View style={styles.ratingRow}>
+                            <Text variant="bodySmall" style={styles.ratingRater}>
+                              {rating.rater?.name || 'Unknown'}
+                            </Text>
+                            <View style={styles.ratingStars}>
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <MaterialCommunityIcons
+                                  key={star}
+                                  name={star <= rating.rating ? 'star' : 'star-outline'}
+                                  size={14}
+                                  color="#FFD700"
+                                />
+                              ))}
+                            </View>
+                          </View>
+                          {rating.comment && (
+                            <Text variant="bodySmall" style={styles.ratingComment}>
+                              &quot;{rating.comment}&quot;
+                            </Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )}
+
                 <Divider style={styles.divider} />
 
                 <View style={styles.itemsContainer}>
@@ -702,6 +738,34 @@ const styles = StyleSheet.create({
   },
   snackbarError: {
     backgroundColor: '#f44336',
+  },
+  ratingsContainer: {
+    marginTop: 4,
+    gap: 8,
+  },
+  ratingItem: {
+    marginTop: 4,
+    paddingLeft: 8,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  ratingRater: {
+    fontWeight: '600',
+    flex: 1,
+  },
+  ratingStars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  ratingComment: {
+    marginTop: 4,
+    fontStyle: 'italic',
+    opacity: 0.8,
   },
 });
 
