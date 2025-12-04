@@ -49,6 +49,7 @@ export interface ProductBought {
 export interface OrderRating {
   id: number;
   order_id: number;
+  order?: Order;
   rater_id: number;
   rater?: User;
   rated_id: number;

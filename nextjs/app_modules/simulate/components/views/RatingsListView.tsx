@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -20,16 +20,21 @@ import { OrderRating } from '@/lib/users';
 import { mobileOrderService } from '../../services/mobileApi';
 
 interface RatingsListViewProps {
-  mobileUser: User;
+  mobileUser: User | null;
   onBack: () => void;
 }
 
 export function RatingsListView({ mobileUser, onBack }: RatingsListViewProps) {
   const [ratings, setRatings] = useState<OrderRating[]>([]);
   const [loading, setLoading] = useState(true);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
+    if (loadingRef.current) return;
+    
     const loadRatings = async () => {
+      if (loadingRef.current) return;
+      loadingRef.current = true;
       try {
         setLoading(true);
         const data = await mobileOrderService.getMyRatings();
@@ -38,6 +43,7 @@ export function RatingsListView({ mobileUser, onBack }: RatingsListViewProps) {
         console.error('Failed to load ratings:', error);
       } finally {
         setLoading(false);
+        loadingRef.current = false;
       }
     };
     loadRatings();

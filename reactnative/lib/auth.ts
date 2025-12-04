@@ -21,6 +21,8 @@ export interface User {
   role: 'supplier' | 'store' | 'admin';
   created_at: string;
   updated_at: string;
+  average_rating?: number;
+  rating_count?: number;
 }
 
 export interface LoginResponse {

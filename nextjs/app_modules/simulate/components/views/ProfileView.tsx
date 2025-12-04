@@ -50,8 +50,6 @@ export function ProfileView({
   onToast,
 }: ProfileViewProps) {
   const [editingProfile, setEditingProfile] = useState(false);
-  const [analytics, setAnalytics] = useState<{ average_rating?: number; rating_count: number } | null>(null);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
   const getUrlEnd = (url: string): string => {
     try {
@@ -101,23 +99,6 @@ export function ProfileView({
     }
   }, [mobileUser]);
 
-  useEffect(() => {
-    const loadAnalytics = async () => {
-      if (!mobileUser) return;
-      try {
-        setLoadingAnalytics(true);
-        const data = await mobileOrderService.getMyAnalytics();
-        console.log('ProfileView analytics data:', data);
-        setAnalytics(data);
-      } catch (error) {
-        console.error('Failed to load analytics:', error);
-        setAnalytics({ average_rating: undefined, rating_count: 0 });
-      } finally {
-        setLoadingAnalytics(false);
-      }
-    };
-    loadAnalytics();
-  }, [mobileUser]);
 
   const handleSaveProfile = async () => {
     if (!mobileUser) return;
@@ -382,26 +363,24 @@ export function ProfileView({
                     justifyContent: 'center', 
                     mt: 1, 
                     minHeight: 24,
-                    ...(analytics && analytics.rating_count > 0 && onRatingsClick ? { cursor: 'pointer' } : {})
+                    ...(mobileUser.rating_count && mobileUser.rating_count > 0 && onRatingsClick ? { cursor: 'pointer' } : {})
                   }}
-                  onClick={analytics && analytics.rating_count > 0 && onRatingsClick ? onRatingsClick : undefined}
+                  onClick={mobileUser.rating_count && mobileUser.rating_count > 0 && onRatingsClick ? onRatingsClick : undefined}
                 >
-                  {loadingAnalytics ? (
-                    <CircularProgress size={16} />
-                  ) : analytics && analytics.rating_count > 0 ? (
+                  {mobileUser.rating_count && mobileUser.rating_count > 0 ? (
                     <>
                       <Rating
-                        value={analytics.average_rating || 0}
+                        value={mobileUser.average_rating || 0}
                         precision={0.1}
                         readOnly
                         size="small"
                         emptyIcon={<StarIcon style={{ opacity: 0.55 }} fontSize="inherit" />}
                       />
                       <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                        {(analytics.average_rating || 0).toFixed(1)}
+                        {(mobileUser.average_rating || 0).toFixed(1)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        ({analytics.rating_count} {analytics.rating_count === 1 ? 'rating' : 'ratings'})
+                        ({mobileUser.rating_count} {mobileUser.rating_count === 1 ? 'rating' : 'ratings'})
                       </Typography>
                     </>
                   ) : (

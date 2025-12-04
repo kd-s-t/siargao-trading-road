@@ -62,10 +62,34 @@ export function OrderDetailView({
   const [submittingRating, setSubmittingRating] = useState(false);
   const [orderRatings, setOrderRatings] = useState<OrderRating[]>(order.ratings || []);
 
+  // Fetch fresh order details to get latest ratings when component mounts
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      try {
+        const freshOrder = await mobileOrderService.getOrder(order.id);
+        if (freshOrder.ratings) {
+          setOrderRatings(freshOrder.ratings);
+        }
+      } catch (error) {
+        console.error('Failed to fetch order details:', error);
+      }
+    };
+    fetchOrderDetails();
+  }, [order.id]);
+
   // Update ratings when order changes
   useEffect(() => {
     setOrderRatings(order.ratings || []);
   }, [order.ratings]);
+
+  // Close dialog if user has already rated
+  useEffect(() => {
+    const userRating = orderRatings.find(r => r.rater_id === mobileUser?.id);
+    if (userRating && ratingDialogOpen) {
+      setRatingDialogOpen(false);
+      onToast('You have already rated this order', 'error');
+    }
+  }, [orderRatings, mobileUser?.id, ratingDialogOpen, onToast]);
 
   const handleDownloadInvoice = async () => {
     await downloadInvoice(
@@ -618,16 +642,27 @@ export function OrderDetailView({
               Download Invoice
             </Button>
 
-            {canRate && (
+            {isDelivered && (
               <Button
                 variant="contained"
                 size="medium"
                 startIcon={<StarIcon />}
-                onClick={() => setRatingDialogOpen(true)}
+                onClick={() => {
+                  if (userRating) {
+                    onToast('You have already rated this order', 'error');
+                    return;
+                  }
+                  setRatingDialogOpen(true);
+                }}
                 fullWidth
-                sx={{ bgcolor: '#ff9800', '&:hover': { bgcolor: '#f57c00' } }}
+                disabled={!!userRating}
+                sx={{ 
+                  bgcolor: userRating ? '#9e9e9e' : '#ff9800', 
+                  '&:hover': { bgcolor: userRating ? '#9e9e9e' : '#f57c00' },
+                  '&.Mui-disabled': { bgcolor: '#9e9e9e', color: '#fff' }
+                }}
               >
-                Rate {mobileUser?.role === 'supplier' ? order.store?.name : order.supplier?.name}
+                {userRating ? 'Already Rated' : `Rate ${mobileUser?.role === 'supplier' ? order.store?.name : order.supplier?.name}`}
               </Button>
             )}
             
@@ -678,7 +713,21 @@ export function OrderDetailView({
         </CardContent>
       </Card>
 
-      <Dialog open={ratingDialogOpen} onClose={() => setRatingDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={ratingDialogOpen && !userRating} 
+        onClose={() => setRatingDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        container={() => {
+          const container = document.getElementById('mobile-content-container');
+          return container || document.body;
+        }}
+        sx={{
+          '& .MuiDialog-container': {
+            alignItems: 'center',
+          },
+        }}
+      >
         <DialogTitle>
           Rate {mobileUser?.role === 'supplier' ? order.store?.name : order.supplier?.name}
         </DialogTitle>

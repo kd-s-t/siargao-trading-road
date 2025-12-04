@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -15,6 +15,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Badge,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -25,8 +26,10 @@ import {
   Logout as LogoutIcon,
   PhoneAndroid as PhoneAndroidIcon,
   Assessment as AssessmentIcon,
+  BugReport as BugReportIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
+import { bugsService } from '@/lib/bugs';
 
 const drawerWidth = 240;
 
@@ -38,9 +41,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [unresolvedBugsCount, setUnresolvedBugsCount] = useState(0);
 
   const adminLevel = user?.admin_level ?? 1;
   const isLevel1 = adminLevel === 1;
+
+  useEffect(() => {
+    if (isLevel1 && user) {
+      const fetchUnresolvedBugs = async () => {
+        try {
+          const response = await bugsService.getBugReports({ limit: 1000 });
+          const unresolved = response.data.filter(
+            (bug) => bug.status !== 'resolved' && bug.status !== 'closed'
+          );
+          setUnresolvedBugsCount(unresolved.length);
+        } catch (error) {
+          console.error('Failed to fetch unresolved bugs count:', error);
+        }
+      };
+
+      fetchUnresolvedBugs();
+      const interval = setInterval(fetchUnresolvedBugs, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isLevel1, user]);
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
@@ -50,6 +74,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { text: 'Orders', icon: <ShoppingCartIcon />, path: '/orders' },
     { text: 'Products', icon: <InventoryIcon />, path: '/products' },
     { text: 'Simulate', icon: <PhoneAndroidIcon />, path: '/simulate' },
+    ...(isLevel1
+      ? [
+          {
+            text: 'Bugs',
+            icon: (
+              <Badge badgeContent={unresolvedBugsCount} color="error" overlap="circular">
+                <BugReportIcon sx={{ color: 'red' }} />
+              </Badge>
+            ),
+            path: '/bugs',
+          },
+        ]
+      : []),
   ].filter(Boolean);
 
   return (

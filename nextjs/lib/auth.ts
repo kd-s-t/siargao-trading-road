@@ -18,6 +18,8 @@ export interface User {
   website?: string;
   created_at: string;
   updated_at: string;
+  average_rating?: number;
+  rating_count?: number;
 }
 
 export interface LoginResponse {
