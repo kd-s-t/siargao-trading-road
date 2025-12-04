@@ -80,6 +80,28 @@ func GetOrdersWithRatings(c *gin.Context) {
 	})
 }
 
+func GetMyRatings(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	var ratings []models.Rating
+	if err := database.DB.
+		Preload("Rater").
+		Preload("Rated").
+		Preload("Order").
+		Where("rated_id = ?", userID).
+		Order("created_at DESC").
+		Find(&ratings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch ratings"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ratings": ratings})
+}
+
 func CreateRating(c *gin.Context) {
 	userID, err := getUserID(c)
 	if err != nil {

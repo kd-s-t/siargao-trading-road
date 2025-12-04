@@ -1,5 +1,6 @@
 import api from './api';
 import { Product } from './products';
+import { OrderRating } from './ratings';
 
 export interface Message {
   id: number;
@@ -55,6 +56,7 @@ export interface Order {
   shipping_address?: string;
   notes?: string;
   order_items: OrderItem[];
+  ratings?: OrderRating[];
   created_at: string;
   updated_at: string;
 }

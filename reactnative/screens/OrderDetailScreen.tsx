@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform, Linking, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform, Linking, Alert, TouchableOpacity } from 'react-native';
 import {
   Text,
   Surface,
@@ -11,12 +11,16 @@ import {
   Button,
   ActivityIndicator,
   Snackbar,
+  Portal,
 } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Order, orderService, Message } from '../lib/orders';
 import { useAuth } from '../contexts/AuthContext';
 import OrderMap from '../components/OrderMap';
 import api from '../lib/api';
+import { ratingService, OrderRating } from '../lib/ratings';
+import { Dialog } from 'react-native-paper';
 
 const statusColors: Record<string, string> = {
   preparing: '#ff9800',
@@ -51,6 +55,10 @@ export default function OrderDetailScreen() {
     message: '',
     type: 'success',
   });
+  const [showRatingDialog, setShowRatingDialog] = useState(false);
+  const [ratingValue, setRatingValue] = useState(5);
+  const [ratingComment, setRatingComment] = useState('');
+  const [submittingRating, setSubmittingRating] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -70,6 +78,36 @@ export default function OrderDetailScreen() {
       setSnackbar({ visible: true, message: 'Failed to load order', type: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const hasRated = (order: Order | null) => {
+    if (!order || !order.ratings || !user) return false;
+    return order.ratings.some((rating) => rating.rater_id === user.id);
+  };
+
+  const canRate = (order: Order | null) => {
+    return order?.status === 'delivered' && !hasRated(order);
+  };
+
+  const handleSubmitRating = async () => {
+    if (!order || !user) return;
+    const ratedId = user.role === 'store' ? order.supplier_id : order.store_id;
+    if (!ratedId) return;
+
+    try {
+      setSubmittingRating(true);
+      await ratingService.createRating(order.id, ratedId, ratingValue, ratingComment.trim() || undefined);
+      setShowRatingDialog(false);
+      setRatingValue(5);
+      setRatingComment('');
+      await loadOrder();
+      setSnackbar({ visible: true, message: 'Rating submitted successfully', type: 'success' });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to submit rating';
+      setSnackbar({ visible: true, message: errorMessage, type: 'error' });
+    } finally {
+      setSubmittingRating(false);
     }
   };
 
@@ -422,6 +460,62 @@ export default function OrderDetailScreen() {
           </Card.Content>
         </Card>
 
+        {order.ratings && order.ratings.length > 0 && (
+          <Card style={styles.orderCard}>
+            <Card.Content>
+              <Text variant="titleSmall" style={styles.sectionTitle}>
+                Ratings
+              </Text>
+              {order.ratings.map((rating: OrderRating) => (
+                <View key={rating.id} style={styles.ratingItem}>
+                  <View style={styles.ratingHeader}>
+                    <Text variant="bodyMedium" style={styles.ratingRater}>
+                      {rating.rater?.name || 'Unknown'}
+                    </Text>
+                    <View style={styles.ratingStars}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <MaterialCommunityIcons
+                          key={star}
+                          name={star <= rating.rating ? 'star' : 'star-outline'}
+                          size={16}
+                          color="#FFD700"
+                        />
+                      ))}
+                      <Text variant="bodySmall" style={styles.ratingValue}>
+                        {rating.rating}/5
+                      </Text>
+                    </View>
+                  </View>
+                  {rating.comment && (
+                    <Text variant="bodySmall" style={styles.ratingComment}>
+                      &quot;{rating.comment}&quot;
+                    </Text>
+                  )}
+                  <Text variant="labelSmall" style={styles.ratingDate}>
+                    {new Date(rating.created_at).toLocaleDateString()}
+                  </Text>
+                  <Divider style={styles.ratingDivider} />
+                </View>
+              ))}
+            </Card.Content>
+          </Card>
+        )}
+
+        {canRate(order) && (
+          <Card style={styles.orderCard}>
+            <Card.Content>
+              <Button
+                mode="contained"
+                icon="star"
+                onPress={() => setShowRatingDialog(true)}
+                style={styles.rateButton}
+              >
+                Rate {user?.role === 'store' ? order.supplier?.name : order.store?.name}
+              </Button>
+            </Card.Content>
+          </Card>
+        )}
+
         {order.store && order.supplier && (
           <Card style={styles.chatCard}>
             <Card.Content>
@@ -578,6 +672,55 @@ export default function OrderDetailScreen() {
           </Card.Content>
         </Card>
       </ScrollView>
+
+      <Portal>
+        <Dialog visible={showRatingDialog} onDismiss={() => setShowRatingDialog(false)}>
+          <Dialog.Title>Rate {user?.role === 'store' ? order.supplier?.name : order.store?.name}</Dialog.Title>
+          <Dialog.Content>
+            <View style={styles.ratingDialogContent}>
+              <Text variant="bodyMedium" style={styles.ratingDialogLabel}>
+                Rating:
+              </Text>
+              <View style={styles.ratingDialogStars}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => setRatingValue(star)}
+                    style={styles.ratingStarButton}
+                  >
+                    <MaterialCommunityIcons
+                      name={star <= ratingValue ? 'star' : 'star-outline'}
+                      size={32}
+                      color="#FFD700"
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text variant="bodySmall" style={{ marginBottom: 8 }}>
+                Comment (optional):
+              </Text>
+              <TextInput
+                value={ratingComment}
+                onChangeText={setRatingComment}
+                multiline
+                numberOfLines={4}
+                style={styles.ratingCommentInput}
+                placeholder="Share your experience..."
+              />
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowRatingDialog(false)}>Cancel</Button>
+            <Button
+              onPress={handleSubmitRating}
+              disabled={submittingRating}
+              mode="contained"
+            >
+              Submit
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
 
       <Snackbar
         visible={snackbar.visible}
@@ -870,5 +1013,59 @@ const styles = StyleSheet.create({
   },
   snackbarError: {
     backgroundColor: '#f44336',
+  },
+  ratingItem: {
+    marginBottom: 12,
+  },
+  ratingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  ratingRater: {
+    fontWeight: '600',
+  },
+  ratingStars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingValue: {
+    marginLeft: 4,
+    fontWeight: '600',
+  },
+  ratingComment: {
+    marginTop: 4,
+    fontStyle: 'italic',
+    opacity: 0.8,
+  },
+  ratingDate: {
+    marginTop: 4,
+    opacity: 0.6,
+  },
+  ratingDivider: {
+    marginTop: 12,
+  },
+  rateButton: {
+    marginTop: 8,
+  },
+  ratingDialogContent: {
+    gap: 16,
+  },
+  ratingDialogLabel: {
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  ratingDialogStars: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  ratingStarButton: {
+    padding: 4,
+  },
+  ratingCommentInput: {
+    marginTop: 8,
   },
 });
