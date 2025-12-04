@@ -520,6 +520,7 @@ export default function ProfileScreen() {
             )}
           </Card.Content>
         </Card>
+        </View>
 
         {!editing && (
           <Card style={styles.actionsCard}>

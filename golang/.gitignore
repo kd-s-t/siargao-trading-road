@@ -40,6 +40,10 @@ go.work.sum
 /dist/
 /build/
 
+# Compiled binaries
+main
+server
+
 # Logs
 *.log
 

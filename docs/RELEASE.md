@@ -78,6 +78,232 @@ cd reactnative
 npm run release
 ```
 
+## Android Build Process
+
+This section details the complete process for building Android APK files.
+
+### Pre-Build Checks
+
+Before building, ensure TypeScript errors are resolved:
+
+```bash
+cd reactnative
+npm run lint
+```
+
+This runs `tsc --noEmit` to check for TypeScript errors. The pre-push hook automatically runs this check.
+
+### Building Android APK with EAS
+
+The recommended method for building Android APKs is using EAS Build (Expo Application Services):
+
+```bash
+cd reactnative
+eas build --platform android --profile preview --non-interactive
+```
+
+**What happens:**
+1. EAS compresses and uploads your project files
+2. Builds the app in the cloud (no local Android SDK required)
+3. Generates a signed APK
+4. Provides a download link when complete
+
+**Build Output:**
+- Build ID: `90553a72-a99e-4674-93b3-f025bccc1dba` (example)
+- Build Page: `https://expo.dev/accounts/{username}/projects/{project}/builds/{build-id}`
+- Download URL: `https://expo.dev/artifacts/eas/{artifact-id}.apk`
+
+### Viewing Build Details
+
+To check build status and get download links:
+
+```bash
+cd reactnative
+eas build:view {BUILD_ID}
+```
+
+Example output:
+```
+ID                       90553a72-a99e-4674-93b3-f025bccc1dba
+Platform                 Android
+Status                   finished
+Profile                  preview
+Application Archive URL  https://expo.dev/artifacts/eas/iPJ3SoPGuM9D6fFpgz9Qof.apk
+```
+
+### Download Links
+
+EAS provides two types of download links:
+
+1. **Build Page URL** (requires login):
+   - Format: `https://expo.dev/accounts/{username}/projects/{project}/builds/{build-id}`
+   - Shows build details, logs, and download button
+   - May require Expo account login
+
+2. **Direct Artifact URL** (public):
+   - Format: `https://expo.dev/artifacts/eas/{artifact-id}.apk`
+   - Direct download link, publicly accessible
+   - Can be used in landing pages or shared directly
+   - **Note**: Each build gets a unique URL (not dynamic)
+
+### Local Android Build (Alternative)
+
+For local builds without EAS account:
+
+```bash
+cd reactnative
+npm run release:local:android
+```
+
+**Prerequisites:**
+- Android Studio installed
+- Android SDK configured
+- `ANDROID_HOME` or `ANDROID_SDK_ROOT` environment variable set
+- Java JDK 11 or 17 installed
+- `JAVA_HOME` environment variable set
+
+**What the script does:**
+1. Auto-detects Android SDK location
+2. Auto-detects Java JDK
+3. Runs `npx expo prebuild` if needed
+4. Builds APK using Gradle: `./gradlew assembleRelease`
+5. Copies APK to `builds/android.apk`
+6. Optionally uploads to S3
+
+**Common Local Build Issues:**
+
+1. **Gradle Plugin Errors:**
+   ```
+   Plugin [id: 'expo-module-gradle-plugin'] was not found
+   ```
+   - Solution: Run `npx expo install --fix` to update dependencies
+
+2. **Java Compiler Not Found:**
+   ```
+   No Java compiler found, please ensure you are running Gradle with a JDK
+   ```
+   - Solution: Set `JAVA_HOME` to JDK path (not JRE)
+   - macOS: `export JAVA_HOME=$(/usr/libexec/java_home -v 17)`
+
+3. **Android SDK Not Found:**
+   - Solution: Set `ANDROID_HOME` environment variable
+   - macOS default: `~/Library/Android/sdk`
+   - Linux default: `~/Android/Sdk`
+
+### TypeScript Validation
+
+Before building, ensure all TypeScript errors are fixed:
+
+```bash
+cd reactnative
+npm run lint
+```
+
+Common issues to check:
+- Unclosed JSX tags
+- Missing type definitions
+- Import errors
+- Type mismatches
+
+The pre-push hook automatically runs this check, but you can run it manually before building.
+
+### Build Profiles
+
+Three build profiles are available in `eas.json`:
+
+1. **Development**:
+   - Includes development client
+   - APK format
+   - For local testing
+
+2. **Preview** (recommended for distribution):
+   - APK format
+   - Internal distribution
+   - For testing and sharing
+
+3. **Production**:
+   - APK or AAB format
+   - Store distribution
+   - For Google Play submission
+
+### Troubleshooting Android Builds
+
+#### Build Fails with "Unknown error" in JavaScript Bundle Phase
+
+**Cause**: TypeScript or JavaScript errors in the codebase
+
+**Solution**:
+1. Run `npm run lint` to check for TypeScript errors
+2. Fix all reported errors
+3. Common issues:
+   - Unclosed JSX tags (e.g., missing `</View>`)
+   - Missing type definitions for props
+   - Import path errors
+
+#### Build Fails with Gradle Errors
+
+**Cause**: Native Android project configuration issues
+
+**Solution**:
+1. Clean build directories:
+   ```bash
+   cd reactnative
+   rm -rf android/app/build android/.gradle
+   ```
+2. Update Expo dependencies:
+   ```bash
+   npx expo install --fix
+   ```
+3. Rebuild native project:
+   ```bash
+   npx expo prebuild --clean
+   ```
+
+#### EAS Build Succeeds but Local Build Fails
+
+**Recommendation**: Use EAS Build for reliable builds. Local builds require:
+- Proper Android SDK setup
+- Correct Java/JDK configuration
+- All native dependencies properly linked
+
+EAS Build handles all of this automatically in the cloud.
+
+### Download and Distribution
+
+After a successful build, you can:
+
+1. **Download from EAS Dashboard**:
+   - Visit the build page URL
+   - Click download button
+   - Or use the direct artifact URL
+
+2. **Use S3 Latest Link** (if using release script):
+   - The release script uploads to S3
+   - Latest build: `https://{bucket}.s3.{region}.amazonaws.com/android/latest.apk`
+   - This URL is dynamic and always points to the latest build
+
+3. **Share Direct Link**:
+   - EAS artifact URLs are publicly accessible
+   - Can be shared directly or embedded in landing pages
+   - Note: Each build has a unique URL
+
+### Integration with Landing Page
+
+The landing page (`nextjs/app/page.tsx`) is configured to use S3 URLs for downloads:
+
+```typescript
+const DOWNLOAD_URLS = {
+  android: `${baseUrl}/android/latest.apk`,
+  ios: `${baseUrl}/ios/latest.ipa`,
+};
+```
+
+To use EAS artifact URLs instead, you would need to:
+1. Update the URL after each build
+2. Or create an API endpoint that fetches the latest build URL from EAS
+
+For dynamic "always latest" downloads, the S3 approach is recommended.
+
 ## Release Script Options
 
 The `npm run release` command supports the following options:

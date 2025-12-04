@@ -15,5 +15,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+echo "Linting reactnative..."
+cd reactnative && npm run lint && cd ..
+if [ $? -ne 0 ]; then
+  echo "React Native linting failed. Please fix the issues before pushing."
+  exit 1
+fi
+
 echo "All pre-push checks passed!"
 

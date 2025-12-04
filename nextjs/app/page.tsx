@@ -39,16 +39,21 @@ declare global {
   }
 }
 
-// Stable download URLs that always point to the latest build
+// Download URLs - EAS artifact URLs (update after each build)
 const getDownloadUrls = () => {
+  // EAS artifact URLs (static per build - update after each new build)
+  const easAndroidUrl = process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL || 
+    'https://expo.dev/artifacts/eas/iPJ3SoPGuM9D6fFpgz9Qof.apk';
+  
+  // Fallback to S3 if configured
   const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || 'development';
   const awsRegion = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
   const bucketName = `siargaotradingroad-mobile-builds-${environment}`;
-  const baseUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com`;
+  const s3BaseUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com`;
   
   return {
-    android: `${baseUrl}/android/latest.apk`,
-    ios: `${baseUrl}/ios/latest.ipa`,
+    android: easAndroidUrl,
+    ios: process.env.NEXT_PUBLIC_IOS_DOWNLOAD_URL || `${s3BaseUrl}/ios/latest.ipa`,
   };
 };
 
