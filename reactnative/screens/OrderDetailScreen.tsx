@@ -60,6 +60,7 @@ export default function OrderDetailScreen() {
   const [ratingComment, setRatingComment] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const messagesScrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (orderId && !order) {
@@ -170,7 +171,7 @@ export default function OrderDetailScreen() {
       setChatMessage('');
       await loadMessages();
       setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
+        messagesScrollRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to send message';
@@ -186,10 +187,26 @@ export default function OrderDetailScreen() {
       return;
     }
 
-    const phoneNumber = entity.phone.replace(/[^0-9+]/g, '');
-    Linking.openURL(`tel:${phoneNumber}`).catch(() => {
-      setSnackbar({ visible: true, message: 'Failed to open phone dialer', type: 'error' });
-    });
+    let phoneNumber = entity.phone.replace(/[^0-9+]/g, '');
+    
+    if (!phoneNumber.startsWith('+') && !phoneNumber.startsWith('0')) {
+      phoneNumber = `+63${phoneNumber}`;
+    } else if (phoneNumber.startsWith('0')) {
+      phoneNumber = `+63${phoneNumber.substring(1)}`;
+    }
+
+    const telUrl = `tel:${phoneNumber}`;
+    Linking.canOpenURL(telUrl)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(telUrl);
+        } else {
+          setSnackbar({ visible: true, message: 'Phone dialer not available', type: 'error' });
+        }
+      })
+      .catch(() => {
+        setSnackbar({ visible: true, message: 'Failed to open phone dialer', type: 'error' });
+      });
   };
 
   const handleDownloadInvoice = async () => {
@@ -544,7 +561,13 @@ export default function OrderDetailScreen() {
                 />
               </View>
 
-              <View style={styles.messagesContainer}>
+              <ScrollView
+                ref={messagesScrollRef}
+                style={styles.messagesContainer}
+                contentContainerStyle={styles.messagesContent}
+                showsVerticalScrollIndicator={false}
+                onContentSizeChange={() => messagesScrollRef.current?.scrollToEnd({ animated: true })}
+              >
                 {loadingMessages && messages.length === 0 ? (
                   <ActivityIndicator size="small" style={styles.messagesLoading} />
                 ) : messages.length === 0 ? (
@@ -562,9 +585,11 @@ export default function OrderDetailScreen() {
                           isCurrentUser ? styles.messageBubbleRight : styles.messageBubbleLeft,
                         ]}
                       >
-                        <Text variant="labelSmall" style={styles.messageSender}>
-                          {message.sender.name}
-                        </Text>
+                        {!isCurrentUser && (
+                          <Text variant="labelSmall" style={styles.messageSender}>
+                            {message.sender.name}
+                          </Text>
+                        )}
                         <Text
                           variant="bodySmall"
                           style={[
@@ -574,14 +599,20 @@ export default function OrderDetailScreen() {
                         >
                           {message.content}
                         </Text>
-                        <Text variant="labelSmall" style={styles.messageTime}>
+                        <Text
+                          variant="labelSmall"
+                          style={[
+                            styles.messageTime,
+                            isCurrentUser ? styles.messageTimeRight : styles.messageTimeLeft,
+                          ]}
+                        >
                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </Text>
                       </View>
                     );
                   })
                 )}
-              </View>
+              </ScrollView>
 
               <View style={styles.chatInputContainer}>
                 <TextInput
@@ -628,14 +659,26 @@ export default function OrderDetailScreen() {
 
         <Card style={styles.actionsCard}>
           <Card.Content>
-            <Button
-              mode="outlined"
-              icon="download"
-              onPress={handleDownloadInvoice}
-              style={styles.actionButton}
-            >
-              Download Invoice
-            </Button>
+            <View style={styles.actionButtonsRow}>
+              <Button
+                mode="contained"
+                icon="phone"
+                onPress={handleCall}
+                style={[styles.actionButton, styles.callButton]}
+              >
+                Call {entityName}
+              </Button>
+              {order.status === 'delivered' && (
+                <Button
+                  mode="outlined"
+                  icon="download"
+                  onPress={handleDownloadInvoice}
+                  style={styles.actionButton}
+                >
+                  Download Invoice
+                </Button>
+              )}
+            </View>
 
             {user?.role === 'supplier' && order.status === 'preparing' && (
               <View style={styles.statusButtons}>
@@ -928,10 +971,12 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     borderRadius: 8,
     backgroundColor: '#fafafa',
-    minHeight: 200,
-    maxHeight: 200,
-    padding: 12,
+    maxHeight: 300,
     marginBottom: 12,
+  },
+  messagesContent: {
+    padding: 12,
+    flexGrow: 1,
   },
   messagesLoading: {
     marginTop: 20,
@@ -943,27 +988,36 @@ const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: '75%',
-    marginBottom: 8,
-    padding: 12,
-    borderRadius: 8,
+    marginBottom: 12,
+    padding: 10,
+    borderRadius: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   messageBubbleLeft: {
     alignSelf: 'flex-start',
-    backgroundColor: '#e3f2fd',
-    borderTopLeftRadius: 0,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   messageBubbleRight: {
     alignSelf: 'flex-end',
-    backgroundColor: '#4caf50',
-    borderTopRightRadius: 0,
+    backgroundColor: '#1a3a5f',
+    borderTopRightRadius: 4,
   },
   messageSender: {
     fontWeight: '600',
     marginBottom: 4,
-    opacity: 0.7,
+    opacity: 0.8,
+    fontSize: 11,
   },
   messageContent: {
     marginBottom: 4,
+    lineHeight: 18,
   },
   messageContentLeft: {
     color: '#000',
@@ -974,6 +1028,14 @@ const styles = StyleSheet.create({
   messageTime: {
     opacity: 0.6,
     fontSize: 10,
+    marginTop: 2,
+  },
+  messageTimeLeft: {
+    color: '#666',
+  },
+  messageTimeRight: {
+    color: '#fff',
+    opacity: 0.8,
   },
   chatInputContainer: {
     flexDirection: 'row',
@@ -1007,8 +1069,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
   },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
   actionButton: {
-    marginBottom: 8,
+    flex: 1,
+    minWidth: 140,
+  },
+  callButton: {
+    backgroundColor: '#4caf50',
   },
   statusButtons: {
     flexDirection: 'row',

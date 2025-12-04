@@ -112,6 +112,11 @@ export const orderService = {
     await api.delete(`/orders/items/${itemId}`);
   },
 
+  submitOrder: async (orderId: number): Promise<Order> => {
+    const { data } = await api.post<Order>(`/orders/${orderId}/submit`);
+    return data;
+  },
+
   getMessages: async (orderId: number): Promise<Message[]> => {
     const { data } = await api.get<Message[]>(`/orders/${orderId}/messages`);
     return data;

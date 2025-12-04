@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,6 +13,7 @@ import {
   Text,
   Surface,
   ActivityIndicator,
+  Menu,
 } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSharedValue, useAnimatedStyle, withRepeat, withTiming, interpolate } from 'react-native-reanimated';
@@ -33,17 +34,32 @@ const THEME_COLORS = {
   },
 };
 
-export default function LoginScreen() {
+const validatePhilippineMobile = (mobile: string): boolean => {
+  const cleaned = mobile.replace(/\D/g, '');
+  if (cleaned.startsWith('63')) {
+    return cleaned.length === 12 && cleaned.substring(2, 3) === '9';
+  }
+  if (cleaned.startsWith('0')) {
+    return cleaned.length === 11 && cleaned.substring(1, 2) === '9';
+  }
+  return cleaned.length === 10 && cleaned.startsWith('9');
+};
+
+export default function RegisterScreen() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'supplier' | 'store'>('supplier');
+  const [roleMenuVisible, setRoleMenuVisible] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { register } = useAuth();
   const navigation = useNavigation();
 
   const animatedValue = useSharedValue(0);
 
-  useEffect(() => {
+  React.useEffect(() => {
     animatedValue.value = withRepeat(
       withTiming(1, { duration: 4000 }),
       -1,
@@ -72,8 +88,18 @@ export default function LoginScreen() {
   });
 
   const handleSubmit = async () => {
-    if (!email || !password) {
+    if (!name || !email || !mobile || !password) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (!validatePhilippineMobile(mobile)) {
+      setError('Please enter a valid Philippine mobile number (e.g., 9606075119)');
       return;
     }
 
@@ -81,9 +107,9 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      await register(email, password, name, mobile, role);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.response?.data?.error || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -131,7 +157,7 @@ export default function LoginScreen() {
         </View>
         <Surface style={styles.surface} elevation={3}>
           <Text variant="bodyMedium" style={styles.subtitle}>
-            Sign in to continue
+            Create a new account
           </Text>
 
           {error ? (
@@ -141,7 +167,17 @@ export default function LoginScreen() {
           ) : null}
 
           <TextInput
-            label="Email"
+            label="Name *"
+            value={name}
+            onChangeText={setName}
+            mode="outlined"
+            autoCapitalize="words"
+            style={styles.input}
+            disabled={loading}
+          />
+
+          <TextInput
+            label="Email *"
             value={email}
             onChangeText={setEmail}
             mode="outlined"
@@ -153,7 +189,18 @@ export default function LoginScreen() {
           />
 
           <TextInput
-            label="Password"
+            label="Mobile *"
+            value={mobile}
+            onChangeText={setMobile}
+            mode="outlined"
+            keyboardType="phone-pad"
+            style={styles.input}
+            disabled={loading}
+            helperText="Philippine mobile number (e.g., 9606075119)"
+          />
+
+          <TextInput
+            label="Password *"
             value={password}
             onChangeText={setPassword}
             mode="outlined"
@@ -162,7 +209,44 @@ export default function LoginScreen() {
             autoComplete="password"
             style={styles.input}
             disabled={loading}
+            helperText="Must be at least 6 characters"
           />
+
+          <Menu
+            visible={roleMenuVisible}
+            onDismiss={() => setRoleMenuVisible(false)}
+            anchor={
+              <TextInput
+                label="I am a *"
+                value={role === 'supplier' ? "I'm a Supplier" : "I'm a Store Owner"}
+                mode="outlined"
+                style={styles.input}
+                disabled={loading}
+                right={
+                  <TextInput.Icon
+                    icon="chevron-down"
+                    onPress={() => setRoleMenuVisible(true)}
+                  />
+                }
+                editable={false}
+              />
+            }
+          >
+            <Menu.Item
+              onPress={() => {
+                setRole('supplier');
+                setRoleMenuVisible(false);
+              }}
+              title="I'm a Supplier"
+            />
+            <Menu.Item
+              onPress={() => {
+                setRole('store');
+                setRoleMenuVisible(false);
+              }}
+              title="I'm a Store Owner"
+            />
+          </Menu>
 
           <Button
             mode="contained"
@@ -172,20 +256,20 @@ export default function LoginScreen() {
             loading={loading}
             buttonColor={THEME_COLORS.primary.main}
           >
-            Sign In
+            Register
           </Button>
 
           <View style={styles.switchContainer}>
             <Text variant="bodyMedium" style={styles.switchText}>
-              Don't have an account?{' '}
+              Already have an account?{' '}
             </Text>
             <Button
               mode="text"
-              onPress={() => (navigation as any).navigate('Register')}
+              onPress={() => (navigation as any).navigate('Login')}
               compact
               textColor={THEME_COLORS.primary.main}
             >
-              Register
+              Sign in
             </Button>
           </View>
         </Surface>
@@ -203,7 +287,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'flex-start',
     padding: 20,
-    paddingTop: 20,
+    paddingTop: 0,
   },
   surface: {
     padding: 24,
@@ -212,16 +296,11 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginTop: 80,
-    marginBottom: 32,
+    marginBottom: 17,
   },
   logo: {
     width: 320,
     height: 128,
-  },
-  title: {
-    textAlign: 'center',
-    marginBottom: 8,
-    fontWeight: 'bold',
   },
   subtitle: {
     textAlign: 'center',

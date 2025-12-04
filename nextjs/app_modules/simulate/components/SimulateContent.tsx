@@ -28,23 +28,26 @@ import { User, LoginResponse } from '@/lib/auth';
 import { Order } from '@/lib/users';
 import { mobileAuthService, mobileOrderService } from '../services/mobileApi';
 import { MobileLogin } from './MobileLogin';
+import { MobileRegister } from './MobileRegister';
 import { MobileDrawer } from './MobileDrawer';
-import { useSuppliers, useStores, useSupplierProducts } from '../hooks/useMobileData';
+import { useSuppliers, useStores, useSupplierProducts, useMyProducts } from '../hooks/useMobileData';
 import { useMobileOrders, useDraftOrder } from '../hooks/useMobileOrders';
 import { useMessages } from '../hooks/useMessages';
-import { SuppliersView, StoresView, SupplierProductsView, TruckView, OrdersView, OrderDetailView, ProfileView, RatingsListView } from './views';
+import { SuppliersView, StoresView, SupplierProductsView, MyProductsView, TruckView, OrdersView, OrderDetailView, ProfileView, RatingsListView } from './views';
 
 export function SimulateContent() {
   const [mobileUser, setMobileUser] = useState<User | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [error, setError] = useState('');
-  const [activeView, setActiveView] = useState<'suppliers' | 'stores' | 'orders' | 'supplier-products' | 'truck' | 'order-detail' | 'profile' | 'ratings-list'>('profile');
+  const [showRegister, setShowRegister] = useState(false);
+  const [activeView, setActiveView] = useState<'suppliers' | 'stores' | 'orders' | 'supplier-products' | 'truck' | 'order-detail' | 'profile' | 'ratings-list' | 'my-products'>('profile');
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
   const { suppliers, loading: loadingSuppliers, loadSuppliers } = useSuppliers();
   const { stores, loading: loadingStores, loadStores } = useStores();
   const { products: supplierProducts, loading: loadingProducts, loadProducts } = useSupplierProducts(selectedSupplier?.id || null);
+  const { products: myProducts, loading: loadingMyProducts, loadProducts: loadMyProducts } = useMyProducts();
   const { orders, loading: loadingOrders, loadOrders } = useMobileOrders();
   const { draftOrder, loading: loadingDraftOrder, loadDraftOrder } = useDraftOrder(selectedSupplier?.id || null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -55,6 +58,11 @@ export function SimulateContent() {
 
   const handleLoginSuccess = (response: LoginResponse) => {
       setMobileUser(response.user);
+  };
+
+  const handleRegisterSuccess = (response: LoginResponse) => {
+      setMobileUser(response.user);
+      setShowRegister(false);
   };
 
   const handleMobileLogout = () => {
@@ -86,6 +94,8 @@ export function SimulateContent() {
       loadSuppliers();
     } else if (mobileUser && activeView === 'stores' && mobileUser.role === 'supplier') {
       loadStores();
+    } else if (mobileUser && activeView === 'my-products' && mobileUser.role === 'supplier') {
+      loadMyProducts();
     }
   }, [mobileUser, activeView]);
 
@@ -205,7 +215,17 @@ export function SimulateContent() {
 
 
   const mobileContent = !mobileUser ? (
-    <MobileLogin onLoginSuccess={handleLoginSuccess} />
+    showRegister ? (
+      <MobileRegister 
+        onRegisterSuccess={handleRegisterSuccess} 
+        onSwitchToLogin={() => setShowRegister(false)}
+      />
+    ) : (
+      <MobileLogin 
+        onLoginSuccess={handleLoginSuccess}
+        onSwitchToRegister={() => setShowRegister(true)}
+      />
+    )
   ) : (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#f5f5f5', overflow: 'hidden', position: 'relative', width: '100%' }}>
       <AppBar
@@ -244,6 +264,7 @@ export function SimulateContent() {
             {activeView === 'suppliers' ? 'Suppliers' : 
              activeView === 'stores' ? 'Stores' : 
              activeView === 'supplier-products' ? selectedSupplier?.name || 'Products' :
+             activeView === 'my-products' ? 'My Products' :
              activeView === 'truck' ? 'Truck' :
              activeView === 'order-detail' ? `Order #${selectedOrder?.id || ''}` :
              activeView === 'profile' ? 'Profile' :
@@ -338,6 +359,19 @@ export function SimulateContent() {
 
         {activeView === 'stores' && (
           <StoresView stores={stores} loading={loadingStores} />
+        )}
+
+        {activeView === 'my-products' && (
+          <MyProductsView
+            products={myProducts}
+            loading={loadingMyProducts}
+            onRefresh={loadMyProducts}
+            onError={setError}
+            onToast={(message, type) => {
+              setToast({ message, type });
+              setTimeout(() => setToast(null), 3000);
+            }}
+          />
         )}
 
         {activeView === 'supplier-products' && (
@@ -548,13 +582,23 @@ export function SimulateContent() {
               </Typography>
               {(() => {
                 let endpoint = '';
-                const method = 'GET';
-                if (activeView === 'profile') {
+                let method = 'GET';
+                if (!mobileUser) {
+                  if (showRegister) {
+                    endpoint = '/register';
+                    method = 'POST';
+                  } else {
+                    endpoint = '/login';
+                    method = 'POST';
+                  }
+                } else if (activeView === 'profile') {
                   endpoint = '/me';
                 } else if (activeView === 'ratings-list') {
                   endpoint = '/me/ratings';
                 } else if (activeView === 'stores') {
                   endpoint = '/stores';
+                } else if (activeView === 'my-products') {
+                  endpoint = '/products';
                 } else if (activeView === 'orders') {
                   endpoint = '/orders';
                 }

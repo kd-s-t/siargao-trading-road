@@ -17,11 +17,12 @@ import {
   Store as StoreIcon,
   ShoppingCart as ShoppingCartIcon,
   AccountCircle as AccountIcon,
+  Inventory as InventoryIcon,
 } from '@mui/icons-material';
 import { User } from '@/lib/auth';
 import { Order } from '@/lib/users';
 
-type ViewType = 'suppliers' | 'stores' | 'orders' | 'supplier-products' | 'truck' | 'order-detail' | 'profile' | 'ratings-list';
+type ViewType = 'suppliers' | 'stores' | 'orders' | 'supplier-products' | 'truck' | 'order-detail' | 'profile' | 'ratings-list' | 'my-products';
 
 interface MobileDrawerProps {
   mobileUser: User;
@@ -42,6 +43,7 @@ export function MobileDrawer({
 
   const menuItems = [
     { label: 'Profile', icon: <AccountIcon />, view: 'profile' as const },
+    ...(mobileUser?.role === 'supplier' ? [{ label: 'Products', icon: <InventoryIcon />, view: 'my-products' as const }] : []),
     ...(mobileUser?.role === 'supplier' ? [] : [{ label: 'Suppliers', icon: <StoreIcon />, view: 'suppliers' as const }]),
     ...(mobileUser?.role === 'store' ? [] : [{ label: 'Stores', icon: <StoreIcon />, view: 'stores' as const }]),
     { 
