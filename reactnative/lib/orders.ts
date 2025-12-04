@@ -1,6 +1,19 @@
 import api from './api';
 import { Product } from './products';
 
+export interface Message {
+  id: number;
+  order_id: number;
+  sender_id: number;
+  sender: {
+    id: number;
+    name: string;
+    role: string;
+  };
+  content: string;
+  created_at: string;
+}
+
 export interface OrderItem {
   id: number;
   order_id: number;
@@ -20,6 +33,9 @@ export interface Order {
     id: number;
     name: string;
     email: string;
+    phone?: string;
+    latitude?: number;
+    longitude?: number;
     logo_url?: string;
     banner_url?: string;
   };
@@ -28,6 +44,9 @@ export interface Order {
     id: number;
     name: string;
     email: string;
+    phone?: string;
+    latitude?: number;
+    longitude?: number;
     logo_url?: string;
     banner_url?: string;
   };
@@ -89,6 +108,16 @@ export const orderService = {
 
   removeOrderItem: async (itemId: number): Promise<void> => {
     await api.delete(`/orders/items/${itemId}`);
+  },
+
+  getMessages: async (orderId: number): Promise<Message[]> => {
+    const { data } = await api.get<Message[]>(`/orders/${orderId}/messages`);
+    return data;
+  },
+
+  createMessage: async (orderId: number, content: string): Promise<Message> => {
+    const { data } = await api.post<Message>(`/orders/${orderId}/messages`, { content });
+    return data;
   },
 };
 

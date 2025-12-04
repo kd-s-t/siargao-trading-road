@@ -17,8 +17,10 @@ import {
   Chip,
   Button,
   Avatar,
+  Rating,
+  Divider,
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, Download as DownloadIcon, Email as EmailIcon } from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, Download as DownloadIcon, Email as EmailIcon, Star as StarIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminLayout from '@/components/AdminLayout';
@@ -109,6 +111,7 @@ export function OrderDetailContent() {
       alert('Failed to send invoice. Please try again.');
     });
   };
+
 
   return (
     <AdminLayout>
@@ -354,7 +357,7 @@ export function OrderDetailContent() {
                   )}
 
                   {order.notes && (
-                    <Paper sx={{ p: 3 }}>
+                    <Paper sx={{ p: 3, mb: 3 }}>
                       <Typography variant="h6" gutterBottom>
                         Notes
                       </Typography>
@@ -363,6 +366,47 @@ export function OrderDetailContent() {
                       </Typography>
                     </Paper>
                   )}
+
+                  <Paper sx={{ p: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Ratings
+                    </Typography>
+                    {order.ratings && order.ratings.length > 0 ? (
+                      order.ratings.map((rating, index) => (
+                        <Box key={rating.id} sx={{ mb: index < order.ratings!.length - 1 ? 3 : 0 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              {rating.rater?.name || 'Unknown'} rated {rating.rated?.name || 'Unknown'}
+                            </Typography>
+                            <Rating
+                              value={rating.rating}
+                              readOnly
+                              size="small"
+                              emptyIcon={<StarIcon style={{ opacity: 0.55 }} fontSize="inherit" />}
+                            />
+                            <Typography variant="body2" fontWeight="bold">
+                              {rating.rating}/5
+                            </Typography>
+                          </Box>
+                          {rating.comment && (
+                            <Box sx={{ mt: 1, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                &quot;{rating.comment}&quot;
+                              </Typography>
+                            </Box>
+                          )}
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                            {new Date(rating.created_at).toLocaleString()}
+                          </Typography>
+                          {index < order.ratings!.length - 1 && <Divider sx={{ mt: 2 }} />}
+                        </Box>
+                      ))
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No ratings yet for this order.
+                      </Typography>
+                    )}
+                  </Paper>
                 </motion.div>
               </Box>
             </Box>

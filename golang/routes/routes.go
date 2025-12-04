@@ -14,6 +14,8 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 		c.Next()
 	})
 
+	r.Use(middleware.AuditLogMiddleware())
+
 	api := r.Group("/api")
 	{
 		api.POST("/register", handlers.Register)
@@ -59,7 +61,13 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 			protected.POST("/users/register", handlers.AdminRegisterUser)
 
 			protected.GET("/dashboard/analytics", handlers.GetDashboardAnalytics)
+
+			protected.GET("/audit-logs", handlers.GetAuditLogs)
+
+			protected.GET("/ratings/summary", handlers.GetRatingsSummary)
+			protected.GET("/ratings/orders", handlers.GetOrdersWithRatings)
+
+			protected.POST("/orders/:id/rating", handlers.CreateRating)
 		}
 	}
 }
-

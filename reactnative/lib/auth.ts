@@ -6,6 +6,9 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
   logo_url?: string;
   banner_url?: string;
   facebook?: string;

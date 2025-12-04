@@ -142,6 +142,14 @@ export const mobileOrderService = {
     const { data } = await mobileApi.post<Message>(`/orders/${orderId}/messages`, { content });
     return data;
   },
+  getMyAnalytics: async (): Promise<{ average_rating?: number; rating_count: number }> => {
+    const { data } = await mobileApi.get<{ average_rating?: number; rating_count: number }>('/me/analytics');
+    return data;
+  },
+  createRating: async (orderId: number, rating: number, comment?: string): Promise<{ id: number; order_id: number; rater_id: number; rated_id: number; rating: number; comment?: string; created_at: string }> => {
+    const { data } = await mobileApi.post(`/orders/${orderId}/rating`, { rating, comment });
+    return data;
+  },
 };
 
 export default mobileApi;

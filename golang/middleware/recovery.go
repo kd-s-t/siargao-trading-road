@@ -18,4 +18,3 @@ func RecoveryMiddleware() gin.HandlerFunc {
 		c.Abort()
 	})
 }
-

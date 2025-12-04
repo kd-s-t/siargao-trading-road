@@ -1,40 +1,63 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Image } from 'react-native';
 import {
   Text,
   Divider,
   TouchableRipple,
+  Badge,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
+import { orderService, Order } from '../lib/orders';
 
 export default function DrawerContent(props: DrawerContentComponentProps) {
   const { user, logout } = useAuth();
-  const navigation = useNavigation();
+  const { navigation } = props;
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    if (user && (user.role === 'supplier' || user.role === 'store')) {
+      loadOrders();
+    }
+  }, [user?.id]);
+
+  const loadOrders = async () => {
+    try {
+      const data = await orderService.getOrders();
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Failed to load orders for badge:', error);
+    }
+  };
+
+  const nonDeliveredCount = orders.filter(order => order.status !== 'delivered').length;
 
   const menuItems = user?.role === 'store' ? [
+    { label: 'Profile', icon: 'account', screen: 'Profile' },
     { label: 'Suppliers', icon: 'store', screen: 'Suppliers' },
-    { label: 'Orders', icon: 'cart', screen: 'Orders' },
-    { label: 'Profile', icon: 'account', screen: 'Profile' },
+    { label: 'Orders', icon: 'cart', screen: 'Orders', badge: nonDeliveredCount },
   ] : user?.role === 'supplier' ? [
-    { label: 'Products', icon: 'package-variant', screen: 'SupplierMain' },
-    { label: 'Orders', icon: 'cart', screen: 'SupplierMain' },
     { label: 'Profile', icon: 'account', screen: 'Profile' },
+    { label: 'Products', icon: 'package-variant', screen: 'SupplierMain', params: { screen: 'ProductsTab' } },
+    { label: 'Orders', icon: 'cart', screen: 'SupplierMain', params: { screen: 'OrdersTab' }, badge: nonDeliveredCount },
   ] : [
-    { label: 'Dashboard', icon: 'view-dashboard', screen: 'Dashboard' },
     { label: 'Profile', icon: 'account', screen: 'Profile' },
+    { label: 'Dashboard', icon: 'view-dashboard', screen: 'Dashboard' },
   ];
 
-  const handleNavigation = (screen: string) => {
-    (navigation as any).navigate(screen);
-    (navigation as any).closeDrawer();
+  const handleNavigation = (screen: string, params?: any) => {
+    if (params) {
+      (navigation as any).navigate(screen, params);
+    } else {
+      (navigation as any).navigate(screen);
+    }
+    navigation.closeDrawer();
   };
 
   const handleLogout = async () => {
     await logout();
-    (navigation as any).closeDrawer();
+    navigation.closeDrawer();
   };
 
   return (
@@ -77,16 +100,23 @@ export default function DrawerContent(props: DrawerContentComponentProps) {
         {menuItems.map((item, index) => (
           <TouchableRipple
             key={index}
-            onPress={() => handleNavigation(item.screen)}
+            onPress={() => handleNavigation(item.screen, (item as any).params)}
             style={styles.menuItem}
           >
             <View style={styles.menuItemContent}>
-              <MaterialCommunityIcons
-                name={item.icon as any}
-                size={24}
-                color="#1976d2"
-                style={styles.menuIcon}
-              />
+              <View style={styles.iconContainer}>
+                <MaterialCommunityIcons
+                  name={item.icon as any}
+                  size={24}
+                  color="#1976d2"
+                  style={styles.menuIcon}
+                />
+                {(item as any).badge !== undefined && (item as any).badge > 0 && (
+                  <Badge style={styles.badge} size={18}>
+                    {(item as any).badge}
+                  </Badge>
+                )}
+              </View>
               <Text variant="bodyLarge" style={styles.menuLabel}>
                 {item.label}
               </Text>
@@ -198,8 +228,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  menuIcon: {
+  iconContainer: {
+    position: 'relative',
     marginRight: 16,
+  },
+  menuIcon: {
+  },
+  badge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#f44336',
   },
   menuLabel: {
     flex: 1,

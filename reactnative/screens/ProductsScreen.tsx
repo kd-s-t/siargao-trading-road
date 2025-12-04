@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Alert, Image } from 'react-native';
 import {
   Text,
   Surface,
@@ -160,6 +160,21 @@ export default function ProductsScreen() {
               >
                 <Card.Content>
                   <View style={styles.productHeader}>
+                    <View style={styles.productImageContainer}>
+                      {product.image_url && product.image_url.trim() !== '' ? (
+                        <Image
+                          source={{ uri: product.image_url }}
+                          style={styles.productImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.productImagePlaceholder}>
+                          <Text variant="labelSmall" style={styles.placeholderText}>
+                            No Image
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                     <View style={styles.productTitleContainer}>
                       <View style={styles.titleWithBadge}>
                         <Text
@@ -349,12 +364,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa',
   },
   productHeader: {
+    flexDirection: 'row',
+    gap: 12,
     marginBottom: 12,
   },
+  productImageContainer: {
+    flexShrink: 0,
+  },
+  productImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  productImagePlaceholder: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: '#999',
+    fontSize: 10,
+  },
   productTitleContainer: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   titleWithBadge: {
     flex: 1,

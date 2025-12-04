@@ -8,6 +8,8 @@ export interface Store {
   description: string;
   logo_url?: string;
   banner_url?: string;
+  average_rating?: number;
+  rating_count: number;
 }
 
 export const storesService = {

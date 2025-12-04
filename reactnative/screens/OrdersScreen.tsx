@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Image, TouchableOpacity, Linking, Alert } from 'react-native';
 import {
   Text,
   Surface,
@@ -9,10 +9,13 @@ import {
   Chip,
   Avatar,
   IconButton,
+  Button,
+  Snackbar,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { orderService, Order } from '../lib/orders';
 import { useNavigation } from '@react-navigation/native';
+import api from '../lib/api';
 
 const statusColors: Record<string, string> = {
   preparing: '#ff9800',
@@ -34,13 +37,31 @@ export default function OrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
+  const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
+    visible: false,
+    message: '',
+    type: 'success',
+  });
 
   const loadOrders = async () => {
     try {
+      setError(null);
+      console.log('Loading orders...');
       const data = await orderService.getOrders();
-      setOrders(data);
-    } catch (error) {
+      console.log('Orders loaded:', data?.length || 0, 'orders');
+      setOrders(data || []);
+    } catch (error: any) {
       console.error('Failed to load orders:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to load orders';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -67,6 +88,54 @@ export default function OrdersScreen() {
   const getStatusLabel = (status: string) => {
     return statusLabels[status] || status;
   };
+
+  const handleDownloadInvoice = async (order: Order) => {
+    try {
+      const apiUrl = api.defaults.baseURL || 'http://localhost:3020/api';
+      const invoiceUrl = `${apiUrl}/orders/${order.id}/invoice`;
+      const canOpen = await Linking.canOpenURL(invoiceUrl);
+      if (canOpen) {
+        await Linking.openURL(invoiceUrl);
+        setSnackbar({ visible: true, message: 'Opening invoice...', type: 'success' });
+      } else {
+        setSnackbar({ visible: true, message: 'Cannot open invoice URL', type: 'error' });
+      }
+    } catch (error) {
+      setSnackbar({ visible: true, message: 'Failed to download invoice', type: 'error' });
+    }
+  };
+
+  const handleUpdateStatus = async (orderId: number, status: string) => {
+    try {
+      setUpdatingStatus(orderId);
+      await orderService.updateOrderStatus(orderId, status);
+      await loadOrders();
+      setSnackbar({ visible: true, message: `Order status updated to ${getStatusLabel(status)}`, type: 'success' });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to update status';
+      setSnackbar({ visible: true, message: errorMessage, type: 'error' });
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  const handleMarkDelivered = (orderId: number) => {
+    Alert.alert(
+      'Mark as Delivered',
+      'Are you sure you want to mark this order as delivered?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: () => handleUpdateStatus(orderId, 'delivered'),
+        },
+      ]
+    );
+  };
+
+  const filteredOrders = statusFilter
+    ? orders.filter(order => order.status === statusFilter)
+    : orders;
 
   if (loading) {
     return (
@@ -99,16 +168,106 @@ export default function OrdersScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {orders.length === 0 ? (
+        <View style={styles.filterContainer}>
+          <Chip
+            selected={statusFilter === null}
+            onPress={() => setStatusFilter(null)}
+            style={[
+              styles.filterChip,
+              statusFilter === null && styles.filterChipSelected,
+            ]}
+            textStyle={statusFilter === null ? styles.filterChipTextSelected : undefined}
+          >
+            All
+          </Chip>
+          <Chip
+            selected={statusFilter === 'draft'}
+            onPress={() => setStatusFilter('draft')}
+            style={[
+              styles.filterChip,
+              statusFilter === 'draft' && styles.filterChipSelected,
+            ]}
+            textStyle={statusFilter === 'draft' ? styles.filterChipTextSelected : undefined}
+          >
+            Draft
+          </Chip>
+          <Chip
+            selected={statusFilter === 'preparing'}
+            onPress={() => setStatusFilter('preparing')}
+            style={[
+              styles.filterChip,
+              statusFilter === 'preparing' && styles.filterChipSelected,
+            ]}
+            textStyle={statusFilter === 'preparing' ? styles.filterChipTextSelected : undefined}
+          >
+            Preparing
+          </Chip>
+          <Chip
+            selected={statusFilter === 'in_transit'}
+            onPress={() => setStatusFilter('in_transit')}
+            style={[
+              styles.filterChip,
+              statusFilter === 'in_transit' && styles.filterChipSelected,
+            ]}
+            textStyle={statusFilter === 'in_transit' ? styles.filterChipTextSelected : undefined}
+          >
+            In Transit
+          </Chip>
+          <Chip
+            selected={statusFilter === 'delivered'}
+            onPress={() => setStatusFilter('delivered')}
+            style={[
+              styles.filterChip,
+              statusFilter === 'delivered' && styles.filterChipSelected,
+            ]}
+            textStyle={statusFilter === 'delivered' ? styles.filterChipTextSelected : undefined}
+          >
+            Delivered
+          </Chip>
+          <Chip
+            selected={statusFilter === 'cancelled'}
+            onPress={() => setStatusFilter('cancelled')}
+            style={[
+              styles.filterChip,
+              statusFilter === 'cancelled' && styles.filterChipSelected,
+            ]}
+            textStyle={statusFilter === 'cancelled' ? styles.filterChipTextSelected : undefined}
+          >
+            Cancelled
+          </Chip>
+        </View>
+
+        {error ? (
+          <Card style={styles.emptyCard}>
+            <Card.Content>
+              <Text variant="bodyLarge" style={styles.errorText}>
+                Error loading orders
+              </Text>
+              <Text variant="bodySmall" style={styles.errorSubtext}>
+                {error}
+              </Text>
+              <Button
+                mode="contained"
+                onPress={loadOrders}
+                style={styles.retryButton}
+              >
+                Retry
+              </Button>
+            </Card.Content>
+          </Card>
+        ) : filteredOrders.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Card.Content>
               <Text variant="bodyLarge" style={styles.emptyText}>
-                No orders yet
+                No orders{statusFilter ? ` with status "${getStatusLabel(statusFilter)}"` : ''}
+              </Text>
+              <Text variant="bodySmall" style={styles.emptySubtext}>
+                {statusFilter ? 'Try selecting a different filter' : 'Your orders will appear here once you place them'}
               </Text>
             </Card.Content>
           </Card>
         ) : (
-          orders.map((order) => {
+          filteredOrders.map((order) => {
             const isStore = user?.role === 'store';
             const entity = isStore ? order.supplier : order.store;
             const entityName = isStore ? 'Supplier' : 'Store';
@@ -116,7 +275,16 @@ export default function OrdersScreen() {
             if (!entity) return null;
 
             return (
-            <Card key={order.id} style={styles.orderCard}>
+            <TouchableOpacity
+              key={order.id}
+              onPress={() => {
+                if ((navigation as any).navigate) {
+                  (navigation as any).navigate('OrderDetail', { order });
+                }
+              }}
+              activeOpacity={0.7}
+            >
+            <Card style={styles.orderCard}>
               {entity.banner_url && entity.banner_url.trim() !== '' ? (
                 <Image
                   source={{ uri: entity.banner_url }}
@@ -221,6 +389,19 @@ export default function OrdersScreen() {
                   </Text>
                   {order.order_items.map((item) => (
                     <View key={item.id} style={styles.itemRow}>
+                      {item.product.image_url && item.product.image_url.trim() !== '' ? (
+                        <Image
+                          source={{ uri: item.product.image_url }}
+                          style={styles.itemImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.itemImagePlaceholder}>
+                          <Text variant="labelSmall" style={styles.itemPlaceholderText}>
+                            No Image
+                          </Text>
+                        </View>
+                      )}
                       <View style={styles.itemInfo}>
                         <Text variant="bodySmall" style={styles.itemName}>
                           {item.product.name}
@@ -233,12 +414,93 @@ export default function OrdersScreen() {
                     </View>
                   ))}
                 </View>
+
+                <Divider style={styles.divider} />
+
+                <View style={styles.actionsContainer}>
+                  <Button
+                    mode="outlined"
+                    icon="download"
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDownloadInvoice(order);
+                    }}
+                    style={styles.actionButton}
+                  >
+                    Download Invoice
+                  </Button>
+
+                  {user?.role === 'supplier' && order.status === 'preparing' && (
+                    <View style={styles.statusButtons}>
+                      <Button
+                        mode="outlined"
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleUpdateStatus(order.id, 'in_transit');
+                        }}
+                        style={styles.statusButton}
+                        disabled={updatingStatus === order.id}
+                      >
+                        Mark In Transit
+                      </Button>
+                      <Button
+                        mode="outlined"
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleMarkDelivered(order.id);
+                        }}
+                        style={styles.statusButton}
+                        disabled={updatingStatus === order.id}
+                      >
+                        Mark Delivered
+                      </Button>
+                    </View>
+                  )}
+
+                  {user?.role === 'supplier' && order.status === 'in_transit' && (
+                    <Button
+                      mode="outlined"
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleMarkDelivered(order.id);
+                      }}
+                      style={styles.actionButton}
+                      disabled={updatingStatus === order.id}
+                    >
+                      Mark Delivered
+                    </Button>
+                  )}
+
+                  {user?.role === 'supplier' && order.status === 'delivered' && (
+                    <Button
+                      mode="outlined"
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleUpdateStatus(order.id, 'in_transit');
+                      }}
+                      style={styles.actionButton}
+                      disabled={updatingStatus === order.id}
+                    >
+                      Revert to In Transit
+                    </Button>
+                  )}
+                </View>
               </Card.Content>
             </Card>
+            </TouchableOpacity>
             );
           })
         )}
       </ScrollView>
+
+      <Snackbar
+        visible={snackbar.visible}
+        onDismiss={() => setSnackbar({ ...snackbar, visible: false })}
+        duration={3000}
+        style={snackbar.type === 'error' ? styles.snackbarError : styles.snackbarSuccess}
+      >
+        {snackbar.message}
+      </Snackbar>
     </View>
   );
 }
@@ -275,12 +537,47 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  filterContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  filterChip: {
+    marginRight: 4,
+    marginBottom: 4,
+  },
+  filterChipSelected: {
+    backgroundColor: '#1976d2',
+  },
+  filterChipTextSelected: {
+    color: '#fff',
+  },
   emptyCard: {
     marginTop: 32,
   },
   emptyText: {
     textAlign: 'center',
     marginBottom: 8,
+  },
+  emptySubtext: {
+    textAlign: 'center',
+    opacity: 0.7,
+    marginTop: 8,
+  },
+  errorText: {
+    textAlign: 'center',
+    marginBottom: 8,
+    color: '#d32f2f',
+  },
+  errorSubtext: {
+    textAlign: 'center',
+    opacity: 0.7,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  retryButton: {
+    marginTop: 8,
   },
   orderCard: {
     marginBottom: 16,
@@ -346,10 +643,37 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginTop: 8,
     paddingLeft: 8,
+    paddingVertical: 8,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  itemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    flexShrink: 0,
+  },
+  itemImagePlaceholder: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  itemPlaceholderText: {
+    color: '#999',
+    fontSize: 9,
   },
   itemInfo: {
+    flex: 1,
     gap: 4,
   },
   itemName: {
@@ -357,6 +681,27 @@ const styles = StyleSheet.create({
   },
   itemDetails: {
     opacity: 0.7,
+  },
+  actionsContainer: {
+    marginTop: 8,
+    gap: 8,
+  },
+  actionButton: {
+    marginTop: 4,
+  },
+  statusButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  statusButton: {
+    flex: 1,
+  },
+  snackbarSuccess: {
+    backgroundColor: '#4caf50',
+  },
+  snackbarError: {
+    backgroundColor: '#f44336',
   },
 });
 

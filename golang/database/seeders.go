@@ -23,7 +23,7 @@ func ResetDatabase() error {
 		return fmt.Errorf("database connection not initialized")
 	}
 
-	if err := DB.Exec("TRUNCATE TABLE order_items, orders, products, business_documents, users CASCADE").Error; err != nil {
+	if err := DB.Exec("TRUNCATE TABLE audit_logs, ratings, order_items, orders, products, business_documents, users CASCADE").Error; err != nil {
 		return fmt.Errorf("failed to truncate tables: %w", err)
 	}
 
@@ -48,6 +48,10 @@ func SeedAll() error {
 	}
 
 	if err := SeedOrders(); err != nil {
+		return err
+	}
+
+	if err := SeedRatings(); err != nil {
 		return err
 	}
 
@@ -481,6 +485,73 @@ func SeedOrders() error {
 
 		usedKeys[key] = true
 		orderCount++
+	}
+
+	return nil
+}
+
+func SeedRatings() error {
+	var deliveredOrders []models.Order
+	if err := DB.Where("status = ?", models.OrderStatusDelivered).Find(&deliveredOrders).Error; err != nil {
+		return err
+	}
+
+	if len(deliveredOrders) == 0 {
+		return nil
+	}
+
+	ratingData := []struct {
+		storeRating     int
+		supplierRating  int
+		storeComment    string
+		supplierComment string
+	}{
+		{5, 5, "Excellent service and fast delivery. Products arrived in perfect condition.", "Great customer to work with. Clear communication and prompt payment."},
+		{4, 4, "Good quality products. Delivery was on time. Would order again.", "Professional store owner. Easy to coordinate with."},
+		{5, 4, "Outstanding supplier! Best prices and quality in the area.", "Reliable customer. Always pays on time."},
+		{3, 5, "Products were okay but delivery was a bit delayed.", "Very understanding customer. Appreciate their patience."},
+		{4, 5, "Satisfactory experience. Good communication throughout the process.", "Excellent customer. Highly recommend doing business with them."},
+		{5, 5, "Perfect order! Everything was exactly as described.", "Great business partner. Very professional."},
+		{4, 4, "Good experience overall. Would recommend.", "Pleasant to work with. Timely payments."},
+		{5, 4, "Excellent quality and service. Will order again soon.", "Reliable and trustworthy customer."},
+		{4, 5, "Good products, fast delivery. Very satisfied.", "Professional and easy to communicate with."},
+		{5, 5, "Outstanding service! Best supplier we've worked with.", "Excellent customer. Highly recommended."},
+	}
+
+	for i, order := range deliveredOrders {
+		// Check if ratings already exist for this order
+		var existingRatings int64
+		DB.Model(&models.Rating{}).Where("order_id = ?", order.ID).Count(&existingRatings)
+		if existingRatings > 0 {
+			continue // Skip if ratings already exist
+		}
+
+		// Use rating data in a cycle
+		data := ratingData[i%len(ratingData)]
+
+		storeRating := models.Rating{
+			OrderID: order.ID,
+			RaterID: order.StoreID,
+			RatedID: order.SupplierID,
+			Rating:  data.storeRating,
+			Comment: data.storeComment,
+		}
+
+		if err := DB.Create(&storeRating).Error; err != nil {
+			continue
+		}
+
+		supplierRating := models.Rating{
+			OrderID: order.ID,
+			RaterID: order.SupplierID,
+			RatedID: order.StoreID,
+			Rating:  data.supplierRating,
+			Comment: data.supplierComment,
+		}
+
+		if err := DB.Create(&supplierRating).Error; err != nil {
+			continue
+		}
 	}
 
 	return nil

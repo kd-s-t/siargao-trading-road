@@ -230,17 +230,6 @@ export default function ProfileScreen() {
           </View>
 
         <View style={styles.profileCardWrapper}>
-          {!editing && (
-            <View style={styles.editButtonContainer}>
-              <IconButton
-                icon="pencil"
-                size={24}
-                iconColor="#1976d2"
-                onPress={() => setEditing(true)}
-                style={styles.editIconButton}
-              />
-            </View>
-          )}
         <Card style={styles.profileCard}>
           <Card.Content>
             <View style={styles.avatarContainer}>
@@ -295,8 +284,16 @@ export default function ProfileScreen() {
               <Text variant="bodyMedium" style={styles.role}>
                 {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </Text>
-              {(user.facebook || user.instagram || user.twitter || user.linkedin || user.youtube || user.tiktok || user.website) && (
+              {(user.email || user.facebook || user.instagram || user.twitter || user.linkedin || user.youtube || user.tiktok || user.website) && (
                 <View style={styles.socialLinks}>
+                  {user.email && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(`mailto:${user.email}`)}
+                      style={styles.socialButton}
+                    >
+                      <MaterialCommunityIcons name="email" size={24} color="#1976d2" />
+                    </TouchableOpacity>
+                  )}
                   {user.facebook && (
                     <TouchableOpacity
                       onPress={() => Linking.openURL(user.facebook!)}
@@ -365,18 +362,6 @@ export default function ProfileScreen() {
             <Text variant="titleMedium" style={styles.sectionTitle}>
               Account Details
             </Text>
-              {!editing && (
-                <Button
-                  mode="text"
-                  icon="pencil"
-                  onPress={() => setEditing(true)}
-                  textColor="#1976d2"
-                  compact
-                  style={styles.sectionEditButton}
-                >
-                  Edit
-                </Button>
-              )}
             </View>
             <Divider style={styles.divider} />
 
@@ -523,18 +508,16 @@ export default function ProfileScreen() {
         </View>
 
         {!editing && (
-          <Card style={styles.actionsCard}>
-            <Card.Content>
-              <Button
-                mode="contained"
-                onPress={handleLogout}
-                buttonColor="#d32f2f"
-                style={styles.logoutButton}
-              >
-                Logout
-              </Button>
-            </Card.Content>
-          </Card>
+          <View style={styles.logoutContainer}>
+            <Button
+              mode="contained"
+              onPress={handleLogout}
+              buttonColor="#d32f2f"
+              style={styles.logoutButton}
+            >
+              Logout
+            </Button>
+          </View>
         )}
       </ScrollView>
     </View>
@@ -700,7 +683,12 @@ const styles = StyleSheet.create({
   },
   detailsCard: {
     marginHorizontal: 16,
+    marginTop: 16,
     marginBottom: 16,
+  },
+  logoutContainer: {
+    marginHorizontal: 16,
+    marginBottom: 32,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -739,11 +727,7 @@ const styles = StyleSheet.create({
     flex: 2,
     textAlign: 'right',
   },
-  actionsCard: {
-    marginHorizontal: 16,
-    marginBottom: 32,
-  },
   logoutButton: {
-    marginTop: 8,
+    width: '100%',
   },
 });

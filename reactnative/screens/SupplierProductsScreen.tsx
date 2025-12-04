@@ -145,6 +145,19 @@ export default function SupplierProductsScreen() {
             <Card key={product.id} style={styles.productCard}>
               <Card.Content>
                 <View style={styles.productHeader}>
+                  {product.image_url && product.image_url.trim() !== '' ? (
+                    <Image
+                      source={{ uri: product.image_url }}
+                      style={styles.productImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.productImagePlaceholder}>
+                      <Text variant="labelSmall" style={styles.placeholderText}>
+                        No Image
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.productInfo}>
                     <Text variant="titleMedium" style={styles.productName}>
                       {product.name}
@@ -161,6 +174,14 @@ export default function SupplierProductsScreen() {
                 ) : null}
                 <Divider style={styles.divider} />
                 <View style={styles.productDetails}>
+                  {product.sku ? (
+                    <View style={styles.detailRow}>
+                      <Text variant="bodySmall" style={styles.label}>
+                        SKU:
+                      </Text>
+                      <Text variant="bodySmall">{product.sku}</Text>
+                    </View>
+                  ) : null}
                   <View style={styles.detailRow}>
                     <Text variant="bodySmall" style={styles.label}>
                       Stock:
@@ -265,9 +286,31 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   productHeader: {
+    flexDirection: 'row',
+    gap: 12,
     marginBottom: 8,
   },
+  productImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    flexShrink: 0,
+  },
+  productImagePlaceholder: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  placeholderText: {
+    color: '#999',
+    fontSize: 10,
+  },
   productInfo: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

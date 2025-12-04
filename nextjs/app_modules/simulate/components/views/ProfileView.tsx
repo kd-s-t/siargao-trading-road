@@ -26,10 +26,11 @@ import {
   Email,
   Save as SaveIcon,
   Cancel as CancelIcon,
+  Star as StarIcon,
 } from '@mui/icons-material';
-import { Button } from '@mui/material';
+import { Button, Rating } from '@mui/material';
 import { User } from '@/lib/auth';
-import { mobileAuthService } from '../../services/mobileApi';
+import { mobileAuthService, mobileOrderService } from '../../services/mobileApi';
 
 interface ProfileViewProps {
   mobileUser: User;
@@ -47,6 +48,8 @@ export function ProfileView({
   onToast,
 }: ProfileViewProps) {
   const [editingProfile, setEditingProfile] = useState(false);
+  const [analytics, setAnalytics] = useState<{ average_rating?: number; rating_count: number } | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
   const getUrlEnd = (url: string): string => {
     try {
@@ -94,6 +97,24 @@ export function ProfileView({
       });
       setEditingProfile(false);
     }
+  }, [mobileUser]);
+
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      if (!mobileUser) return;
+      try {
+        setLoadingAnalytics(true);
+        const data = await mobileOrderService.getMyAnalytics();
+        console.log('ProfileView analytics data:', data);
+        setAnalytics(data);
+      } catch (error) {
+        console.error('Failed to load analytics:', error);
+        setAnalytics({ average_rating: undefined, rating_count: 0 });
+      } finally {
+        setLoadingAnalytics(false);
+      }
+    };
+    loadAnalytics();
   }, [mobileUser]);
 
   const handleSaveProfile = async () => {
@@ -347,9 +368,36 @@ export function ProfileView({
                 sx={{ mb: 1 }}
               />
             ) : (
-              <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                {mobileUser.name}
-              </Typography>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                  {mobileUser.name}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center', mt: 1, minHeight: 24 }}>
+                  {loadingAnalytics ? (
+                    <CircularProgress size={16} />
+                  ) : analytics && analytics.rating_count > 0 ? (
+                    <>
+                      <Rating
+                        value={analytics.average_rating || 0}
+                        precision={0.1}
+                        readOnly
+                        size="small"
+                        emptyIcon={<StarIcon style={{ opacity: 0.55 }} fontSize="inherit" />}
+                      />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {(analytics.average_rating || 0).toFixed(1)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        ({analytics.rating_count} {analytics.rating_count === 1 ? 'rating' : 'ratings'})
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      No ratings yet
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
             )}
             {(mobileUser.email ||
               mobileUser.facebook ||

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -179,12 +179,28 @@ export default function OnboardingDialog() {
     router.push(path);
   };
 
+  if (!open) {
+    return null;
+  }
+
+  if (!open) {
+    return null;
+  }
+
   return (
     <Dialog
       open={open}
       onClose={handleSkip}
       maxWidth="md"
       fullWidth
+      disableEscapeKeyDown={false}
+      hideBackdrop={false}
+      BackdropProps={{
+        sx: {
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        },
+        onClick: handleSkip,
+      }}
       PaperProps={{
         sx: {
           borderRadius: 2,
