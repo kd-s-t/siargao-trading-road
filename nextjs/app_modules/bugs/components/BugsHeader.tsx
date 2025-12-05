@@ -1,5 +1,4 @@
 import { Typography, Box } from '@mui/material';
-import { BugReport } from '@/lib/bugs';
 
 interface BugsHeaderProps {
   total: number;

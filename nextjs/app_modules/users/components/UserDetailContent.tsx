@@ -55,7 +55,9 @@ export function UserDetailContent() {
 
   useEffect(() => {
     const redirect = !authLoading && (!authUser || authUser.role !== 'admin');
-    redirect && router.push('/login');
+    if (redirect) {
+      router.push('/login');
+    }
   }, [authUser, authLoading, router]);
 
   const loadData = useCallback(async () => {
@@ -75,7 +77,9 @@ export function UserDetailContent() {
   }, [userId]);
 
   useEffect(() => {
-    authUser?.role === 'admin' && userId && loadData();
+    if (authUser?.role === 'admin' && userId) {
+      loadData();
+    }
   }, [authUser, userId, loadData]);
 
   return (

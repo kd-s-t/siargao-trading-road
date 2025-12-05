@@ -24,11 +24,22 @@ export function ProductsContent() {
 
   useEffect(() => {
     const redirect = !authLoading && (!user || user.role !== 'admin');
-    redirect && (user?.role === 'store' ? router.push('/store/dashboard') : user?.role === 'supplier' ? router.push('/supplier/dashboard') : router.push('/login'));
+    if (redirect) {
+      if (user?.role === 'store') {
+        router.push('/store/dashboard');
+      } else if (user?.role === 'supplier') {
+        router.push('/supplier/dashboard');
+      } else {
+        router.push('/login');
+      }
+    }
   }, [user, authLoading, router]);
 
   const handleDelete = async (id: number) => {
-    confirm('Are you sure you want to delete this product?') && (await productsService.deleteProduct(id), loadData());
+    if (confirm('Are you sure you want to delete this product?')) {
+      await productsService.deleteProduct(id);
+      loadData();
+    }
   };
 
   const categories = Array.from(new Set(products.map(p => p.category).filter((c): c is string => Boolean(c))));

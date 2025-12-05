@@ -7,7 +7,6 @@ import {
   TableHead,
   TableRow,
   Chip,
-  Box,
   Typography,
 } from '@mui/material';
 import { motion } from 'framer-motion';

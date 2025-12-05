@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { bugsService, BugReport } from '@/lib/bugs';
 
@@ -19,13 +19,7 @@ export function useBugs() {
     platform: '',
   });
 
-  useEffect(() => {
-    if (user && user.role === 'admin' && (user.admin_level ?? 1) === 1) {
-      loadBugs();
-    }
-  }, [user, page, filters]);
-
-  const loadBugs = async (isTableRefresh = false) => {
+  const loadBugs = useCallback(async (isTableRefresh = false) => {
     try {
       if (isTableRefresh) {
         setTableLoading(true);
@@ -50,7 +44,13 @@ export function useBugs() {
         setLoading(false);
       }
     }
-  };
+  }, [page, limit, filters]);
+
+  useEffect(() => {
+    if (user && user.role === 'admin' && (user.admin_level ?? 1) === 1) {
+      loadBugs();
+    }
+  }, [user, loadBugs]);
 
   const updateFilters = (newFilters: typeof filters) => {
     setFilters(newFilters);

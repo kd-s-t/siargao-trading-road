@@ -15,7 +15,7 @@ import {
   Avatar,
 } from '@mui/material';
 import { CloudUpload as CloudUploadIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { Product, User, productsService } from '@/lib/users';
+import { User, productsService } from '@/lib/users';
 import { authService } from '@/lib/auth';
 
 interface AddProductDialogProps {

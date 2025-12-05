@@ -33,21 +33,25 @@ export function StoreProductsContent() {
 
   useEffect(() => {
     const redirect = !authLoading && (!user || user.role !== 'store');
-    redirect && router.push('/login');
+    if (redirect) {
+      router.push('/login');
+    }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    user?.role === 'store' && (async () => {
-      try {
-        setLoading(true);
-        const data = await productsService.getProducts();
-        setProducts(data);
-      } catch (error) {
-        console.error('Failed to load products:', error);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    if (user?.role === 'store') {
+      (async () => {
+        try {
+          setLoading(true);
+          const data = await productsService.getProducts();
+          setProducts(data);
+        } catch (error) {
+          console.error('Failed to load products:', error);
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
   }, [user]);
 
   const filteredProducts = products.filter(
