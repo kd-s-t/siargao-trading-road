@@ -45,9 +45,9 @@ const getDownloadUrls = () => {
   const s3BaseUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com`;
   
   const androidFileName = process.env.NEXT_PUBLIC_ANDROID_FILE_NAME || 
-    'application-eda840ee-c1e3-403e-93c5-70a194aa1735.apk';
+    'application-adb7007e-2591-4778-a14c-71b7244ab8a9.apk';
   const iosFileName = process.env.NEXT_PUBLIC_IOS_FILE_NAME || 
-    'application-051b0d81-aa49-45f2-aa65-d39eba5db877.tar.gz';
+    'application-0ba3caf8-40a9-4291-a0e9-407285f3c9f6.tar.gz';
   
   return {
     android: process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL || `${s3BaseUrl}/${androidFileName}`,
