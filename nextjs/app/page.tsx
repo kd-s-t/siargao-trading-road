@@ -39,21 +39,20 @@ declare global {
   }
 }
 
-// Download URLs - EAS artifact URLs (update after each build)
 const getDownloadUrls = () => {
-  // EAS artifact URLs (static per build - update after each new build)
-  const easAndroidUrl = process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL || 
-    'https://expo.dev/artifacts/eas/iPJ3SoPGuM9D6fFpgz9Qof.apk';
-  
-  // Fallback to S3 if configured
   const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || 'development';
   const awsRegion = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
   const bucketName = `siargaotradingroad-mobile-builds-${environment}`;
   const s3BaseUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com`;
   
+  const androidFileName = process.env.NEXT_PUBLIC_ANDROID_FILE_NAME || 
+    'application-eda840ee-c1e3-403e-93c5-70a194aa1735.apk';
+  const iosFileName = process.env.NEXT_PUBLIC_IOS_FILE_NAME || 
+    'application-051b0d81-aa49-45f2-aa65-d39eba5db877.tar.gz';
+  
   return {
-    android: easAndroidUrl,
-    ios: process.env.NEXT_PUBLIC_IOS_DOWNLOAD_URL || `${s3BaseUrl}/ios/latest.ipa`,
+    android: process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL || `${s3BaseUrl}/${androidFileName}`,
+    ios: process.env.NEXT_PUBLIC_IOS_DOWNLOAD_URL || `${s3BaseUrl}/${iosFileName}`,
   };
 };
 
