@@ -4,7 +4,7 @@
     "slug": "siargao-trading-road-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/applogo.png",
+    "icon": "./assets/app-icon-square.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -21,7 +21,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/applogo.png",
+        "foregroundImage": "./assets/app-icon-square.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.siargao.trading.road",
