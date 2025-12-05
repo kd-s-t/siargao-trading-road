@@ -88,6 +88,7 @@ module "ec2" {
   enable_ssl           = var.enable_ssl
   ssl_domains          = var.ssl_domains
   ssl_email            = var.ssl_email
+  create_eip           = false
 }
 
 module "ecr" {

@@ -8,6 +8,14 @@ resource "aws_s3_bucket" "mobile_builds" {
   }
 }
 
+resource "aws_s3_bucket_ownership_controls" "mobile_builds" {
+  bucket = aws_s3_bucket.mobile_builds.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
 resource "aws_s3_bucket_versioning" "mobile_builds" {
   bucket = aws_s3_bucket.mobile_builds.id
 
@@ -41,7 +49,10 @@ resource "aws_s3_bucket_policy" "mobile_builds" {
     ]
   })
 
-  depends_on = [aws_s3_bucket_public_access_block.mobile_builds]
+  depends_on = [
+    aws_s3_bucket_public_access_block.mobile_builds,
+    aws_s3_bucket_ownership_controls.mobile_builds
+  ]
 }
 
 resource "aws_s3_bucket_cors_configuration" "mobile_builds" {
