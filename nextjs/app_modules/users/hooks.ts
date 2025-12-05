@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usersService, User } from '@/lib/users';
 import { UserFormData } from './types';
-import { MIN_PASSWORD_LENGTH } from './constants';
 
 export function useUsers() {
   const { user } = useAuth();

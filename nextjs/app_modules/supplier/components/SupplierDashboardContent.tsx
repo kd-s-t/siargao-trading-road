@@ -17,7 +17,9 @@ export function SupplierDashboardContent() {
 
   useEffect(() => {
     const redirect = !authLoading && (!user || user.role !== 'supplier');
-    redirect && router.push('/login');
+    if (redirect) {
+      router.push('/login');
+    }
   }, [user, authLoading, router]);
 
   return (

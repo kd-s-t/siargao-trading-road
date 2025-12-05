@@ -31,7 +31,15 @@ export function UsersContent() {
 
   useEffect(() => {
     const redirect = !authLoading && (!user || user.role !== 'admin');
-    redirect && (user?.role === 'store' ? router.push('/store/dashboard') : user?.role === 'supplier' ? router.push('/supplier/dashboard') : router.push('/login'));
+    if (redirect) {
+      if (user?.role === 'store') {
+        router.push('/store/dashboard');
+      } else if (user?.role === 'supplier') {
+        router.push('/supplier/dashboard');
+      } else {
+        router.push('/login');
+      }
+    }
   }, [user, authLoading, router]);
 
   const adminLevel = user?.admin_level ?? 1;

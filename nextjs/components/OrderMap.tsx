@@ -215,7 +215,7 @@ export function OrderMap({ store, supplier, status, height = 250 }: OrderMapProp
     };
 
     fetchRoute();
-  }, [storeLocation, supplierLocation, mounted]);
+  }, [storeLocation, supplierLocation, mounted, isFetchingRoute, routePoints.length]);
 
   useEffect(() => {
     if (!isInTransit || !routePoints.length || routePoints.length < 2) {

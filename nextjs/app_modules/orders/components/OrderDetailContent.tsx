@@ -38,7 +38,9 @@ export function OrderDetailContent() {
 
   useEffect(() => {
     const redirect = !authLoading && (!authUser || authUser.role !== 'admin');
-    redirect && router.push('/login');
+    if (redirect) {
+      router.push('/login');
+    }
   }, [authUser, authLoading, router]);
 
   const loadOrder = useCallback(async () => {
@@ -55,7 +57,9 @@ export function OrderDetailContent() {
   }, [orderId, router]);
 
   useEffect(() => {
-    authUser?.role === 'admin' && orderId && loadOrder();
+    if (authUser?.role === 'admin' && orderId) {
+      loadOrder();
+    }
   }, [authUser, orderId, loadOrder]);
 
   const getStatusColor = (status: string): 'success' | 'info' | 'warning' | 'error' | 'default' => {
@@ -85,31 +89,31 @@ export function OrderDetailContent() {
   };
 
   const handleDownloadInvoice = async () => {
-    order && (async () => {
-      const logoBase64 = await loadImageAsBase64('/logo.png');
-      const blob = await pdf(<InvoicePDF order={order} logoBase64={logoBase64} />).toBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const date = new Date(order.created_at);
-      const dateStr = date.toISOString().split('T')[0];
-      const storeName = order.store?.name || 'Store';
-      const sanitizedStoreName = storeName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-').toLowerCase();
-      link.download = `invoice-${dateStr}-${sanitizedStoreName}-${order.id}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    })();
+    if (!order) return;
+    const logoBase64 = await loadImageAsBase64('/logo.png');
+    const blob = await pdf(<InvoicePDF order={order} logoBase64={logoBase64} />).toBlob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const date = new Date(order.created_at);
+    const dateStr = date.toISOString().split('T')[0];
+    const storeName = order.store?.name || 'Store';
+    const sanitizedStoreName = storeName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-').toLowerCase();
+    link.download = `invoice-${dateStr}-${sanitizedStoreName}-${order.id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleSendInvoiceEmail = async () => {
-    order && (async () => {
+    if (!order) return;
+    try {
       await ordersService.sendInvoiceEmail(order.id);
       alert('Invoice sent successfully!');
-    })().catch(() => {
+    } catch {
       alert('Failed to send invoice. Please try again.');
-    });
+    }
   };
 
 

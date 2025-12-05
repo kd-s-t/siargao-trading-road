@@ -97,19 +97,19 @@ export function SimulateContent() {
     } else if (mobileUser && activeView === 'my-products' && mobileUser.role === 'supplier') {
       loadMyProducts();
     }
-  }, [mobileUser, activeView]);
+  }, [mobileUser, activeView, loadSuppliers, loadStores, loadMyProducts]);
 
   useEffect(() => {
     if (mobileUser && (mobileUser.role === 'supplier' || mobileUser.role === 'store') && activeView !== 'profile' && activeView !== 'ratings-list') {
       loadOrders();
     }
-  }, [mobileUser?.id, activeView]);
+  }, [mobileUser, activeView, loadOrders]);
 
   useEffect(() => {
     if (activeView === 'orders' && mobileUser && (mobileUser.role === 'supplier' || mobileUser.role === 'store')) {
       loadOrders();
     }
-  }, [activeView]);
+  }, [activeView, mobileUser, loadOrders]);
 
 
   const handleSupplierClick = async (supplier: Supplier) => {

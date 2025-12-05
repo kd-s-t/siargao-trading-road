@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import { CloudUpload as CloudUploadIcon, Description as DescriptionIcon, Download as DownloadIcon } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
-import { Product, User, productsService } from '@/lib/users';
+import { User, productsService } from '@/lib/users';
 
 interface BulkImportDialogProps {
   open: boolean;

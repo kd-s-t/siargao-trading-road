@@ -29,7 +29,9 @@ export function ProductDetailContent() {
 
   useEffect(() => {
     const redirect = !authLoading && (!authUser || authUser.role !== 'admin');
-    redirect && router.push('/login');
+    if (redirect) {
+      router.push('/login');
+    }
   }, [authUser, authLoading, router]);
 
   const loadProduct = useCallback(async () => {
@@ -46,7 +48,9 @@ export function ProductDetailContent() {
   }, [productId, router]);
 
   useEffect(() => {
-    authUser?.role === 'admin' && productId && loadProduct();
+    if (authUser?.role === 'admin' && productId) {
+      loadProduct();
+    }
   }, [authUser, productId, loadProduct]);
 
   return (

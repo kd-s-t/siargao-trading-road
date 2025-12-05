@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import Image from 'next/image';
 import { mobileAuthService } from '../services/mobileApi';
-import { LoginResponse, User } from '@/lib/auth';
+import { LoginResponse } from '@/lib/auth';
 
 interface MobileLoginProps {
   onLoginSuccess: (response: LoginResponse) => void;

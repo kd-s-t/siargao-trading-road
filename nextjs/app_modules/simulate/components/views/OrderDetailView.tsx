@@ -126,7 +126,6 @@ export function OrderDetailView({
 
   // Check if user has already rated this order
   const userRating = orderRatings.find(r => r.rater_id === mobileUser?.id);
-  const canRate = isDelivered && !userRating;
 
   const handleSubmitRating = async () => {
     if (!ratingValue || !mobileUser) return;

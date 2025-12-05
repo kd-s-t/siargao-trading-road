@@ -33,21 +33,25 @@ export function StoreOrdersContent() {
 
   useEffect(() => {
     const redirect = !authLoading && (!user || user.role !== 'store');
-    redirect && router.push('/login');
+    if (redirect) {
+      router.push('/login');
+    }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    user?.role === 'store' && (async () => {
-      try {
-        setLoading(true);
-        const data = await ordersService.getOrders();
-        setOrders(data);
-      } catch (error) {
-        console.error('Failed to load orders:', error);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    if (user?.role === 'store') {
+      (async () => {
+        try {
+          setLoading(true);
+          const data = await ordersService.getOrders();
+          setOrders(data);
+        } catch (error) {
+          console.error('Failed to load orders:', error);
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
   }, [user]);
 
   const filteredOrders = orders.filter(

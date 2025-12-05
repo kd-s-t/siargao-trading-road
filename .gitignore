@@ -18,11 +18,11 @@ pnpm-lock.yaml
 *.swp
 *.swo
 *~
-.DS_Store
 *.sublime-project
 *.sublime-workspace
 
 # OS files
+**/.DS_Store
 .DS_Store
 .DS_Store?
 ._*

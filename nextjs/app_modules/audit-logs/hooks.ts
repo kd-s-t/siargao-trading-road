@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { auditLogsService, AuditLog } from '@/lib/audit_logs';
 
@@ -16,13 +16,7 @@ export function useAuditLogs() {
     endpoint?: string;
   }>({});
 
-  useEffect(() => {
-    if (user && user.role === 'admin' && (user.admin_level ?? 1) === 1) {
-      loadAuditLogs();
-    }
-  }, [user, page, filters]);
-
-  const loadAuditLogs = async () => {
+  const loadAuditLogs = useCallback(async () => {
     try {
       setLoading(true);
       const response = await auditLogsService.getAuditLogs({
@@ -38,7 +32,13 @@ export function useAuditLogs() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, filters]);
+
+  useEffect(() => {
+    if (user && user.role === 'admin' && (user.admin_level ?? 1) === 1) {
+      loadAuditLogs();
+    }
+  }, [user, loadAuditLogs]);
 
   const updateFilters = (newFilters: typeof filters) => {
     setFilters(newFilters);

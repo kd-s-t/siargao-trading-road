@@ -15,7 +15,6 @@ import {
   Toolbar,
 } from '@mui/material';
 import {
-  Download as DownloadIcon,
   Store as StoreIcon,
   Inventory as InventoryIcon,
   ShoppingCart as ShoppingCartIcon,

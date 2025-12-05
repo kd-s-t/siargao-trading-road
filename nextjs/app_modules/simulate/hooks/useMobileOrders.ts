@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Order } from '@/lib/users';
 import { mobileOrderService } from '../services/mobileApi';
 

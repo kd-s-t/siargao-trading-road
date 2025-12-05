@@ -17,13 +17,6 @@ export function DashboardContent() {
   const router = useRouter();
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const hasSeenOnboarding = localStorage.getItem('admin_onboarding_completed');
-      return !hasSeenOnboarding;
-    }
-    return false;
-  });
 
   useEffect(() => {
     const redirect = !authLoading && (!user || user.role !== 'admin');
