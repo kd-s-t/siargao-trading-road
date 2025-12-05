@@ -3,6 +3,7 @@ locals {
 }
 
 resource "aws_eip" "siargaotradingroad_eip" {
+  count    = var.create_eip ? 1 : 0
   instance = aws_instance.siargaotradingroad_server.id
   domain   = "vpc"
   

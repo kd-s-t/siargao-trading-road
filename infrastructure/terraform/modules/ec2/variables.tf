@@ -73,3 +73,9 @@ variable "enable_ssl" {
   default     = false
 }
 
+variable "create_eip" {
+  description = "Whether to create an Elastic IP for the instance"
+  type        = bool
+  default     = false
+}
+
