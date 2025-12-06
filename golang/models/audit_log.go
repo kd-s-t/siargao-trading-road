@@ -11,7 +11,7 @@ type AuditLog struct {
 	UserID       *uint          `gorm:"index" json:"user_id,omitempty"`
 	User         *User          `gorm:"foreignKey:UserID;references:ID" json:"user,omitempty"`
 	Role         string         `gorm:"type:varchar(20);index" json:"role,omitempty"`
-	Action       string         `gorm:"type:varchar(10);not null" json:"action"`
+	Action       string         `gorm:"type:varchar(255);not null" json:"action"`
 	Endpoint     string         `gorm:"type:varchar(255);not null" json:"endpoint"`
 	Method       string         `gorm:"type:varchar(10);not null" json:"method"`
 	StatusCode   int            `gorm:"not null" json:"status_code"`

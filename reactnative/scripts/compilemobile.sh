@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Default values
 PLATFORM="all"
-PROFILE="preview"
+PROFILE="production"
 ENVIRONMENT="development"
 AWS_REGION="us-east-1"
 LOCAL_BUILD=false
@@ -46,7 +46,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --platform PLATFORM    Platform to build (android, ios, all) [default: all]"
-      echo "  --profile PROFILE      Build profile (development, preview, production) [default: preview]"
+      echo "  --profile PROFILE      Build profile (development, production) [default: production]"
       echo "  --environment ENV       Environment (development, staging, production) [default: development]"
       echo "  --region REGION        AWS region [default: us-east-1]"
       echo "  --local                Build locally without EAS (requires Android Studio/Xcode) [default: false]"
@@ -69,8 +69,8 @@ if [[ ! "$PLATFORM" =~ ^(android|ios|all)$ ]]; then
 fi
 
 # Validate profile
-if [[ ! "$PROFILE" =~ ^(development|preview|production)$ ]]; then
-  echo -e "${RED}Error: Profile must be 'development', 'preview', or 'production'${NC}"
+if [[ ! "$PROFILE" =~ ^(development|production)$ ]]; then
+  echo -e "${RED}Error: Profile must be 'development' or 'production'${NC}"
   exit 1
 fi
 

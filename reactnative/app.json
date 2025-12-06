@@ -27,8 +27,15 @@
       "package": "com.siargao.trading.road",
       "permissions": [
         "INTERNET",
-        "ACCESS_NETWORK_STATE"
-      ]
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.ico"

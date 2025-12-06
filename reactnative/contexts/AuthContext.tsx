@@ -18,6 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthProvider: Starting auth check');
     checkAuth();
   }, []);
 
@@ -25,12 +26,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        const userData = await authService.getMe();
-        setUser(userData);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth check timeout')), 2000)
+        );
+        try {
+          const userData = await Promise.race([
+            authService.getMe(),
+            timeoutPromise
+          ]) as any;
+          setUser(userData);
+        } catch (authError) {
+          await AsyncStorage.removeItem('token');
+        }
       }
     } catch (error) {
+      console.log('AuthProvider: Auth check failed, clearing token');
       await AsyncStorage.removeItem('token');
     } finally {
+      console.log('AuthProvider: Auth check complete, loading:', false);
       setLoading(false);
     }
   };

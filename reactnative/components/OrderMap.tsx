@@ -7,6 +7,7 @@ let MapView: any = null;
 let Marker: any = null;
 let Polyline: any = null;
 let PROVIDER_DEFAULT: any = null;
+let PROVIDER_GOOGLE: any = null;
 let mapsAvailable = false;
 
 try {
@@ -16,6 +17,7 @@ try {
     Marker = maps.Marker;
     Polyline = maps.Polyline;
     PROVIDER_DEFAULT = maps.PROVIDER_DEFAULT || undefined;
+    PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE || undefined;
     mapsAvailable = true;
   }
 } catch (error) {
@@ -198,7 +200,7 @@ export default function OrderMap({ store, supplier, status, height = 250 }: Orde
   return (
     <View style={[styles.container, { height }]}>
       <MapView
-        provider={PROVIDER_DEFAULT}
+        provider={PROVIDER_GOOGLE || PROVIDER_DEFAULT}
         style={styles.map}
         region={region}
         scrollEnabled={true}
