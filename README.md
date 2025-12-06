@@ -24,6 +24,7 @@ Siargao Trading Road marketplace app connecting suppliers and stores in Siargao.
 	<img src="https://img.shields.io/badge/React%20Native-61DAFB?style=for-the-badge&logo=react&logoColor=black" /> 
 	<img src="https://img.shields.io/badge/React%20Navigation-61DAFB?style=for-the-badge&logo=react&logoColor=black" /> 
 	<img src="https://img.shields.io/badge/React%20Native%20Paper-6366F1?style=for-the-badge&logo=react&logoColor=white" /> 
+	<br />
 	<img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" /> 
 	<img src="https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white" /> 
 	<br />
