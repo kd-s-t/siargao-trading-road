@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:siargao_trading_road/screens/suppliers_screen.dart';
 import 'package:siargao_trading_road/screens/supplier_products_screen.dart';
 import 'package:siargao_trading_road/screens/orders_screen.dart';
+import 'package:siargao_trading_road/screens/order_detail_screen.dart';
 import 'package:siargao_trading_road/screens/truck_screen.dart';
 import 'package:siargao_trading_road/screens/profile_screen.dart';
 import 'package:siargao_trading_road/widgets/drawer_content.dart';
@@ -39,6 +40,9 @@ class StoreDrawer extends StatelessWidget {
                 break;
               case '/profile':
                 screen = const ProfileScreen();
+                break;
+              case '/order-detail':
+                screen = OrderDetailScreen();
                 break;
               default:
                 screen = const SuppliersScreen();

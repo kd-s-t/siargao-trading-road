@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:siargao_trading_road/screens/dashboard_screen.dart';
+import 'package:siargao_trading_road/screens/order_detail_screen.dart';
 import 'package:siargao_trading_road/screens/profile_screen.dart';
 import 'package:siargao_trading_road/widgets/drawer_content.dart';
 
@@ -25,6 +26,9 @@ class AdminDrawer extends StatelessWidget {
                 break;
               case '/profile':
                 screen = const ProfileScreen();
+                break;
+              case '/order-detail':
+                screen = OrderDetailScreen();
                 break;
               default:
                 screen = const DashboardScreen();

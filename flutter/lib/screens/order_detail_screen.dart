@@ -6,6 +6,7 @@ import 'package:siargao_trading_road/services/order_service.dart';
 import 'package:siargao_trading_road/services/rating_service.dart';
 import 'package:siargao_trading_road/models/order.dart';
 import 'package:siargao_trading_road/models/rating.dart';
+import 'package:siargao_trading_road/models/user.dart';
 import 'package:siargao_trading_road/widgets/order_map.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
 import 'package:http/http.dart' as http;
@@ -444,6 +445,82 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             const SizedBox(height: 32),
           ],
         ),
+      ),
+      bottomSheet: _showRatingDialog ? _buildRatingDialogSheet(user) : null,
+    );
+  }
+
+  Widget _buildRatingDialogSheet(user) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Rate Order',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    _showRatingDialog = false;
+                    _ratingValue = 5;
+                    _ratingCommentController.clear();
+                  });
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text('Rating:'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (index) {
+              return IconButton(
+                icon: Icon(
+                  index < _ratingValue ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                  size: 40,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _ratingValue = index + 1;
+                  });
+                },
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _ratingCommentController,
+            decoration: const InputDecoration(
+              labelText: 'Comment (optional)',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 3,
+            maxLength: 500,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _submittingRating ? null : _handleSubmitRating,
+            child: _submittingRating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Submit Rating'),
+          ),
+        ],
       ),
     );
   }
