@@ -9,13 +9,16 @@ import 'package:siargao_trading_road/widgets/drawer_content.dart';
 class StoreDrawer extends StatelessWidget {
   const StoreDrawer({super.key});
 
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        drawer: const DrawerContent(),
+        drawer: DrawerContent(navigatorKey: navigatorKey),
         body: Navigator(
+          key: navigatorKey,
           onGenerateRoute: (settings) {
             Widget screen;
             switch (settings.name) {
