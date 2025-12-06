@@ -24,6 +24,9 @@ Siargao Trading Road marketplace app connecting suppliers and stores in Siargao.
 	<img src="https://img.shields.io/badge/React%20Navigation-61DAFB?style=for-the-badge&logo=react&logoColor=black" /> 
 	<img src="https://img.shields.io/badge/React%20Native%20Paper-6366F1?style=for-the-badge&logo=react&logoColor=white" /> 
 	<br />
+	<img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" /> 
+	<img src="https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white" /> 
+	<br />
 	<img src="https://img.shields.io/badge/iOS-000000?style=for-the-badge&logo=apple&logoColor=white" /> 
 	<img src="https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" /> 
 	<br />
@@ -52,7 +55,10 @@ Siargao Trading Road marketplace app connecting suppliers and stores in Siargao.
 - **Store Management**: Register, browse suppliers, purchase products
 - **Product Management**: Full CRUD operations with soft delete and restore
 - **Authentication**: JWT-based secure authentication system
-- **Multi-Platform**: React Native mobile app (suppliers & stores) and Next.js web admin panel (admin only)
+- **Multi-Platform**: 
+  - React Native mobile app (suppliers & stores)
+  - Flutter mobile app (suppliers & stores) - *New*
+  - Next.js web admin panel (admin only)
 
 ## Quick Start
 
@@ -115,6 +121,32 @@ Alternatively, you can use `npm start` or `npx expo start` to launch the Expo de
 
 For detailed setup, environment variables, building, and deployment, see [reactnative/README.md](./reactnative/README.md).
 
+### Mobile App (Flutter)
+
+**Prerequisites:**
+- Flutter SDK 3.0+
+- Dart SDK 3.0+
+- Backend API running on `http://192.168.31.76:3020` (or configure in `lib/services/api_service.dart`)
+- Google Maps API key (for maps functionality)
+
+**Setup and Run:**
+```bash
+cd flutter
+flutter pub get
+flutter run
+```
+
+The Flutter app provides the same functionality as the React Native app, with a native Flutter implementation. Features include:
+- Authentication (Login/Register)
+- Role-based navigation (Supplier, Store, Admin)
+- Product management with CRUD operations
+- Order management with status tracking
+- Maps integration with route visualization
+- Cart functionality
+- Profile management
+
+For detailed setup, architecture, and features, see [flutter/README.md](./flutter/README.md).
+
 ### Mobile App Release
 
 **Prerequisites:**
@@ -151,12 +183,13 @@ For detailed release instructions, troubleshooting, and setup, see [docs/RELEASE
 ```
 siargaotradingroad/
 ├── reactnative/    # React Native mobile app
-├── golang/         # Golang REST API
-├── nextjs/         # Next.js admin panel
+├── flutter/         # Flutter mobile app (Dart)
+├── golang/          # Golang REST API
+├── nextjs/          # Next.js admin panel
 │   └── .storybook/  # Storybook configuration
-├── postman/        # Postman API collection
-├── infrastructure/ # Infrastructure as Code
-└── docs/           # Documentation
+├── postman/         # Postman API collection
+├── infrastructure/  # Infrastructure as Code
+└── docs/            # Documentation
 ```
 
 ## User Types
@@ -195,7 +228,8 @@ Access at `http://localhost:2022`
 
 - [Backend API](./golang/README.md) - Golang API setup and testing
 - [Admin Panel](./nextjs/README.md) - Next.js admin panel setup
-- [Mobile App](./reactnative/README.md) - React Native mobile app setup and deployment
+- [React Native Mobile App](./reactnative/README.md) - React Native mobile app setup and deployment
+- [Flutter Mobile App](./flutter/README.md) - Flutter mobile app setup and architecture
 - [Mobile App Release](./docs/RELEASE.md) - Build and release mobile app to S3
 - [Tech Stack](./docs/TECH_STACK.md) - Technology stack details
 - [Database Schema](./docs/DATABASE_SCHEMA.md) - Database structure and relationships
