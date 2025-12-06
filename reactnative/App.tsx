@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler';
+import 'react-native-reanimated';
 import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -47,8 +48,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <Text>Something went wrong. The error has been reported.</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#ffffff' }}>
+          <Text style={{ color: '#000', fontSize: 16, textAlign: 'center' }}>Something went wrong. The error has been reported.</Text>
         </View>
       );
     }
@@ -137,6 +138,7 @@ function SupplierTabs() {
 function StoreDrawer() {
   return (
     <Drawer.Navigator
+      useLegacyImplementation={false}
       drawerContent={(props) => <DrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
@@ -160,6 +162,7 @@ function StoreDrawer() {
 function SupplierDrawer() {
   return (
     <Drawer.Navigator
+      useLegacyImplementation={false}
       drawerContent={(props) => <DrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
@@ -182,6 +185,7 @@ function SupplierDrawer() {
 function AdminDrawer() {
   return (
     <Drawer.Navigator
+      useLegacyImplementation={false}
       drawerContent={(props) => <DrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
@@ -202,53 +206,77 @@ function AdminDrawer() {
 function AppNavigator() {
   const { user, loading } = useAuth();
 
+  console.log('AppNavigator: loading=', loading, 'user=', user ? 'exists' : 'null');
+
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
+        <ActivityIndicator size="large" color="#1976d2" />
+        <Text style={{ marginTop: 16, color: '#666', fontSize: 16 }}>Loading...</Text>
       </View>
     );
   }
 
-  return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? (
-          <>
-            {user.role === 'supplier' ? (
-              <Stack.Screen name="SupplierDrawer" component={SupplierDrawer} />
-            ) : user.role === 'store' ? (
-              <Stack.Screen name="StoreDrawer" component={StoreDrawer} />
-            ) : (
-              <Stack.Screen name="AdminDrawer" component={AdminDrawer} />
-            )}
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
+  try {
+    return (
+      <NavigationContainer
+        theme={{
+          dark: false,
+          colors: {
+            primary: '#1976d2',
+            background: '#ffffff',
+            card: '#ffffff',
+            text: '#000000',
+            border: '#e0e0e0',
+            notification: '#f44336',
+          },
+        }}
+      >
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {user ? (
+            <>
+              {user.role === 'supplier' ? (
+                <Stack.Screen name="SupplierDrawer" component={SupplierDrawer} />
+              ) : user.role === 'store' ? (
+                <Stack.Screen name="StoreDrawer" component={StoreDrawer} />
+              ) : (
+                <Stack.Screen name="AdminDrawer" component={AdminDrawer} />
+              )}
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Register" component={RegisterScreen} />
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    );
+  } catch (error) {
+    console.error('AppNavigator error:', error);
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff', padding: 20 }}>
+        <Text style={{ color: '#000', fontSize: 16, textAlign: 'center' }}>Navigation Error. Check console.</Text>
+      </View>
+    );
+  }
 }
 
 export default function App() {
   useEffect(() => {
-    // React Native error handling
+    console.log('App component mounted');
     if (typeof global !== 'undefined' && (global as any).ErrorUtils) {
       const ErrorUtils = (global as any).ErrorUtils;
       const originalError = ErrorUtils.getGlobalHandler();
       ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
+        console.error('Global Error:', error);
+        console.error('Error stack:', error.stack);
         bugReportService.reportError(error, 'Global Error Handler');
         if (originalError) {
           originalError(error, isFatal);
         }
       });
     }
-    // Note: React Native doesn't have window object or PromiseRejectionEvent
-    // Unhandled promise rejections are handled by ErrorUtils above
   }, []);
 
   return (

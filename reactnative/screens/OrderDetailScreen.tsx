@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform, Linking, Alert, TouchableOpacity } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Text,
   Surface,
@@ -210,18 +213,48 @@ export default function OrderDetailScreen() {
   };
 
   const handleDownloadInvoice = async () => {
+    if (!order?.id) return;
+    
     try {
       const apiUrl = api.defaults.baseURL || 'http://localhost:3020/api';
       const invoiceUrl = `${apiUrl}/orders/${order.id}/invoice`;
-      const canOpen = await Linking.canOpenURL(invoiceUrl);
-      if (canOpen) {
-        await Linking.openURL(invoiceUrl);
-        setSnackbar({ visible: true, message: 'Opening invoice...', type: 'success' });
+      
+      const date = new Date(order.created_at);
+      const dateStr = date.toISOString().split('T')[0];
+      const storeName = order.store?.name || 'Store';
+      const sanitizedStoreName = storeName
+        .replace(/[^a-zA-Z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .toLowerCase();
+      const fileName = `invoice-${dateStr}-${sanitizedStoreName}-${order.id}.pdf`;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+
+      setSnackbar({ visible: true, message: 'Downloading invoice...', type: 'success' });
+
+      const token = await AsyncStorage.getItem('token');
+      const downloadResult = await FileSystem.downloadAsync(invoiceUrl, fileUri, {
+        headers: token ? {
+          Authorization: `Bearer ${token}`,
+        } : {},
+      });
+
+      if (downloadResult.status === 200) {
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: 'Save Invoice',
+          });
+          setSnackbar({ visible: true, message: 'Invoice downloaded successfully', type: 'success' });
+        } else {
+          setSnackbar({ visible: true, message: 'Sharing is not available on this device', type: 'error' });
+        }
       } else {
-        setSnackbar({ visible: true, message: 'Cannot open invoice URL', type: 'error' });
+        setSnackbar({ visible: true, message: 'Failed to download invoice', type: 'error' });
       }
-    } catch (error) {
-      setSnackbar({ visible: true, message: 'Failed to download invoice', type: 'error' });
+    } catch (error: any) {
+      console.error('Failed to download invoice:', error);
+      setSnackbar({ visible: true, message: error.message || 'Failed to download invoice', type: 'error' });
     }
   };
 
@@ -639,69 +672,40 @@ export default function OrderDetailScreen() {
                 </Text>
               )}
 
-              {user?.role === 'supplier' && order.store && (
-                <>
-                  <Divider style={styles.divider} />
-                  <Button
-                    mode="contained"
-                    icon="phone"
-                    onPress={handleCall}
-                    style={styles.callButton}
-                    disabled={!order.store.phone}
-                  >
-                    Call {order.store.name}
-                  </Button>
-                </>
-              )}
             </Card.Content>
           </Card>
         )}
 
-        <Card style={styles.actionsCard}>
-          <Card.Content>
-            <View style={styles.actionButtonsRow}>
+        <View style={styles.actionsContainer}>
+          <Button
+            mode="contained"
+            icon="phone"
+            onPress={handleCall}
+            style={[styles.actionButton, styles.callButton]}
+          >
+            Call {entityName}
+          </Button>
+          {order.status === 'delivered' && (
+            <Button
+              mode="outlined"
+              icon="download"
+              onPress={handleDownloadInvoice}
+              style={styles.actionButton}
+            >
+              Download Invoice
+            </Button>
+          )}
+
+          {user?.role === 'supplier' && order.status === 'preparing' && (
+            <>
               <Button
-                mode="contained"
-                icon="phone"
-                onPress={handleCall}
-                style={[styles.actionButton, styles.callButton]}
+                mode="outlined"
+                onPress={() => handleUpdateStatus('in_transit')}
+                style={styles.actionButton}
+                disabled={updatingStatus}
               >
-                Call {entityName}
+                Mark In Transit
               </Button>
-              {order.status === 'delivered' && (
-                <Button
-                  mode="outlined"
-                  icon="download"
-                  onPress={handleDownloadInvoice}
-                  style={styles.actionButton}
-                >
-                  Download Invoice
-                </Button>
-              )}
-            </View>
-
-            {user?.role === 'supplier' && order.status === 'preparing' && (
-              <View style={styles.statusButtons}>
-                <Button
-                  mode="outlined"
-                  onPress={() => handleUpdateStatus('in_transit')}
-                  style={styles.statusButton}
-                  disabled={updatingStatus}
-                >
-                  Mark In Transit
-                </Button>
-                <Button
-                  mode="outlined"
-                  onPress={handleMarkDelivered}
-                  style={styles.statusButton}
-                  disabled={updatingStatus}
-                >
-                  Mark Delivered
-                </Button>
-              </View>
-            )}
-
-            {user?.role === 'supplier' && order.status === 'in_transit' && (
               <Button
                 mode="outlined"
                 onPress={handleMarkDelivered}
@@ -710,20 +714,31 @@ export default function OrderDetailScreen() {
               >
                 Mark Delivered
               </Button>
-            )}
+            </>
+          )}
 
-            {user?.role === 'supplier' && order.status === 'delivered' && (
-              <Button
-                mode="outlined"
-                onPress={() => handleUpdateStatus('in_transit')}
-                style={styles.actionButton}
-                disabled={updatingStatus}
-              >
-                Revert to In Transit
-              </Button>
-            )}
-          </Card.Content>
-        </Card>
+          {user?.role === 'supplier' && order.status === 'in_transit' && (
+            <Button
+              mode="outlined"
+              onPress={handleMarkDelivered}
+              style={styles.actionButton}
+              disabled={updatingStatus}
+            >
+              Mark Delivered
+            </Button>
+          )}
+
+          {user?.role === 'supplier' && order.status === 'delivered' && (
+            <Button
+              mode="outlined"
+              onPress={() => handleUpdateStatus('in_transit')}
+              style={styles.actionButton}
+              disabled={updatingStatus}
+            >
+              Revert to In Transit
+            </Button>
+          )}
+        </View>
       </ScrollView>
 
       <Portal>
@@ -1061,29 +1076,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: '#f44336',
   },
-  actionsCard: {
+  actionsContainer: {
     marginHorizontal: 16,
     marginBottom: 16,
-  },
-  actionButtonsRow: {
-    flexDirection: 'row',
     gap: 12,
-    flexWrap: 'wrap',
   },
   actionButton: {
-    flex: 1,
-    minWidth: 140,
+    marginBottom: 12,
   },
   callButton: {
     backgroundColor: '#4caf50',
-  },
-  statusButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
-  statusButton: {
-    flex: 1,
   },
   snackbarSuccess: {
     backgroundColor: '#4caf50',

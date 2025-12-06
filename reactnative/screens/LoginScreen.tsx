@@ -33,14 +33,7 @@ const THEME_COLORS = {
   },
 };
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
-  const navigation = useNavigation();
-
+function AnimatedBackground() {
   const animatedValue = useSharedValue(0);
   const shineValue = useSharedValue(0);
 
@@ -65,7 +58,7 @@ export default function LoginScreen() {
       'clamp'
     );
     return { opacity };
-  });
+  }, []);
 
   const gradient2Style = useAnimatedStyle(() => {
     const opacity = interpolate(
@@ -75,19 +68,46 @@ export default function LoginScreen() {
       'clamp'
     );
     return { opacity };
-  });
+  }, []);
 
-  const shineStyle = useAnimatedStyle(() => {
-    const translateX = interpolate(
-      shineValue.value,
-      [0, 1],
-      [-200, 200],
-      'clamp'
-    );
-    return {
-      transform: [{ translateX }],
-    };
-  });
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Animated.View style={[StyleSheet.absoluteFill, gradient1Style]} pointerEvents="none">
+        <LinearGradient
+          colors={[
+            THEME_COLORS.primary.main,
+            THEME_COLORS.secondary.main,
+            THEME_COLORS.primary.light,
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, gradient2Style]} pointerEvents="none">
+        <LinearGradient
+          colors={[
+            THEME_COLORS.secondary.main,
+            THEME_COLORS.primary.light,
+            THEME_COLORS.secondary.light,
+          ]}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+    </View>
+  );
+}
+
+export default function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigation = useNavigation();
+
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -112,30 +132,13 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <Animated.View style={[StyleSheet.absoluteFill, gradient1Style]}>
+      {/* <AnimatedBackground /> */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <LinearGradient
-          colors={[
-            THEME_COLORS.primary.main,
-            THEME_COLORS.secondary.main,
-            THEME_COLORS.primary.light,
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          colors={[THEME_COLORS.primary.main, THEME_COLORS.secondary.main]}
           style={StyleSheet.absoluteFill}
         />
-      </Animated.View>
-      <Animated.View style={[StyleSheet.absoluteFill, gradient2Style]}>
-        <LinearGradient
-          colors={[
-            THEME_COLORS.secondary.main,
-            THEME_COLORS.primary.light,
-            THEME_COLORS.secondary.light,
-          ]}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -167,7 +170,8 @@ export default function LoginScreen() {
             autoCapitalize="none"
             autoComplete="email"
             style={styles.input}
-            disabled={loading}
+            editable={!loading}
+            pointerEvents="auto"
           />
 
           <TextInput
@@ -179,7 +183,8 @@ export default function LoginScreen() {
             autoCapitalize="none"
             autoComplete="password"
             style={styles.input}
-            disabled={loading}
+            editable={!loading}
+            pointerEvents="auto"
           />
 
           <View style={styles.buttonContainer}>
@@ -193,14 +198,6 @@ export default function LoginScreen() {
             >
               Sign In
             </Button>
-            <Animated.View style={[styles.shineOverlay, shineStyle]} pointerEvents="none">
-              <LinearGradient
-                colors={['transparent', 'rgba(255, 255, 255, 0.4)', 'transparent']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.shineGradient}
-              />
-            </Animated.View>
           </View>
 
           <View style={styles.switchContainer}>
@@ -226,6 +223,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+    zIndex: 1,
   },
   scrollContent: {
     flexGrow: 1,

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"siargao-trading-road/config"
@@ -32,6 +33,11 @@ func Connect(cfg *config.Config) error {
 		return err
 	}
 
+	err = migrateAuditLogsActionColumn()
+	if err != nil {
+		return fmt.Errorf("failed to migrate audit_logs.action column: %w", err)
+	}
+
 	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{})
 	if err != nil {
 		return err
@@ -50,9 +56,46 @@ func Migrate() error {
 		return fmt.Errorf("database connection not initialized")
 	}
 
-	err := DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{})
+	err := migrateAuditLogsActionColumn()
+	if err != nil {
+		return fmt.Errorf("failed to migrate audit_logs.action column: %w", err)
+	}
+
+	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{})
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func migrateAuditLogsActionColumn() error {
+	if DB == nil {
+		return fmt.Errorf("database connection not initialized")
+	}
+
+	var columnType string
+	var maxLength *int
+	err := DB.Raw(`
+		SELECT data_type, character_maximum_length
+		FROM information_schema.columns
+		WHERE table_name = 'audit_logs' AND column_name = 'action'
+	`).Row().Scan(&columnType, &maxLength)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return fmt.Errorf("failed to check column type: %w", err)
+	}
+
+	if columnType == "character varying" && maxLength != nil && *maxLength == 255 {
+		return nil
+	}
+
+	err = DB.Exec("ALTER TABLE audit_logs ALTER COLUMN action TYPE VARCHAR(255)").Error
+	if err != nil {
+		return fmt.Errorf("failed to alter column: %w", err)
 	}
 
 	return nil

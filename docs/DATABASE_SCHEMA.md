@@ -194,7 +194,7 @@ Activity logs for all API calls to track user, admin, and employee actions.
 | user_id | INTEGER | FOREIGN KEY, INDEX | Reference to users.id (nullable for unauthenticated requests) |
 | user | User | FOREIGN KEY | User who performed the action |
 | role | VARCHAR(20) | INDEX | User role (admin, supplier, store) - nullable for unauthenticated requests |
-| action | VARCHAR(10) | NOT NULL | HTTP method + endpoint path |
+| action | VARCHAR(255) | NOT NULL | HTTP method + endpoint path |
 | endpoint | VARCHAR(255) | NOT NULL | API endpoint path |
 | method | VARCHAR(10) | NOT NULL | HTTP method (GET, POST, PUT, DELETE, etc.) |
 | status_code | INTEGER | NOT NULL | HTTP response status code |

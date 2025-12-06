@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -45,18 +45,7 @@ const validatePhilippineMobile = (mobile: string): boolean => {
   return cleaned.length === 10 && cleaned.startsWith('9');
 };
 
-export default function RegisterScreen() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'supplier' | 'store'>('supplier');
-  const [roleMenuVisible, setRoleMenuVisible] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
-  const navigation = useNavigation();
-
+function AnimatedBackground() {
   const animatedValue = useSharedValue(0);
 
   React.useEffect(() => {
@@ -75,7 +64,7 @@ export default function RegisterScreen() {
       'clamp'
     );
     return { opacity };
-  });
+  }, []);
 
   const gradient2Style = useAnimatedStyle(() => {
     const opacity = interpolate(
@@ -85,7 +74,50 @@ export default function RegisterScreen() {
       'clamp'
     );
     return { opacity };
-  });
+  }, []);
+
+  return (
+    <>
+      <Animated.View style={[StyleSheet.absoluteFill, gradient1Style]} pointerEvents="none">
+        <LinearGradient
+          colors={[
+            THEME_COLORS.primary.main,
+            THEME_COLORS.secondary.main,
+            THEME_COLORS.primary.light,
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, gradient2Style]} pointerEvents="none">
+        <LinearGradient
+          colors={[
+            THEME_COLORS.secondary.main,
+            THEME_COLORS.primary.light,
+            THEME_COLORS.secondary.light,
+          ]}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+    </>
+  );
+}
+
+export default function RegisterScreen() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'supplier' | 'store'>('supplier');
+  const [roleMenuVisible, setRoleMenuVisible] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
+  const navigation = useNavigation();
+
 
   const handleSubmit = async () => {
     if (!name || !email || !mobile || !password) {
@@ -120,30 +152,7 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <Animated.View style={[StyleSheet.absoluteFill, gradient1Style]}>
-        <LinearGradient
-          colors={[
-            THEME_COLORS.primary.main,
-            THEME_COLORS.secondary.main,
-            THEME_COLORS.primary.light,
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-      <Animated.View style={[StyleSheet.absoluteFill, gradient2Style]}>
-        <LinearGradient
-          colors={[
-            THEME_COLORS.secondary.main,
-            THEME_COLORS.primary.light,
-            THEME_COLORS.secondary.light,
-          ]}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
+      <AnimatedBackground />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
