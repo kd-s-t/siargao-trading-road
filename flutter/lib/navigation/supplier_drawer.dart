@@ -9,6 +9,8 @@ import 'package:siargao_trading_road/widgets/drawer_content.dart';
 class SupplierDrawer extends StatelessWidget {
   const SupplierDrawer({super.key});
 
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -16,8 +18,9 @@ class SupplierDrawer extends StatelessWidget {
       home: DefaultTabController(
         length: 2,
         child: Scaffold(
-          drawer: const DrawerContent(),
+          drawer: DrawerContent(navigatorKey: navigatorKey),
           body: Navigator(
+            key: navigatorKey,
             onGenerateRoute: (settings) {
               Widget screen;
               switch (settings.name) {

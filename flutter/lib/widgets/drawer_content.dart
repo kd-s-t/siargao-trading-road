@@ -5,7 +5,9 @@ import 'package:siargao_trading_road/services/order_service.dart';
 import 'package:siargao_trading_road/models/order.dart';
 
 class DrawerContent extends StatelessWidget {
-  const DrawerContent({super.key});
+  final GlobalKey<NavigatorState>? navigatorKey;
+  
+  const DrawerContent({super.key, this.navigatorKey});
 
   @override
   Widget build(BuildContext context) {
@@ -152,8 +154,13 @@ class DrawerContent extends StatelessWidget {
                 )
               : null,
           onTap: () {
+            final route = item['route'] as String;
             Navigator.pop(context);
-            Navigator.pushNamed(context, item['route'] as String);
+            if (navigatorKey?.currentState != null) {
+              navigatorKey!.currentState!.pushNamed(route);
+            } else {
+              Navigator.of(context, rootNavigator: false).pushNamed(route);
+            }
           },
         );
       },

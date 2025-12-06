@@ -16,6 +16,20 @@ const (
 	OrderStatusCancelled OrderStatus = "cancelled"
 )
 
+type PaymentMethod string
+
+const (
+	PaymentMethodCashOnDelivery PaymentMethod = "cash_on_delivery"
+	PaymentMethodGCash          PaymentMethod = "gcash"
+)
+
+type DeliveryOption string
+
+const (
+	DeliveryOptionPickup  DeliveryOption = "pickup"
+	DeliveryOptionDeliver DeliveryOption = "deliver"
+)
+
 type Order struct {
 	ID              uint           `gorm:"primaryKey" json:"id"`
 	StoreID         uint           `gorm:"not null;index" json:"store_id"`
@@ -24,6 +38,10 @@ type Order struct {
 	Supplier        User           `gorm:"foreignKey:SupplierID;references:ID" json:"supplier,omitempty"`
 	Status          OrderStatus    `gorm:"type:varchar(20);not null;default:'draft'" json:"status"`
 	TotalAmount     float64        `gorm:"type:decimal(10,2);default:0" json:"total_amount"`
+	PaymentMethod   PaymentMethod  `gorm:"type:varchar(20)" json:"payment_method"`
+	DeliveryOption  DeliveryOption `gorm:"type:varchar(20)" json:"delivery_option"`
+	DeliveryFee     float64        `gorm:"type:decimal(10,2);default:0" json:"delivery_fee"`
+	Distance        float64        `gorm:"type:decimal(10,2);default:0" json:"distance"`
 	ShippingAddress string         `gorm:"type:text" json:"shipping_address"`
 	Notes           string         `gorm:"type:text" json:"notes"`
 	OrderItems      []OrderItem    `gorm:"foreignKey:OrderID" json:"order_items"`

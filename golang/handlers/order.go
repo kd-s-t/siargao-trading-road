@@ -90,6 +90,10 @@ func GetOrder(c *gin.Context) {
 		"supplier":         order.Supplier,
 		"status":           order.Status,
 		"total_amount":     order.TotalAmount,
+		"payment_method":   order.PaymentMethod,
+		"delivery_option":  order.DeliveryOption,
+		"delivery_fee":     order.DeliveryFee,
+		"distance":         order.Distance,
 		"shipping_address": order.ShippingAddress,
 		"notes":            order.Notes,
 		"order_items":      order.OrderItems,
@@ -440,7 +444,57 @@ func SubmitOrder(c *gin.Context) {
 		return
 	}
 
+	var req struct {
+		PaymentMethod   string  `json:"payment_method" binding:"required"`
+		DeliveryOption  string  `json:"delivery_option" binding:"required"`
+		DeliveryFee     float64 `json:"delivery_fee"`
+		Distance        float64 `json:"distance"`
+		ShippingAddress string  `json:"shipping_address"`
+		Notes           string  `json:"notes"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	validPaymentMethods := map[string]bool{
+		"cash_on_delivery": true,
+		"gcash":            true,
+	}
+
+	validDeliveryOptions := map[string]bool{
+		"pickup":  true,
+		"deliver": true,
+	}
+
+	if !validPaymentMethods[req.PaymentMethod] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment method"})
+		return
+	}
+
+	if !validDeliveryOptions[req.DeliveryOption] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid delivery option"})
+		return
+	}
+
+	var subtotal float64
+	for _, item := range order.OrderItems {
+		subtotal += item.Subtotal
+	}
+
 	order.Status = models.OrderStatusPreparing
+	order.PaymentMethod = models.PaymentMethod(req.PaymentMethod)
+	order.DeliveryOption = models.DeliveryOption(req.DeliveryOption)
+	order.DeliveryFee = req.DeliveryFee
+	order.Distance = req.Distance
+	order.TotalAmount = subtotal + req.DeliveryFee
+	if req.ShippingAddress != "" {
+		order.ShippingAddress = req.ShippingAddress
+	}
+	if req.Notes != "" {
+		order.Notes = req.Notes
+	}
 
 	if err := database.DB.Save(&order).Error; err != nil {
 		log.Printf("Error submitting order: %v", err)

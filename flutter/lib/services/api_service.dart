@@ -6,7 +6,7 @@ import 'dart:convert';
 class ApiService {
   static const String baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://192.168.31.76:3020/api',
+    defaultValue: 'http://localhost:3020/api',
   );
 
   static Future<Map<String, String>> _getHeaders() async {

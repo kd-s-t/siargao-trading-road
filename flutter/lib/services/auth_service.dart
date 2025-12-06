@@ -81,12 +81,26 @@ class AuthService {
     String? phone,
     String? logoUrl,
     String? bannerUrl,
+    String? facebook,
+    String? instagram,
+    String? twitter,
+    String? linkedin,
+    String? youtube,
+    String? tiktok,
+    String? website,
   }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
     if (phone != null) body['phone'] = phone;
     if (logoUrl != null) body['logo_url'] = logoUrl;
     if (bannerUrl != null) body['banner_url'] = bannerUrl;
+    if (facebook != null) body['facebook'] = facebook;
+    if (instagram != null) body['instagram'] = instagram;
+    if (twitter != null) body['twitter'] = twitter;
+    if (linkedin != null) body['linkedin'] = linkedin;
+    if (youtube != null) body['youtube'] = youtube;
+    if (tiktok != null) body['tiktok'] = tiktok;
+    if (website != null) body['website'] = website;
 
     final response = await ApiService.put('/me', body: body);
 
