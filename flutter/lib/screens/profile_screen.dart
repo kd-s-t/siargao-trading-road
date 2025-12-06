@@ -218,7 +218,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildBanner(user),
-                _buildProfileCard(user),
+                Transform.translate(
+                  offset: const Offset(0, -40),
+                  child: _buildProfileCard(user),
+                ),
                 _buildDetailsCard(user),
                 if (!_editing) _buildLogoutButton(authProvider),
                 const SizedBox(height: 32),
@@ -279,7 +282,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildProfileCard(User user) {
     return Card(
-      margin: const EdgeInsets.only(top: -40, left: 16, right: 16, bottom: 16),
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
