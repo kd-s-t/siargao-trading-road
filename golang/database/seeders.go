@@ -70,6 +70,8 @@ func UpdateUserLocations() error {
 		"toms@example.com":    {"Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8430472), floatPtr(126.1347197)},
 		"711@example.com":     {"National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574)},
 		"walmart@example.com": {"Del Carmen Road, Del Carmen, Surigao del Norte", floatPtr(9.7739032), floatPtr(126.1304724)},
+		"arons@example.com":   {"Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772)},
+		"arniestore@example.com": {"National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574)},
 	}
 
 	storeLocations := map[string]struct {
@@ -131,8 +133,10 @@ func SeedSuppliers() error {
 	}{
 		{"nike@example.com", "Nike", "09123456781", fmt.Sprintf("%s/assets/nikelogo.png", s3BaseURL), fmt.Sprintf("%s/assets/nikebanner.jpg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772), "https://facebook.com/nike", "https://instagram.com/nike", "https://twitter.com/nike", "https://linkedin.com/company/nike", "https://youtube.com/nike", "https://tiktok.com/@nike", "https://nike.com"},
 		{"toms@example.com", "Toms and Toms Coffee Shop", "09123456782", fmt.Sprintf("%s/assets/tomslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/tomsbanner.jpg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8430472), floatPtr(126.1347197), "https://facebook.com/tomscoffee", "https://instagram.com/tomscoffee", "", "", "", "https://tiktok.com/@tomscoffee", "https://tomscoffee.com"},
-		{"711@example.com", "7-Eleven", "09123456783", fmt.Sprintf("%s/assets/711logo.png", s3BaseURL), fmt.Sprintf("%s/assets/711banner.webp", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "https://facebook.com/7eleven", "https://instagram.com/7eleven", "https://twitter.com/7eleven", "", "", "", "https://7-eleven.com"},
+		{"711@example.com", "7-Eleven", "09123456783", fmt.Sprintf("%s/assets/711logo.png", s3BaseURL), fmt.Sprintf("%s/assets/711banner.webp", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "https://facebook.com/7eleven", "https://instagram.com/7eleven", "https://twitter.com/7eleven", "", "", "", "", "https://7-eleven.com"},
 		{"walmart@example.com", "Walmart", "09123456784", fmt.Sprintf("%s/assets/walmartlogo.png", s3BaseURL), fmt.Sprintf("%s/assets/walmartbanner.jpg", s3BaseURL), "Del Carmen Road, Del Carmen, Surigao del Norte", floatPtr(9.7739032), floatPtr(126.1304724), "https://facebook.com/walmart", "https://instagram.com/walmart", "https://twitter.com/walmart", "https://linkedin.com/company/walmart", "https://youtube.com/walmart", "", "https://walmart.com"},
+		{"arons@example.com", "Arons", "09123456785", fmt.Sprintf("%s/assets/aronslogo.png", s3BaseURL), fmt.Sprintf("%s/assets/aronsbanner.png", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772), "", "", "", "", "", "", ""},
+		{"arniestore@example.com", "Arnie Store", "09123456786", fmt.Sprintf("%s/assets/arniestorelogo.png", s3BaseURL), fmt.Sprintf("%s/assets/arniestorebanner.png", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "", "", "", "", "", "", ""},
 	}
 
 	for _, s := range suppliers {
