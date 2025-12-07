@@ -56,6 +56,7 @@ func TestRegister(t *testing.T) {
 			Email:    "test@example.com",
 			Password: "password123",
 			Name:     "Test User",
+			Phone:    "1234567890",
 			Role:     "supplier",
 		}
 
@@ -87,6 +88,7 @@ func TestRegister(t *testing.T) {
 			Email:    "test@example.com",
 			Password: "password123",
 			Name:     "Test User 2",
+			Phone:    "1234567891",
 			Role:     "store",
 		}
 
@@ -107,6 +109,7 @@ func TestRegister(t *testing.T) {
 			Email:    "test2@example.com",
 			Password: "password123",
 			Name:     "Test User",
+			Phone:    "1234567892",
 			Role:     "invalid",
 		}
 
@@ -135,6 +138,7 @@ func TestLogin(t *testing.T) {
 		Email:    "login@example.com",
 		Password: string(hashedPassword),
 		Name:     "Login User",
+		Phone:    "1234567893",
 		Role:     models.RoleSupplier,
 	}
 	database.DB.Create(&user)
