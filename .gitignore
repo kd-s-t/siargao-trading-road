@@ -76,3 +76,6 @@ infrastructure/terraform/modules/security/splitsafe-key-development.pem
 
 # AWS
 .aws-sam/
+
+# Assets
+assets/
