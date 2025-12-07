@@ -70,13 +70,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 10),
                     Image.asset(
                       'assets/str.png',
                       width: 320,
                       height: 128,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 14),
                     Card(
                       elevation: 3,
                       child: Padding(

@@ -9,10 +9,12 @@ import 'package:siargao_trading_road/models/order.dart';
 import 'package:siargao_trading_road/models/user.dart';
 import 'package:siargao_trading_road/widgets/order_map.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
+import 'package:siargao_trading_road/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -37,10 +39,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   int _ratingValue = 5;
   final _ratingCommentController = TextEditingController();
   String? _errorMessage;
+  File? _selectedImage;
 
   @override
   void initState() {
     super.initState();
+    _messageController.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         Future.delayed(const Duration(milliseconds: 100), () {
@@ -219,15 +227,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _handleSendMessage() async {
-    if (_order?.id == null || _messageController.text.trim().isEmpty || _sendingMessage) return;
+    if (_order?.id == null || (_messageController.text.trim().isEmpty && _selectedImage == null) || _sendingMessage) return;
 
     setState(() {
       _sendingMessage = true;
     });
 
     try {
-      await OrderService.createMessage(_order!.id, _messageController.text.trim());
+      String? imageUrl;
+      if (_selectedImage != null) {
+        final uploadResult = await AuthService.uploadImage(_selectedImage!.path);
+        imageUrl = uploadResult['url'];
+      }
+
+      await OrderService.createMessage(
+        _order!.id,
+        _messageController.text.trim().isEmpty ? '' : _messageController.text.trim(),
+        imageUrl: imageUrl,
+      );
       _messageController.clear();
+      setState(() {
+        _selectedImage = null;
+      });
       await _loadMessages();
     } catch (e) {
       if (mounted) {
@@ -241,6 +262,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           _sendingMessage = false;
         });
       }
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
     }
   }
 
@@ -539,22 +574,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 children: [
                   _buildOrderCard(entity, entityName, user),
                   _buildItemsCard(),
+                  if (_order!.store != null && _order!.supplier != null)
+                    _buildChatCard(user, entity, entityName),
+                  if (_hasActionButtons(user))
+                    _buildActionsCard(entity, entityName, user),
                   if (_order!.ratings != null && _order!.ratings!.isNotEmpty) _buildRatingsCard(),
                   if (_canRate()) _buildRateButton(entity, user),
-                  if (_order!.store != null && _order!.supplier != null) _buildChatCard(user),
-                  if (_order!.status == 'delivered')
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: OutlinedButton.icon(
-                        onPressed: _handleDownloadInvoice,
-                        icon: const Icon(Icons.download),
-                        label: const Text('Download Invoice'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
-                        ),
-                      ),
-                    ),
-                  _buildActionsCard(entity, entityName, user),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -688,9 +713,34 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   child: Row(
                     children: [
                       if (entity?.logoUrl != null && entity!.logoUrl!.isNotEmpty)
-                        CircleAvatar(
-                          radius: 25,
-                          backgroundImage: NetworkImage(entity.logoUrl!),
+                        ClipOval(
+                          child: Image.network(
+                            entity.logoUrl!,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                width: 50,
+                                height: 50,
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return CircleAvatar(
+                                radius: 25,
+                                backgroundColor: Colors.blue,
+                                child: Text(
+                                  entity.name.isNotEmpty == true ? entity.name[0].toUpperCase() : '?',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              );
+                            },
+                          ),
                         )
                       else
                         CircleAvatar(
@@ -794,9 +844,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Order Items',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'Order Items',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                if (_order!.status == 'delivered')
+                  OutlinedButton.icon(
+                    onPressed: _handleDownloadInvoice,
+                    icon: const Icon(Icons.download, size: 16),
+                    label: const Text(
+                      'Download Invoice',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: const Size(0, 32),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 12),
             ..._order!.orderItems.map((item) => Card(
@@ -813,12 +882,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               width: 60,
                               height: 60,
                               fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.grey[200],
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                          : null,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                );
+                              },
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
                                   width: 60,
                                   height: 60,
                                   color: Colors.grey[300],
-                                  child: const Icon(Icons.image_not_supported),
+                                  child: const Icon(Icons.image_not_supported, size: 24),
                                 );
                               },
                             ),
@@ -899,49 +984,54 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            ..._order!.ratings!.map((rating) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+            ..._order!.ratings!.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final rating = entry.value;
+                  final isLast = index == _order!.ratings!.length - 1;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              rating.rater?.name ?? 'Unknown',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            Row(
+                              children: [
+                                ...List.generate(5, (index) {
+                                  return Icon(
+                                    index < rating.rating ? Icons.star : Icons.star_border,
+                                    color: Colors.amber,
+                                    size: 16,
+                                  );
+                                }),
+                                const SizedBox(width: 4),
+                                Text('${rating.rating}/5'),
+                              ],
+                            ),
+                          ],
+                        ),
+                        if (rating.comment != null && rating.comment!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
                           Text(
-                            rating.rater?.name ?? 'Unknown',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          Row(
-                            children: [
-                              ...List.generate(5, (index) {
-                                return Icon(
-                                  index < rating.rating ? Icons.star : Icons.star_border,
-                                  color: Colors.amber,
-                                  size: 16,
-                                );
-                              }),
-                              const SizedBox(width: 4),
-                              Text('${rating.rating}/5'),
-                            ],
+                            '"${rating.comment}"',
+                            style: const TextStyle(fontStyle: FontStyle.italic),
                           ),
                         ],
-                      ),
-                      if (rating.comment != null && rating.comment!.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
-                          '"${rating.comment}"',
-                          style: const TextStyle(fontStyle: FontStyle.italic),
+                          _formatDate(rating.createdAt),
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
+                        if (!isLast) const Divider(),
                       ],
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatDate(rating.createdAt),
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const Divider(),
-                    ],
-                  ),
-                )),
+                    ),
+                  );
+                }),
           ],
         ),
       ),
@@ -970,7 +1060,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildChatCard(user) {
+  Widget _buildChatCard(user, User? entity, String entityName) {
     final messagingClosed = _isMessagingClosed();
 
     return Card(
@@ -999,7 +1089,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
               ],
             ),
-            const Divider(),
             Container(
               height: 200,
               decoration: BoxDecoration(
@@ -1037,7 +1126,107 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                    Text(message.content),
+                                    if (message.imageUrl != null && message.imageUrl!.isNotEmpty) ...[
+                                      GestureDetector(
+                                        onTap: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) => Dialog(
+                                              backgroundColor: Colors.transparent,
+                                              insetPadding: const EdgeInsets.all(16),
+                                              child: Stack(
+                                                children: [
+                                                  Center(
+                                                    child: InteractiveViewer(
+                                                      minScale: 0.5,
+                                                      maxScale: 4.0,
+                                                      child: Image.network(
+                                                        message.imageUrl!,
+                                                        fit: BoxFit.contain,
+                                                        loadingBuilder: (context, child, loadingProgress) {
+                                                          if (loadingProgress == null) return child;
+                                                          return Container(
+                                                            width: 300,
+                                                            height: 300,
+                                                            color: Colors.black87,
+                                                            child: const Center(
+                                                              child: CircularProgressIndicator(
+                                                                color: Colors.white,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                        errorBuilder: (context, error, stackTrace) {
+                                                          return Container(
+                                                            width: 300,
+                                                            height: 300,
+                                                            color: Colors.black87,
+                                                            child: const Center(
+                                                              child: Icon(
+                                                                Icons.image_not_supported,
+                                                                color: Colors.white,
+                                                                size: 50,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Positioned(
+                                                    top: 8,
+                                                    right: 8,
+                                                    child: IconButton(
+                                                      icon: const Icon(Icons.close, color: Colors.white),
+                                                      onPressed: () => Navigator.of(context).pop(),
+                                                      style: IconButton.styleFrom(
+                                                        backgroundColor: Colors.black54,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(4),
+                                          child: Image.network(
+                                            message.imageUrl!,
+                                            width: 200,
+                                            fit: BoxFit.cover,
+                                            loadingBuilder: (context, child, loadingProgress) {
+                                              if (loadingProgress == null) return child;
+                                              return Container(
+                                                width: 200,
+                                                height: 150,
+                                                color: Colors.grey[200],
+                                                child: Center(
+                                                  child: CircularProgressIndicator(
+                                                    value: loadingProgress.expectedTotalBytes != null
+                                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                        : null,
+                                                    strokeWidth: 2,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                width: 200,
+                                                height: 150,
+                                                color: Colors.grey[300],
+                                                child: const Icon(Icons.image_not_supported, size: 40),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                      if (message.content.isNotEmpty) const SizedBox(height: 4),
+                                    ],
+                                    if (message.content.isNotEmpty)
+                                      Text(message.content),
+                                    const SizedBox(height: 2),
                                     Text(
                                       _formatTime(message.createdAt),
                                       style: const TextStyle(fontSize: 10, color: Colors.grey),
@@ -1050,8 +1239,47 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         ),
             ),
             const SizedBox(height: 8),
+            if (_selectedImage != null) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        _selectedImage!,
+                        width: 200,
+                        height: 150,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                        onPressed: () {
+                          setState(() {
+                            _selectedImage = null;
+                          });
+                        },
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black54,
+                          padding: const EdgeInsets.all(4),
+                          iconSize: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.image),
+                  onPressed: messagingClosed || _sendingMessage ? null : _pickImage,
+                ),
                 Expanded(
                   child: TextField(
                     controller: _messageController,
@@ -1072,30 +1300,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.send),
-                  onPressed: messagingClosed || _messageController.text.trim().isEmpty || _sendingMessage
+                  onPressed: messagingClosed || (_messageController.text.trim().isEmpty && _selectedImage == null) || _sendingMessage
                       ? null
                       : _handleSendMessage,
                 ),
               ],
             ),
-            if (messagingClosed)
-              const Text(
-                'Messaging closed. Order was delivered more than 12 hours ago.',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionsCard(User? entity, String entityName, user) {
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
+            const SizedBox(height: 8),
             ElevatedButton.icon(
               onPressed: () => _handleCall(entity),
               icon: const Icon(Icons.phone),
@@ -1105,8 +1316,35 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 minimumSize: const Size(double.infinity, 48),
               ),
             ),
-            if (user?.role == 'supplier' && _order!.status == 'preparing') ...[
-              const SizedBox(height: 8),
+            if (messagingClosed)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Messaging closed. Order was delivered more than 12 hours ago.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _hasActionButtons(user) {
+    if (user?.role != 'supplier') return false;
+    return _order!.status == 'preparing' ||
+        _order!.status == 'in_transit' ||
+        (_order!.status == 'delivered' && _order!.paymentStatus != 'paid');
+  }
+
+  Widget _buildActionsCard(User? entity, String entityName, user) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            if (user?.role == 'supplier' && _order!.status == 'preparing')
               OutlinedButton(
                 onPressed: _updatingStatus ? null : () => _handleUpdateStatus('in_transit'),
                 style: OutlinedButton.styleFrom(
@@ -1120,9 +1358,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       )
                     : const Text('Mark In Transit'),
               ),
-            ],
             if (user?.role == 'supplier' && _order!.status == 'in_transit') ...[
-              const SizedBox(height: 8),
+              if (user?.role == 'supplier' && _order!.status == 'preparing')
+                const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: _updatingStatus ? null : _handleMarkDelivered,
                 style: OutlinedButton.styleFrom(

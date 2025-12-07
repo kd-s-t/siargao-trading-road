@@ -303,69 +303,8 @@ func SeedProducts() error {
 		stock       int
 		unit        string
 		category    string
-	}{
-		"nike@example.com": {
-			{"Nike Air Max Running Shoes", "Premium running shoes with air cushioning", "NIKE-SHOE-001", 5500.00, 50, "pair", "Footwear"},
-			{"Nike Dri-FIT T-Shirt", "Moisture-wicking athletic t-shirt", "NIKE-APP-001", 1200.00, 100, "piece", "Apparel"},
-			{"Nike Basketball", "Official size basketball", "NIKE-EQP-001", 2500.00, 75, "piece", "Equipment"},
-			{"Nike Sports Socks Pack", "Pack of 3 athletic socks", "NIKE-ACC-001", 450.00, 200, "pack", "Accessories"},
-			{"Nike Water Bottle", "Reusable sports water bottle", "NIKE-ACC-002", 800.00, 150, "piece", "Accessories"},
-			{"Nike Backpack", "Sports backpack with multiple compartments", "NIKE-ACC-003", 3500.00, 60, "piece", "Accessories"},
-		},
-		"toms@example.com": {
-			{"Premium Arabica Coffee Beans 1kg", "High quality Arabica coffee beans", "TOMS-COF-001", 850.00, 100, "kg", "Coffee"},
-			{"Espresso Blend 500g", "Dark roast espresso blend", "TOMS-COF-002", 650.00, 150, "kg", "Coffee"},
-			{"Coffee Filters 100pcs", "Paper coffee filters", "TOMS-ACC-001", 120.00, 300, "pack", "Accessories"},
-			{"French Press Coffee Maker", "Stainless steel French press", "TOMS-EQP-001", 2500.00, 40, "piece", "Equipment"},
-			{"Coffee Grinder", "Electric coffee bean grinder", "TOMS-EQP-002", 3500.00, 30, "piece", "Equipment"},
-			{"Coffee Cups Set of 4", "Ceramic coffee cups", "TOMS-ACC-002", 800.00, 80, "set", "Accessories"},
-		},
-		"711@example.com": {
-			{"Coca Cola 1.5L", "Carbonated soft drink", "711-BEV-001", 75.00, 500, "bottle", "Beverages"},
-			{"Instant Noodles Pack", "Pack of instant noodles", "711-FOD-001", 25.00, 1000, "pack", "Food"},
-			{"Chips Variety Pack", "Assorted chips pack", "711-SNK-001", 150.00, 300, "pack", "Snacks"},
-			{"Mineral Water 500ml", "Purified drinking water", "711-BEV-002", 25.00, 1000, "bottle", "Beverages"},
-			{"Energy Drink", "Caffeinated energy drink", "711-BEV-003", 95.00, 400, "can", "Beverages"},
-			{"Sandwich", "Ready-to-eat sandwich", "711-FOD-002", 120.00, 200, "piece", "Food"},
-		},
-		"walmart@example.com": {
-			{"Premium Rice 50kg", "High quality premium rice", "WAL-GRN-001", 2500.00, 100, "bag", "Grains"},
-			{"Fresh Chicken Whole", "Fresh whole chicken", "WAL-MT-001", 180.00, 200, "piece", "Meat"},
-			{"Tomatoes Fresh", "Fresh red tomatoes", "WAL-VEG-001", 80.00, 300, "kg", "Vegetables"},
-			{"Pork Belly", "Fresh pork belly", "WAL-MT-002", 350.00, 150, "kg", "Meat"},
-			{"Onions", "Fresh white onions", "WAL-VEG-002", 60.00, 250, "kg", "Vegetables"},
-			{"Beef Steak", "Premium beef steak cuts", "WAL-MT-003", 450.00, 100, "kg", "Meat"},
-		},
-		"arons@example.com": {
-			{"Premium Rice 25kg", "High quality premium rice", "ARONS-GRN-001", 1300.00, 150, "bag", "Grains"},
-			{"Cooking Oil 1L", "Vegetable cooking oil", "ARONS-CON-001", 120.00, 200, "bottle", "Condiments"},
-			{"Sugar 1kg", "White refined sugar", "ARONS-CON-002", 65.00, 300, "kg", "Condiments"},
-			{"Salt 500g", "Iodized salt", "ARONS-CON-003", 25.00, 400, "pack", "Condiments"},
-			{"Canned Sardines 155g", "Canned sardines in oil", "ARONS-CAN-001", 35.00, 500, "can", "Canned Goods"},
-			{"Instant Coffee 200g", "Instant coffee powder", "ARONS-BEV-001", 85.00, 250, "pack", "Beverages"},
-			{"Bread Loaf", "Fresh white bread", "ARONS-BAK-001", 45.00, 100, "loaf", "Bakery"},
-			{"Eggs 1 Dozen", "Fresh chicken eggs", "ARONS-DAI-001", 90.00, 200, "dozen", "Dairy"},
-			{"Oil 17kg", "Cooking oil 17kg", "ARONS-CON-004", 1470.00, 100, "17kg", "Condiments"},
-			{"Brown Sugar", "Brown sugar", "ARONS-CON-005", 2500.00, 150, "kg", "Condiments"},
-			{"White Sugar", "White refined sugar", "ARONS-CON-006", 3180.00, 150, "kg", "Condiments"},
-			{"Red Rice Bernal", "Red rice bernal variety", "ARONS-GRN-002", 1100.00, 100, "kg", "Grains"},
-			{"Red Rice Yan Yan", "Red rice yan yan variety", "ARONS-GRN-003", 1070.00, 100, "kg", "Grains"},
-			{"Royal", "Royal rice", "ARONS-GRN-004", 1425.00, 100, "kg", "Grains"},
-			{"Nikel", "Nikel rice", "ARONS-GRN-005", 1215.00, 100, "kg", "Grains"},
-			{"10kg", "Rice 10kg", "ARONS-GRN-006", 495.00, 150, "10kg", "Grains"},
-			{"Kuhako Yellow", "Kuhako yellow rice", "ARONS-GRN-007", 1470.00, 100, "kg", "Grains"},
-		},
-		"arniestore@example.com": {
-			{"Premium Rice 25kg", "High quality premium rice", "ARNIE-GRN-001", 1300.00, 150, "bag", "Grains"},
-			{"Cooking Oil 1L", "Vegetable cooking oil", "ARNIE-CON-001", 120.00, 200, "bottle", "Condiments"},
-			{"Sugar 1kg", "White refined sugar", "ARNIE-CON-002", 65.00, 300, "kg", "Condiments"},
-			{"Salt 500g", "Iodized salt", "ARNIE-CON-003", 25.00, 400, "pack", "Condiments"},
-			{"Canned Sardines 155g", "Canned sardines in oil", "ARNIE-CAN-001", 35.00, 500, "can", "Canned Goods"},
-			{"Instant Coffee 200g", "Instant coffee powder", "ARNIE-BEV-001", 85.00, 250, "pack", "Beverages"},
-			{"Bread Loaf", "Fresh white bread", "ARNIE-BAK-001", 45.00, 100, "loaf", "Bakery"},
-			{"Eggs 1 Dozen", "Fresh chicken eggs", "ARNIE-DAI-001", 90.00, 200, "dozen", "Dairy"},
-		},
-	}
+		imageURL    string
+	}{}
 
 	for email, products := range supplierProducts {
 		var supplier models.User
@@ -376,6 +315,12 @@ func SeedProducts() error {
 		for _, template := range products {
 			var existing models.Product
 			if err := DB.Where("sku = ?", template.sku).First(&existing).Error; err == nil {
+				if template.imageURL != "" {
+					existing.ImageURL = template.imageURL
+					if err := DB.Save(&existing).Error; err != nil {
+						return err
+					}
+				}
 				continue
 			}
 
@@ -388,6 +333,7 @@ func SeedProducts() error {
 				StockQuantity: template.stock,
 				Unit:          template.unit,
 				Category:      template.category,
+				ImageURL:      template.imageURL,
 			}
 
 			if err := DB.Create(&product).Error; err != nil {

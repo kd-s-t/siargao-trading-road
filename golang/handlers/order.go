@@ -538,11 +538,20 @@ func SubmitOrder(c *gin.Context) {
 	order.Distance = req.Distance
 	order.TotalAmount = subtotal + req.DeliveryFee
 	if req.DeliveryOption == "deliver" {
-		if req.ShippingAddress == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "shipping address is required when delivery option is 'deliver'"})
-			return
+		if req.ShippingAddress != "" {
+			order.ShippingAddress = req.ShippingAddress
+		} else {
+			var storeUser models.User
+			if err := database.DB.First(&storeUser, userID).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				return
+			}
+			if storeUser.Address == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "shipping address is required when delivery option is 'deliver'. Please update your address in your profile."})
+				return
+			}
+			order.ShippingAddress = storeUser.Address
 		}
-		order.ShippingAddress = req.ShippingAddress
 	}
 	if req.Notes != "" {
 		order.Notes = req.Notes

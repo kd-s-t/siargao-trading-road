@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:siargao_trading_road/services/order_service.dart';
 import 'package:siargao_trading_road/models/order.dart';
+import 'package:siargao_trading_road/providers/auth_provider.dart';
 
 class TruckScreen extends StatefulWidget {
   const TruckScreen({super.key});
@@ -175,11 +177,18 @@ class _TruckScreenState extends State<TruckScreen> {
         final totalQuantity = _draftOrder!.orderItems.fold<int>(0, (sum, item) => sum + item.quantity);
         final deliveryFee = _deliveryOption == 'deliver' ? totalQuantity * 20.0 : 0.0;
 
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final user = authProvider.user;
+        final shippingAddress = _deliveryOption == 'deliver' && user?.address != null && user!.address!.isNotEmpty
+            ? user.address!
+            : null;
+
         await OrderService.submitOrder(
           _draftOrder!.id,
           paymentMethod: _paymentMethod,
           deliveryOption: _deliveryOption,
           deliveryFee: deliveryFee,
+          shippingAddress: shippingAddress,
           notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
         );
         if (mounted) {
@@ -415,6 +424,43 @@ class _TruckScreenState extends State<TruckScreen> {
                         });
                       },
                     ),
+                    if (_deliveryOption == 'deliver') ...[
+                      const SizedBox(height: 16),
+                      Consumer<AuthProvider>(
+                        builder: (context, authProvider, child) {
+                          final user = authProvider.user;
+                          if (user?.address != null && user!.address!.isNotEmpty) {
+                            return Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey[300]!),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Delivery Address:',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    user.address!,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ],
                   ],
                 ),
               ),
