@@ -308,6 +308,37 @@ jobs:
             echo "✅ Both images verified in ECR"
           EOF
 
+      - name: Clean up Docker resources
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            cd ~/siargao-trading-road
+            
+            echo "🧹 Cleaning up Docker resources..."
+            
+            echo "📊 Disk usage before cleanup:"
+            df -h / | tail -1
+            
+            echo "🛑 Stopping containers..."
+            docker compose down || true
+            
+            echo "🗑️ Removing old images (keeping latest 2)..."
+            docker images --format "{{.Repository}}:{{.Tag}}" | grep siargaotradingroad-development | sort -V | head -n -2 | xargs -r docker rmi -f || true
+            
+            echo "🧹 Pruning unused Docker resources..."
+            docker system prune -a -f --volumes || true
+            
+            echo "📋 Cleaning up old logs..."
+            sudo journalctl --vacuum-time=3d || true
+            sudo find /var/log -type f -name "*.log" -mtime +7 -delete || true
+            
+            echo "📊 Disk usage after cleanup:"
+            df -h / | tail -1
+            echo "✅ Cleanup complete"
+          EOF
+
       - name: Pull Docker images
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -360,7 +391,7 @@ jobs:
             export PATH=$PATH:/usr/bin:/usr/local/bin
             cd ~/siargao-trading-road
             
-            echo "🛑 Stopping existing containers..."
+            echo "🛑 Ensuring containers are stopped..."
             docker compose down || true
             echo "✅ Containers stopped"
           EOF
