@@ -16,6 +16,7 @@ export interface Message {
     role: string;
   };
   content: string;
+  image_url?: string;
   created_at: string;
 }
 
@@ -243,8 +244,12 @@ export const mobileOrderService = {
     const { data } = await mobileApi.get<Message[]>(`/orders/${orderId}/messages`);
     return data;
   },
-  createMessage: async (orderId: number, content: string): Promise<Message> => {
-    const { data } = await mobileApi.post<Message>(`/orders/${orderId}/messages`, { content });
+  createMessage: async (orderId: number, content: string, imageUrl?: string): Promise<Message> => {
+    const body: { content: string; image_url?: string } = { content };
+    if (imageUrl) {
+      body.image_url = imageUrl;
+    }
+    const { data } = await mobileApi.post<Message>(`/orders/${orderId}/messages`, body);
     return data;
   },
   getMyAnalytics: async (): Promise<{ average_rating?: number; rating_count: number }> => {

@@ -67,6 +67,10 @@ export interface Order {
   supplier?: User;
   status: string;
   total_amount: number;
+  payment_method?: string;
+  delivery_option?: string;
+  delivery_fee?: number;
+  distance?: number;
   shipping_address?: string;
   notes?: string;
   order_items: OrderItem[];

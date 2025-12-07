@@ -26,10 +26,10 @@ export function useMessages(orderId: number | null) {
     }
   }, [orderId]);
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, imageUrl?: string) => {
     if (!orderId) return;
     try {
-      await mobileOrderService.createMessage(orderId, content);
+      await mobileOrderService.createMessage(orderId, content, imageUrl);
       await loadMessages(orderId);
     } catch (error) {
       throw error;

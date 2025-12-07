@@ -86,6 +86,9 @@ func TestFullBusinessFlow(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		t.Run(fmt.Sprintf("Store %d create order with supplier %d", i+1, i+1), func(t *testing.T) {
 			client := storeClients[i]
+			if client == nil {
+				t.Fatalf("Store client %d is nil", i+1)
+			}
 			client.SetToken(storeTokens[i])
 
 			suppliersList := client.GetSuppliers()
@@ -116,6 +119,9 @@ func TestFullBusinessFlow(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		t.Run(fmt.Sprintf("Store %d create second order with supplier %d", i+1, (i+1)%3+1), func(t *testing.T) {
 			client := storeClients[i]
+			if client == nil {
+				t.Fatalf("Store client %d is nil", i+1)
+			}
 			client.SetToken(storeTokens[i])
 
 			selectedSupplierID := supplierIDs[(i+1)%3]
@@ -141,6 +147,9 @@ func TestFullBusinessFlow(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		t.Run(fmt.Sprintf("Store %d create third order with supplier %d", i+1, (i+2)%3+1), func(t *testing.T) {
 			client := storeClients[i]
+			if client == nil {
+				t.Fatalf("Store client %d is nil", i+1)
+			}
 			client.SetToken(storeTokens[i])
 
 			selectedSupplierID := supplierIDs[(i+2)%3]

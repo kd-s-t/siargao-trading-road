@@ -150,6 +150,25 @@ This document outlines the complete business workflows for each user role in the
 - **Action**: Get all messages for a specific order
 - **API**: `GET /api/orders/:id/messages`
 - **Response**: Array of message objects with sender information
+- **Response Format**:
+  ```json
+  [
+    {
+      "id": 0,
+      "order_id": 0,
+      "sender_id": 0,
+      "sender": {
+        "id": 0,
+        "name": "string",
+        "role": "supplier" | "store"
+      },
+      "content": "string",
+      "read_at": "2024-01-01T00:00:00Z" | null,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  ]
+  ```
+- **Note**: Messages are ordered by `created_at` in ascending order (oldest first)
 
 #### Send Order Message
 - **Action**: Send a message to the store regarding an order
@@ -160,9 +179,11 @@ This document outlines the complete business workflows for each user role in the
     "content": "string"
   }
   ```
+- **Response**: Created message object with sender information
 - **Constraints**: 
   - Message must be 1-5000 characters
   - For delivered orders, messaging closes 12 hours after delivery
+  - Only supplier and store involved in the order can send messages
 
 #### Send Invoice Email
 - **Action**: Send invoice email to store
@@ -363,6 +384,25 @@ This document outlines the complete business workflows for each user role in the
 - **Action**: Get all messages for a specific order
 - **API**: `GET /api/orders/:id/messages`
 - **Response**: Array of message objects with sender information
+- **Response Format**:
+  ```json
+  [
+    {
+      "id": 0,
+      "order_id": 0,
+      "sender_id": 0,
+      "sender": {
+        "id": 0,
+        "name": "string",
+        "role": "supplier" | "store"
+      },
+      "content": "string",
+      "read_at": "2024-01-01T00:00:00Z" | null,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  ]
+  ```
+- **Note**: Messages are ordered by `created_at` in ascending order (oldest first)
 
 #### Send Order Message
 - **Action**: Send a message to the supplier regarding an order
@@ -373,7 +413,11 @@ This document outlines the complete business workflows for each user role in the
     "content": "string"
   }
   ```
-- **Constraints**: Same as supplier messaging
+- **Response**: Created message object with sender information
+- **Constraints**: 
+  - Message must be 1-5000 characters
+  - For delivered orders, messaging closes 12 hours after delivery
+  - Only supplier and store involved in the order can send messages
 
 ### 2.4 Ratings
 
@@ -468,10 +512,29 @@ The order status flow follows this progression:
 
 ### 3.4 Messaging System
 
-- Messages are tied to specific orders
-- Both store and supplier can send messages
-- For delivered orders, messaging closes 12 hours after delivery
-- Message content: 1-5000 characters
+- **Messages Table Structure**:
+  - Messages are stored in the `messages` table
+  - Each message is linked to an order via `order_id`
+  - Each message has a `sender_id` referencing the user who sent it
+  - Messages include `read_at` timestamp for read receipts (nullable)
+  - Messages support soft deletes via `deleted_at` timestamp
+
+- **Message Object Fields**:
+  - `id`: Unique message identifier
+  - `order_id`: Reference to the order
+  - `sender_id`: Reference to the user who sent the message
+  - `sender`: Sender user object (id, name, role)
+  - `content`: Message text content (1-5000 characters)
+  - `read_at`: Timestamp when message was read (nullable)
+  - `created_at`: Message creation timestamp
+
+- **Messaging Rules**:
+  - Messages are tied to specific orders
+  - Both store and supplier can send messages for their orders
+  - For delivered orders, messaging closes 12 hours after delivery
+  - Message content: 1-5000 characters
+  - Messages are ordered chronologically (oldest first)
+  - Only users involved in the order (store or supplier) can view and send messages
 
 ### 3.5 Minimum Order Amount and Delivery Fee
 

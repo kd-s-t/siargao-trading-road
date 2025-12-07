@@ -6,24 +6,37 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
 	"siargao-trading-road/middleware"
 	"siargao-trading-road/models"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func setupProductTest(t *testing.T) (*gin.Engine, *config.Config, models.User) {
 	gin.SetMode(gin.TestMode)
 
-	cfg := &config.Config{
-		JWTSecret: "test-secret-key",
+	os.Setenv("DB_NAME", "siargao_trading_road_test")
+	os.Setenv("JWT_SECRET", "test-secret-key")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
 	}
 
-	database.DB.Exec("TRUNCATE TABLE products, users CASCADE")
+	err = database.Connect(cfg)
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	if database.DB != nil {
+		database.DB.Exec("TRUNCATE TABLE products, users CASCADE")
+	}
 
 	supplier := models.User{
 		Email:    "supplier@test.com",

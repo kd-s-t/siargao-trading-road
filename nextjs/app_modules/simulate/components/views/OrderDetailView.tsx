@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -23,10 +23,12 @@ import {
   ChatBubbleOutline as ChatIcon,
   ExpandMore as ExpandMoreIcon,
   Star as StarIcon,
+  Image as ImageIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { Order, OrderRating } from '@/lib/users';
 import { User } from '@/lib/auth';
-import { Message, mobileOrderService } from '../../services/mobileApi';
+import { Message, mobileOrderService, mobileAuthService } from '../../services/mobileApi';
 import { OrderMap } from '@/components/OrderMap';
 import { downloadInvoice } from '../../utils/invoice';
 import { Rating, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
@@ -37,7 +39,7 @@ interface OrderDetailViewProps {
   messages: Message[];
   refreshingMessages: boolean;
   onRefreshMessages: () => void;
-  onSendMessage: (content: string) => Promise<void>;
+  onSendMessage: (content: string, imageUrl?: string) => Promise<void>;
   onUpdateStatus: (orderId: number, status: string) => Promise<void>;
   onMarkDeliveredClick: (orderId: number) => void;
   onToast: (message: string, type: 'success' | 'error') => void;
@@ -55,12 +57,16 @@ export function OrderDetailView({
   onToast,
 }: OrderDetailViewProps) {
   const [chatMessage, setChatMessage] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [orderItemsExpanded, setOrderItemsExpanded] = useState(false);
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [ratingValue, setRatingValue] = useState<number | null>(5);
   const [ratingComment, setRatingComment] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
   const [orderRatings, setOrderRatings] = useState<OrderRating[]>(order.ratings || []);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch fresh order details to get latest ratings when component mounts
   useEffect(() => {
@@ -99,8 +105,38 @@ export function OrderDetailView({
     );
   };
 
+  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      onToast('Please select an image file', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      onToast('File size must be less than 5MB', 'error');
+      return;
+    }
+
+    setSelectedImage(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+  };
+
   const handleSend = async () => {
-    if (!chatMessage.trim()) return;
     const isDelivered = order.status === 'delivered';
     const deliveredTime = order.updated_at ? new Date(order.updated_at) : null;
     const now = new Date();
@@ -109,9 +145,32 @@ export function OrderDetailView({
 
     if (messagingClosed) return;
 
+    if (!chatMessage.trim() && !selectedImage) return;
+
     try {
-      await onSendMessage(chatMessage.trim());
+      let imageUrl: string | undefined;
+
+      if (selectedImage) {
+        setUploadingImage(true);
+        try {
+          const result = await mobileAuthService.uploadImage(selectedImage, 'user');
+          imageUrl = result.url;
+        } catch (error) {
+          const err = error as { response?: { data?: { error?: string } } };
+          onToast(err.response?.data?.error || 'Failed to upload image', 'error');
+          setUploadingImage(false);
+          return;
+        }
+        setUploadingImage(false);
+      }
+
+      await onSendMessage(chatMessage.trim() || '', imageUrl);
       setChatMessage('');
+      setSelectedImage(null);
+      setImagePreview(null);
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
     } catch (error) {
       const err = error as { response?: { data?: { error?: string } } };
       onToast(err.response?.data?.error || 'Failed to send message', 'error');
@@ -147,7 +206,14 @@ export function OrderDetailView({
   };
 
   return (
-    <Box>
+    <Box
+      sx={{
+        '@keyframes spin': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+      }}
+    >
       <Box sx={{ mb: 2, overflow: 'hidden', borderRadius: 1, border: '1px solid #e0e0e0' }}>
         <OrderMap
           store={order.store}
@@ -195,6 +261,43 @@ export function OrderDetailView({
               ₱{order.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Typography>
           </Box>
+
+          {order.payment_method && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, opacity: 0.7 }}>
+                Payment Method:
+              </Typography>
+              <Typography variant="body2">
+                {order.payment_method === 'cash_on_delivery' ? 'Cash on Delivery' : 
+                 order.payment_method === 'gcash' ? 'GCash' : 
+                 order.payment_method}
+              </Typography>
+            </Box>
+          )}
+
+          {order.delivery_option && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, opacity: 0.7 }}>
+                Delivery Method:
+              </Typography>
+              <Typography variant="body2">
+                {order.delivery_option === 'pickup' ? 'Pickup' : 
+                 order.delivery_option === 'deliver' ? 'Deliver' : 
+                 order.delivery_option}
+              </Typography>
+            </Box>
+          )}
+
+          {order.delivery_fee !== undefined && order.delivery_fee > 0 && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, opacity: 0.7 }}>
+                Delivery Fee:
+              </Typography>
+              <Typography variant="body2">
+                ₱{order.delivery_fee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Typography>
+            </Box>
+          )}
 
           {order.created_at && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -526,9 +629,25 @@ export function OrderDetailView({
                       <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5, opacity: isCurrentUser ? 0.9 : 0.7 }}>
                         {message.sender.name}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: isCurrentUser ? 'white' : 'inherit' }}>
-                        {message.content}
-                      </Typography>
+                      {message.image_url && (
+                        <Box sx={{ mb: 1, borderRadius: 1, overflow: 'hidden' }}>
+                          <img
+                            src={message.image_url}
+                            alt="Message attachment"
+                            style={{
+                              maxWidth: '100%',
+                              maxHeight: 200,
+                              objectFit: 'contain',
+                              display: 'block',
+                            }}
+                          />
+                        </Box>
+                      )}
+                      {message.content && (
+                        <Typography variant="body2" sx={{ color: isCurrentUser ? 'white' : 'inherit' }}>
+                          {message.content}
+                        </Typography>
+                      )}
                       <Typography variant="caption" sx={{ display: 'block', mt: 0.5, opacity: isCurrentUser ? 0.8 : 0.6 }}>
                         {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </Typography>
@@ -537,7 +656,70 @@ export function OrderDetailView({
                 })
               )}
             </Box>
+            {imagePreview && (
+              <Box sx={{ mb: 1, position: 'relative', display: 'inline-block' }}>
+                <Box
+                  sx={{
+                    position: 'relative',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    border: '1px solid #e0e0e0',
+                    maxWidth: 200,
+                  }}
+                >
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: 150,
+                      display: 'block',
+                      objectFit: 'contain',
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={handleRemoveImage}
+                    sx={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      bgcolor: 'rgba(0, 0, 0, 0.5)',
+                      color: 'white',
+                      '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
+                    }}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              </Box>
+            )}
             <Box sx={{ display: 'flex', gap: 1 }}>
+              <input
+                type="file"
+                accept="image/*"
+                ref={imageInputRef}
+                onChange={handleImageSelect}
+                style={{ display: 'none' }}
+                disabled={messagingClosed || uploadingImage}
+              />
+              <IconButton
+                size="small"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={messagingClosed || uploadingImage}
+                sx={{
+                  bgcolor: 'white',
+                  border: '1px solid #e0e0e0',
+                  '&:hover': { bgcolor: '#f5f5f5' },
+                  '&.Mui-disabled': { bgcolor: '#f5f5f5' },
+                }}
+              >
+                {uploadingImage ? (
+                  <Box sx={{ width: 20, height: 20, border: '2px solid', borderColor: 'primary.main', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <ImageIcon fontSize="small" />
+                )}
+              </IconButton>
               <TextField
                 fullWidth
                 size="small"
@@ -545,18 +727,18 @@ export function OrderDetailView({
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
                 onKeyPress={(e) => {
-                  if (e.key === 'Enter' && chatMessage.trim() && !messagingClosed) {
+                  if (e.key === 'Enter' && (chatMessage.trim() || selectedImage) && !messagingClosed && !uploadingImage) {
                     handleSend();
                   }
                 }}
-                disabled={messagingClosed}
+                disabled={messagingClosed || uploadingImage}
                 sx={{
                   '& .MuiOutlinedInput-root': { bgcolor: 'white' },
                 }}
               />
               <IconButton
                 color="primary"
-                disabled={messagingClosed || !chatMessage.trim()}
+                disabled={messagingClosed || (!chatMessage.trim() && !selectedImage) || uploadingImage}
                 onClick={handleSend}
                 sx={{
                   bgcolor: '#1976d2',
@@ -565,7 +747,11 @@ export function OrderDetailView({
                   '&.Mui-disabled': { bgcolor: '#e0e0e0', color: '#9e9e9e' },
                 }}
               >
-                <SendIcon />
+                {uploadingImage ? (
+                  <Box sx={{ width: 20, height: 20, border: '2px solid', borderColor: 'white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <SendIcon />
+                )}
               </IconButton>
             </Box>
             {messagingClosed && (

@@ -6,23 +6,37 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
 	"siargao-trading-road/middleware"
 	"siargao-trading-road/models"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func setupOrderTest(t *testing.T) (*gin.Engine, *config.Config, models.User, models.User) {
 	gin.SetMode(gin.TestMode)
 
-	cfg := &config.Config{
-		JWTSecret: "test-secret-key",
+	os.Setenv("DB_NAME", "siargao_trading_road_test")
+	os.Setenv("JWT_SECRET", "test-secret-key")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
 	}
 
-	database.DB.Exec("TRUNCATE TABLE order_items, orders, products, users CASCADE")
+	err = database.Connect(cfg)
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	if database.DB != nil {
+		database.DB.Exec("TRUNCATE TABLE order_items, orders, products, users CASCADE")
+	}
 
 	supplier := models.User{
 		Email:    "supplier@test.com",
@@ -60,6 +74,17 @@ func setupOrderTest(t *testing.T) (*gin.Engine, *config.Config, models.User, mod
 	}
 
 	return r, cfg, supplier, store
+}
+
+func createTestToken(userID uint, role string, cfg *config.Config) string {
+	claims := jwt.MapClaims{
+		"user_id": userID,
+		"email":   "test@example.com",
+		"role":    role,
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, _ := token.SignedString([]byte(cfg.JWTSecret))
+	return tokenString
 }
 
 func TestCreateDraftOrder(t *testing.T) {

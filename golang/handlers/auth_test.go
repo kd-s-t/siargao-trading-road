@@ -5,20 +5,31 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
+
+	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func setupAuthTest(t *testing.T) (*gin.Engine, *config.Config) {
 	gin.SetMode(gin.TestMode)
 
-	cfg := &config.Config{
-		JWTSecret: "test-secret-key",
+	os.Setenv("DB_NAME", "siargao_trading_road_test")
+	os.Setenv("JWT_SECRET", "test-secret-key")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
+	}
+
+	err = database.Connect(cfg)
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
 	}
 
 	r := gin.New()
@@ -36,7 +47,9 @@ func setupAuthTest(t *testing.T) (*gin.Engine, *config.Config) {
 func TestRegister(t *testing.T) {
 	r, _ := setupAuthTest(t)
 
-	database.DB.Exec("TRUNCATE TABLE users CASCADE")
+	if database.DB != nil {
+		database.DB.Exec("TRUNCATE TABLE users CASCADE")
+	}
 
 	t.Run("successful registration", func(t *testing.T) {
 		reqBody := RegisterRequest{
@@ -113,7 +126,9 @@ func TestRegister(t *testing.T) {
 func TestLogin(t *testing.T) {
 	r, _ := setupAuthTest(t)
 
-	database.DB.Exec("TRUNCATE TABLE users CASCADE")
+	if database.DB != nil {
+		database.DB.Exec("TRUNCATE TABLE users CASCADE")
+	}
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
 	user := models.User{

@@ -671,7 +671,8 @@ func CreateOrderMessage(c *gin.Context) {
 	}
 
 	var req struct {
-		Content string `json:"content" binding:"required"`
+		Content  string `json:"content"`
+		ImageURL string `json:"image_url"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -679,7 +680,12 @@ func CreateOrderMessage(c *gin.Context) {
 		return
 	}
 
-	if len(req.Content) == 0 || len(req.Content) > 5000 {
+	if req.ImageURL == "" && req.Content == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "message must have either content or an image"})
+		return
+	}
+
+	if req.Content != "" && len(req.Content) > 5000 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "message content must be between 1 and 5000 characters"})
 		return
 	}
@@ -688,6 +694,7 @@ func CreateOrderMessage(c *gin.Context) {
 		OrderID:  order.ID,
 		SenderID: userID,
 		Content:  req.Content,
+		ImageURL: req.ImageURL,
 	}
 
 	if err := database.DB.Create(&message).Error; err != nil {
