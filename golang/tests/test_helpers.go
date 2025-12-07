@@ -99,6 +99,7 @@ func (tc *TestClient) Register(email, password, name, role string) map[string]in
 		"email":    email,
 		"password": password,
 		"name":     name,
+		"phone":    "1234567890",
 		"role":     role,
 	}
 
