@@ -6,8 +6,91 @@ on:
   workflow_dispatch: # Manual trigger
 
 jobs:
-  build-and-push-ecr:
+  build:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        run: |
+          docker buildx create --use || true
+
+      - name: Build frontend image
+        env:
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+          NEXT_PUBLIC_API_URL: https://siargaotradingroad.com/api
+          NEXT_PUBLIC_ENVIRONMENT: production
+        run: |
+          echo "🐳 Building Next.js frontend image..."
+          docker buildx build --platform linux/amd64 \
+            --build-arg NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+            --build-arg NEXT_PUBLIC_ENVIRONMENT=$NEXT_PUBLIC_ENVIRONMENT \
+            -t $ECR_REPOSITORY-frontend:$IMAGE_TAG \
+            -t $ECR_REPOSITORY-frontend:latest \
+            --load \
+            -f Dockerfile \
+            .
+          echo "✅ Frontend image built: $ECR_REPOSITORY-frontend:$IMAGE_TAG"
+
+      - name: Build API image
+        env:
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "🐳 Building Go API image..."
+          docker buildx build --platform linux/amd64 \
+            -t $ECR_REPOSITORY-api:$IMAGE_TAG \
+            -t $ECR_REPOSITORY-api:latest \
+            --load \
+            -f Dockerfile.go \
+            .
+          echo "✅ API image built: $ECR_REPOSITORY-api:$IMAGE_TAG"
+
+      - name: Save frontend image
+        env:
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "💾 Saving frontend image..."
+          docker save $ECR_REPOSITORY-frontend:$IMAGE_TAG -o frontend-image.tar
+          docker save $ECR_REPOSITORY-frontend:latest -o frontend-image-latest.tar
+          echo "✅ Frontend image saved"
+
+      - name: Save API image
+        env:
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "💾 Saving API image..."
+          docker save $ECR_REPOSITORY-api:$IMAGE_TAG -o api-image.tar
+          docker save $ECR_REPOSITORY-api:latest -o api-image-latest.tar
+          echo "✅ API image saved"
+
+      - name: Upload frontend image artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-image
+          path: |
+            frontend-image.tar
+            frontend-image-latest.tar
+          retention-days: 1
+
+      - name: Upload API image artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-image
+          path: |
+            api-image.tar
+            api-image-latest.tar
+          retention-days: 1
+
+  push-ecr:
+    runs-on: ubuntu-latest
+    needs: [build]
     if: github.ref == 'refs/heads/main'
     
     steps:
@@ -43,42 +126,62 @@ jobs:
             fi
           done
 
-      - name: Setup Docker Buildx
-        run: |
-          docker buildx create --use || true
+      - name: Download frontend image artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-image
 
-      - name: Build and push frontend image
+      - name: Download API image artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: api-image
+
+      - name: Load frontend image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: siargaotradingroad-development
           IMAGE_TAG: ${{ github.sha }}
-          NEXT_PUBLIC_API_URL: https://siargaotradingroad.com/api
-          NEXT_PUBLIC_ENVIRONMENT: production
         run: |
-          echo "🐳 Building Next.js frontend image..."
-          docker buildx build --platform linux/amd64 \
-            --build-arg NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
-            --build-arg NEXT_PUBLIC_ENVIRONMENT=$NEXT_PUBLIC_ENVIRONMENT \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:latest \
-            --push \
-            -f Dockerfile \
-            .
+          echo "📥 Loading frontend image..."
+          docker load -i frontend-image.tar
+          docker load -i frontend-image-latest.tar
+          docker tag $ECR_REPOSITORY-frontend:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG
+          docker tag $ECR_REPOSITORY-frontend:latest $ECR_REGISTRY/$ECR_REPOSITORY-frontend:latest
+          echo "✅ Frontend image loaded and tagged"
+
+      - name: Load API image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "📥 Loading API image..."
+          docker load -i api-image.tar
+          docker load -i api-image-latest.tar
+          docker tag $ECR_REPOSITORY-api:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG
+          docker tag $ECR_REPOSITORY-api:latest $ECR_REGISTRY/$ECR_REPOSITORY-api:latest
+          echo "✅ API image loaded and tagged"
+
+      - name: Push frontend image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: siargaotradingroad-development
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "📤 Pushing frontend image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY-frontend:latest
           echo "✅ Frontend image pushed: $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG"
 
-      - name: Build and push API image
+      - name: Push API image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: siargaotradingroad-development
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "🐳 Building Go API image..."
-          docker buildx build --platform linux/amd64 \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY-api:latest \
-            --push \
-            -f Dockerfile.go \
-            .
+          echo "📤 Pushing API image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY-api:latest
           echo "✅ API image pushed: $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG"
 
       - name: Verify frontend image in ECR
@@ -107,8 +210,84 @@ jobs:
             exit 1
           fi
 
+  cleanup-ecr:
+    runs-on: ubuntu-latest
+    needs: [push-ecr]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Clean up old ECR images
+        env:
+          ECR_REPOSITORY: siargaotradingroad-development
+          KEEP_IMAGES: 5
+        run: |
+          echo "🧹 Cleaning up old ECR images..."
+          
+          for REPO in "frontend" "api"; do
+            REPO_NAME="${ECR_REPOSITORY}-${REPO}"
+            echo "📦 Processing repository: $REPO_NAME"
+            
+            IMAGE_COUNT=$(aws ecr describe-images \
+              --repository-name $REPO_NAME \
+              --region us-east-1 \
+              --query 'length(imageDetails)' \
+              --output text 2>/dev/null || echo "0")
+            
+            echo "📊 Found $IMAGE_COUNT images in $REPO_NAME"
+            
+            if [ "$IMAGE_COUNT" -gt "$KEEP_IMAGES" ]; then
+              IMAGES_TO_DELETE=$((IMAGE_COUNT - KEEP_IMAGES))
+              echo "🗑️ Deleting $IMAGES_TO_DELETE old images from $REPO_NAME..."
+              
+              aws ecr describe-images \
+                --repository-name $REPO_NAME \
+                --region us-east-1 \
+                --query "sort_by(imageDetails,&imagePushedAt)[:-$KEEP_IMAGES].[imageTags[0],imageDigest]" \
+                --output json | \
+              jq -r '.[] | select(.[0] != null and .[0] != "latest") | "--image-ids imageTag=" + .[0]' | \
+              while read image_id; do
+                if [ ! -z "$image_id" ]; then
+                  echo "  Deleting image: $image_id"
+                  aws ecr batch-delete-image \
+                    --repository-name $REPO_NAME \
+                    --region us-east-1 \
+                    $image_id || true
+                fi
+              done
+              
+              aws ecr describe-images \
+                --repository-name $REPO_NAME \
+                --region us-east-1 \
+                --query "sort_by(imageDetails,&imagePushedAt)[:-$KEEP_IMAGES].imageDigest" \
+                --output json | \
+              jq -r '.[]' | \
+              while read digest; do
+                if [ ! -z "$digest" ]; then
+                  echo "  Deleting image digest: $digest"
+                  aws ecr batch-delete-image \
+                    --repository-name $REPO_NAME \
+                    --region us-east-1 \
+                    --image-ids imageDigest=$digest || true
+                fi
+              done
+              
+              echo "✅ Cleaned up old images from $REPO_NAME"
+            else
+              echo "✅ No cleanup needed for $REPO_NAME (only $IMAGE_COUNT images, keeping $KEEP_IMAGES)"
+            fi
+          done
+          
+          echo "✅ ECR cleanup complete"
+
   deploy:
-    needs: [build-and-push-ecr]
+    needs: [push-ecr]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
@@ -308,36 +487,6 @@ jobs:
             echo "✅ Both images verified in ECR"
           EOF
 
-      - name: Clean up Docker resources
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
-            set -e
-            source ~/.bashrc
-            export PATH=$PATH:/usr/bin:/usr/local/bin
-            cd ~/siargao-trading-road
-            
-            echo "🧹 Cleaning up Docker resources..."
-            
-            echo "📊 Disk usage before cleanup:"
-            df -h / | tail -1
-            
-            echo "🛑 Stopping containers..."
-            docker compose down || true
-            
-            echo "🗑️ Removing old images (keeping latest 2)..."
-            docker images --format "{{.Repository}}:{{.Tag}}" | grep siargaotradingroad-development | sort -V | head -n -2 | xargs -r docker rmi -f || true
-            
-            echo "🧹 Pruning unused Docker resources..."
-            docker system prune -a -f --volumes || true
-            
-            echo "📋 Cleaning up old logs..."
-            sudo journalctl --vacuum-time=3d || true
-            sudo find /var/log -type f -name "*.log" -mtime +7 -delete || true
-            
-            echo "📊 Disk usage after cleanup:"
-            df -h / | tail -1
-            echo "✅ Cleanup complete"
-          EOF
 
       - name: Pull Docker images
         env:
@@ -420,5 +569,63 @@ jobs:
             echo "📊 Container status:"
             docker compose ps
             echo "✅ Deployment complete!"
+          EOF
+
+  cleanup-ec2:
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Add EC2 to known hosts
+        run: |
+          EC2_HOST="34.204.178.33"
+          EC2_PORT="${EC2_PORT:-22}"
+          
+          echo "🔍 Adding EC2 host to known_hosts..."
+          ssh-keyscan -p $EC2_PORT -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || {
+            echo "⚠️ ssh-keyscan failed, trying alternative method..."
+            ssh -o StrictHostKeyChecking=accept-new -p $EC2_PORT ${{ secrets.EC2_USER }}@$EC2_HOST "echo 'SSH connection test'" || {
+              echo "❌ SSH connection failed"
+              exit 1
+            }
+          }
+          
+          echo "✅ Host added to known_hosts successfully"
+
+      - name: Clean up Docker resources on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            cd ~/siargao-trading-road
+            
+            echo "🧹 Cleaning up Docker resources..."
+            
+            echo "📊 Disk usage before cleanup:"
+            df -h / | tail -1
+            
+            echo "🛑 Stopping containers..."
+            docker compose down || true
+            
+            echo "🗑️ Removing old images (keeping latest 2)..."
+            docker images --format "{{.Repository}}:{{.Tag}}" | grep siargaotradingroad-development | sort -V | head -n -2 | xargs -r docker rmi -f || true
+            
+            echo "🧹 Pruning unused Docker resources..."
+            docker system prune -a -f --volumes || true
+            
+            echo "📋 Cleaning up old logs..."
+            sudo journalctl --vacuum-time=3d || true
+            sudo find /var/log -type f -name "*.log" -mtime +7 -delete || true
+            
+            echo "📊 Disk usage after cleanup:"
+            df -h / | tail -1
+            echo "✅ Cleanup complete"
           EOF
 
