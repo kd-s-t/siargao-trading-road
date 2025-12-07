@@ -20,7 +20,7 @@ resource "aws_eip" "siargaotradingroad_eip" {
 
 resource "aws_instance" "siargaotradingroad_server" {
   ami                    = local.ubuntu_ami_id
-  instance_type          = var.instance_type
+  instance_type          = var.instance_type # KEEP SMALL - DO NOT SCALE UP
   key_name              = var.key_pair_name
   vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = var.instance_profile_name

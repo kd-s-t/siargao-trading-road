@@ -1,5 +1,6 @@
 aws_region = "us-east-1"
 ami_id = "ami-0c7217cdde317cfec"
+# IMPORTANT: Keep instance type small (t3.micro, t2.micro, or t3.small only) - DO NOT USE LARGE INSTANCES
 instance_type = "t3.micro"
 public_key_path = "./modules/security/splitsafe-key-development.pem.pub"
 private_key_path = "./modules/security/splitsafe-key-development.pem"
