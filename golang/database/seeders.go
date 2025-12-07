@@ -479,13 +479,43 @@ func SeedOrders() error {
 		}
 		products = products[:numItems]
 
+		paymentMethod := models.PaymentMethodCashOnDelivery
+		paymentStatus := models.PaymentStatusPaid
+		deliveryOption := models.DeliveryOptionDeliver
+
+		if i%3 == 0 {
+			paymentMethod = models.PaymentMethodGCash
+			if status == models.OrderStatusPreparing || status == models.OrderStatusInTransit {
+				paymentStatus = models.PaymentStatusPending
+			} else {
+				paymentStatus = models.PaymentStatusPaid
+			}
+		}
+
+		if i%2 == 0 {
+			deliveryOption = models.DeliveryOptionPickup
+		}
+
 		order := models.Order{
 			StoreID:         store.ID,
 			SupplierID:      supplier.ID,
 			Status:          status,
 			TotalAmount:     0,
+			PaymentMethod:   paymentMethod,
+			PaymentStatus:   paymentStatus,
+			DeliveryOption:  deliveryOption,
+			DeliveryFee:     0.0,
+			Distance:        0.0,
 			ShippingAddress: "123 Main Street, City, Province",
 			Notes:           "Please deliver during business hours",
+		}
+
+		if paymentMethod == models.PaymentMethodGCash && paymentStatus == models.PaymentStatusPending {
+			order.PaymentProofURL = "https://siargaotradingroad-messaging-images-development.s3.us-east-1.amazonaws.com/payment-proofs/sample-proof.png"
+		}
+
+		if deliveryOption == models.DeliveryOptionPickup {
+			order.ShippingAddress = ""
 		}
 
 		if err := DB.Create(&order).Error; err != nil {
@@ -493,6 +523,7 @@ func SeedOrders() error {
 		}
 
 		var totalAmount float64
+		var totalQuantity int
 		for j, product := range products {
 			var quantity int
 			switch {
@@ -515,6 +546,7 @@ func SeedOrders() error {
 			}
 
 			subtotal := product.Price * float64(quantity)
+			totalQuantity += quantity
 
 			orderItem := models.OrderItem{
 				OrderID:   order.ID,
@@ -531,7 +563,12 @@ func SeedOrders() error {
 			totalAmount += subtotal
 		}
 
-		order.TotalAmount = totalAmount
+		if deliveryOption == models.DeliveryOptionDeliver {
+			order.DeliveryFee = float64(totalQuantity) * 20.0
+			order.Distance = 5.0 + float64(i%10)
+		}
+
+		order.TotalAmount = totalAmount + order.DeliveryFee
 		DB.Save(&order)
 
 		usedKeys[key] = true

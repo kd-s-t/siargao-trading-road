@@ -8,14 +8,14 @@ export function useMobileOrders() {
   const loadingRef = useRef(false);
   const hasLoadedRef = useRef(false);
 
-  const loadOrders = useCallback(async (force = false) => {
+  const loadOrders = useCallback(async (force = false, status?: string | null) => {
     if (loadingRef.current && !force) return;
     if (hasLoadedRef.current && !force) return;
     
     loadingRef.current = true;
     try {
       setLoading(true);
-      const data = await mobileOrderService.getOrders();
+      const data = await mobileOrderService.getOrders(status);
       setOrders(data);
       hasLoadedRef.current = true;
     } catch (error) {

@@ -19,6 +19,7 @@ class DrawerContent extends StatelessWidget {
     }
 
     return Drawer(
+      backgroundColor: Colors.white,
       child: Column(
         children: [
           FutureBuilder<List<Order>>(
@@ -47,47 +48,36 @@ class DrawerContent extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context, user, int badgeCount) {
     return Container(
-      color: Colors.grey.shade100,
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
       child: Column(
         children: [
-          if (user.bannerUrl != null && user.bannerUrl!.isNotEmpty)
-            Image.network(
-              user.bannerUrl!,
-              width: double.infinity,
-              height: 150,
-              fit: BoxFit.cover,
-            )
-          else
-            Container(
-              width: double.infinity,
-              height: 150,
-              color: Colors.grey.shade300,
-            ),
-          const SizedBox(height: 50),
           if (user.logoUrl != null && user.logoUrl!.isNotEmpty)
             CircleAvatar(
-              radius: 40,
+              radius: 50,
               backgroundImage: NetworkImage(user.logoUrl!),
-              backgroundColor: Colors.white,
+              backgroundColor: const Color(0xFF17A2B8),
             )
           else
             CircleAvatar(
-              radius: 40,
-              backgroundColor: const Color(0xFF1976D2),
+              radius: 50,
+              backgroundColor: const Color(0xFF17A2B8),
               child: Text(
-                user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                user.name.isNotEmpty 
+                    ? user.name.split(' ').map((n) => n.isNotEmpty ? n[0].toUpperCase() : '').take(2).join()
+                    : 'U',
                 style: const TextStyle(
-                  fontSize: 32,
+                  fontSize: 24,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
               ),
             ),
           const SizedBox(height: 16),
           Text(
             user.name,
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),

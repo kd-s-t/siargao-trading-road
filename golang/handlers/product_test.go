@@ -15,7 +15,6 @@ import (
 	"siargao-trading-road/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 func setupProductTest(t *testing.T) (*gin.Engine, *config.Config, models.User) {
@@ -65,16 +64,6 @@ func setupProductTest(t *testing.T) (*gin.Engine, *config.Config, models.User) {
 	return r, cfg, supplier
 }
 
-func createTestToken(userID uint, role string, cfg *config.Config) string {
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"email":   "test@example.com",
-		"role":    role,
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString([]byte(cfg.JWTSecret))
-	return tokenString
-}
 
 func TestCreateProduct(t *testing.T) {
 	r, cfg, supplier := setupProductTest(t)

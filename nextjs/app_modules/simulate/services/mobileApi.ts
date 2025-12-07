@@ -222,13 +222,20 @@ export const mobileOrderService = {
     delivery_option: string;
     delivery_fee?: number;
     distance?: number;
+    shipping_address?: string;
+    payment_proof_url?: string;
     notes?: string;
   }): Promise<Order> => {
     const { data: response } = await mobileApi.post<Order>(`/orders/${orderId}/submit`, data);
     return response;
   },
-  getOrders: async (): Promise<Order[]> => {
-    const { data } = await mobileApi.get<Order[]>('/orders');
+  markPaymentAsPaid: async (orderId: number): Promise<Order> => {
+    const { data } = await mobileApi.post<Order>(`/orders/${orderId}/payment/paid`);
+    return data;
+  },
+  getOrders: async (status?: string | null): Promise<Order[]> => {
+    const params = status ? { status } : {};
+    const { data } = await mobileApi.get<Order[]>('/orders', { params });
     return data;
   },
   getOrder: async (id: number): Promise<Order> => {

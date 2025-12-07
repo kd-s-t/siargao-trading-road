@@ -50,7 +50,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     });
 
     try {
-      final orders = await OrderService.getOrders();
+      final orders = await OrderService.getOrders(status: _statusFilter);
       if (mounted) {
         setState(() {
           _orders = orders;
@@ -213,9 +213,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
 
-    final filteredOrders = _statusFilter != null
-        ? _orders.where((order) => order.status == _statusFilter).toList()
-        : _orders;
 
     return Scaffold(
       appBar: AppBar(
@@ -265,7 +262,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     Expanded(
                       child: RefreshIndicator(
                         onRefresh: _handleRefresh,
-                        child: filteredOrders.isEmpty
+                        child: _orders.isEmpty
                             ? Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -286,9 +283,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               )
                             : ListView.builder(
                                 padding: const EdgeInsets.all(16),
-                                itemCount: filteredOrders.length,
+                                itemCount: _orders.length,
                                 itemBuilder: (context, index) {
-                                  final order = filteredOrders[index];
+                                  final order = _orders[index];
                                   final isStore = user?.role == 'store';
                                   final entity = isStore ? order.supplier : order.store;
 
@@ -401,6 +398,55 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                     ),
                                                   ],
                                                 ),
+                                                if (order.paymentMethod != null) ...[
+                                                  const SizedBox(height: 4),
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      const Text(
+                                                        'Payment Method:',
+                                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                                      ),
+                                                      Text(
+                                                        order.paymentMethod == 'cash_on_delivery' ? 'Cash on Delivery' :
+                                                        order.paymentMethod == 'gcash' ? 'GCash' :
+                                                        order.paymentMethod!,
+                                                        style: const TextStyle(fontSize: 12),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                                if (order.paymentStatus != null) ...[
+                                                  const SizedBox(height: 4),
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      const Text(
+                                                        'Payment Status:',
+                                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                                      ),
+                                                      Chip(
+                                                        label: Text(
+                                                          order.paymentStatus == 'paid' ? 'Paid' :
+                                                          order.paymentStatus == 'pending' ? 'Pending' :
+                                                          order.paymentStatus == 'failed' ? 'Failed' :
+                                                          order.paymentStatus!,
+                                                          style: const TextStyle(fontSize: 12),
+                                                        ),
+                                                        backgroundColor: order.paymentStatus == 'paid' ? Colors.green.withOpacity(0.2) :
+                                                                        order.paymentStatus == 'pending' ? Colors.orange.withOpacity(0.2) :
+                                                                        order.paymentStatus == 'failed' ? Colors.red.withOpacity(0.2) :
+                                                                        Colors.grey.withOpacity(0.2),
+                                                        labelStyle: TextStyle(
+                                                          color: order.paymentStatus == 'paid' ? Colors.green :
+                                                                 order.paymentStatus == 'pending' ? Colors.orange :
+                                                                 order.paymentStatus == 'failed' ? Colors.red :
+                                                                 Colors.grey,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
                                                 const SizedBox(height: 4),
                                                 Row(
                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -527,12 +573,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                   spacing: 8,
                                                   runSpacing: 8,
                                                   children: [
-                                                    OutlinedButton.icon(
-                                                      onPressed: () => _handleDownloadInvoice(order),
-                                                      icon: const Icon(Icons.download),
-                                                      label: const Text('Download Invoice'),
-                                                    ),
-                                                    if (user?.role == 'supplier' && order.status == 'preparing') ...[
+                                                    if (order.status == 'delivered')
+                                                      OutlinedButton.icon(
+                                                        onPressed: () => _handleDownloadInvoice(order),
+                                                        icon: const Icon(Icons.download),
+                                                        label: const Text('Download Invoice'),
+                                                      ),
+                                                    if (user?.role == 'supplier' && order.status == 'preparing')
                                                       OutlinedButton(
                                                         onPressed: _updatingStatus == order.id
                                                             ? null
@@ -545,16 +592,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                               )
                                                             : const Text('Mark In Transit'),
                                                       ),
-                                                      OutlinedButton(
-                                                        onPressed: _updatingStatus == order.id
-                                                            ? null
-                                                            : () => _handleMarkDelivered(order.id),
-                                                        child: const Text('Mark Delivered'),
-                                                      ),
-                                                    ],
                                                     if (user?.role == 'supplier' && order.status == 'in_transit')
                                                       OutlinedButton(
-                                                        onPressed: _updatingStatus == order.id
+                                                        onPressed: (_updatingStatus == order.id || (order.paymentMethod == 'gcash' && order.paymentStatus != 'paid'))
                                                             ? null
                                                             : () => _handleMarkDelivered(order.id),
                                                         child: _updatingStatus == order.id
@@ -565,7 +605,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                               )
                                                             : const Text('Mark Delivered'),
                                                       ),
-                                                    if (user?.role == 'supplier' && order.status == 'delivered')
+                                                    if (user?.role == 'supplier' && order.status == 'delivered' && order.paymentStatus != 'paid')
                                                       OutlinedButton(
                                                         onPressed: _updatingStatus == order.id
                                                             ? null
@@ -606,7 +646,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
         onSelected: (selected) {
           setState(() {
             _statusFilter = selected ? value : null;
+            _hasLoaded = false;
           });
+          _loadOrders(force: true);
         },
       ),
     );

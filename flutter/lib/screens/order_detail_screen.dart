@@ -542,6 +542,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   if (_order!.ratings != null && _order!.ratings!.isNotEmpty) _buildRatingsCard(),
                   if (_canRate()) _buildRateButton(entity, user),
                   if (_order!.store != null && _order!.supplier != null) _buildChatCard(user),
+                  if (_order!.status == 'delivered')
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: OutlinedButton.icon(
+                        onPressed: _handleDownloadInvoice,
+                        icon: const Icon(Icons.download),
+                        label: const Text('Download Invoice'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 48),
+                        ),
+                      ),
+                    ),
                   _buildActionsCard(entity, entityName, user),
                   const SizedBox(height: 32),
                 ],
@@ -937,22 +949,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildRateButton(User? entity, user) {
+    if (_hasRated()) {
+      return const SizedBox.shrink();
+    }
+    
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: ElevatedButton.icon(
-          onPressed: _hasRated()
-              ? null
-              : () {
-                  setState(() {
-                    _showRatingDialog = true;
-                  });
-                },
+          onPressed: () {
+            setState(() {
+              _showRatingDialog = true;
+            });
+          },
           icon: const Icon(Icons.star),
-          label: Text(_hasRated()
-              ? 'Already Rated'
-              : 'Rate ${user?.role == 'store' ? _order!.supplier?.name : _order!.store?.name}'),
+          label: Text('Rate ${user?.role == 'store' ? _order!.supplier?.name : _order!.store?.name}'),
         ),
       ),
     );
@@ -1093,41 +1105,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 minimumSize: const Size(double.infinity, 48),
               ),
             ),
-            if (_order!.status == 'delivered') ...[
+            if (user?.role == 'supplier' && _order!.status == 'preparing') ...[
               const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _handleDownloadInvoice,
-                icon: const Icon(Icons.download),
-                label: const Text('Download Invoice'),
+              OutlinedButton(
+                onPressed: _updatingStatus ? null : () => _handleUpdateStatus('in_transit'),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
                 ),
-              ),
-            ],
-            if (user?.role == 'supplier' && _order!.status == 'preparing') ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _updatingStatus ? null : () => _handleUpdateStatus('in_transit'),
-                      child: _updatingStatus
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Mark In Transit'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _updatingStatus ? null : _handleMarkDelivered,
-                      child: const Text('Mark Delivered'),
-                    ),
-                  ),
-                ],
+                child: _updatingStatus
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Mark In Transit'),
               ),
             ],
             if (user?.role == 'supplier' && _order!.status == 'in_transit') ...[
@@ -1146,7 +1137,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     : const Text('Mark Delivered'),
               ),
             ],
-            if (user?.role == 'supplier' && _order!.status == 'delivered') ...[
+            if (user?.role == 'supplier' && _order!.status == 'delivered' && _order!.paymentStatus != 'paid') ...[
               const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: _updatingStatus ? null : () => _handleUpdateStatus('in_transit'),

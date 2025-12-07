@@ -1,6 +1,4 @@
 'use client';
-
-import { useState } from 'react';
 import {
   Box,
   Card,
@@ -20,9 +18,12 @@ interface OrdersViewProps {
   orders: Order[];
   loading: boolean;
   mobileUser: User | null;
+  orderStatusFilter: string | null;
   onOrderClick: (order: Order) => void;
   onUpdateStatus: (orderId: number, status: string) => Promise<void>;
   onMarkDeliveredClick: (orderId: number) => void;
+  onMarkPaymentAsPaid?: (orderId: number) => Promise<void>;
+  onFilterChange: (status: string | null) => void;
   onToast: (message: string, type: 'success' | 'error') => void;
 }
 
@@ -30,13 +31,14 @@ export function OrdersView({
   orders,
   loading,
   mobileUser,
+  orderStatusFilter,
   onOrderClick,
   onUpdateStatus,
   onMarkDeliveredClick,
+  onMarkPaymentAsPaid,
+  onFilterChange,
   onToast,
 }: OrdersViewProps) {
-  const [orderStatusFilter, setOrderStatusFilter] = useState<string | null>(null);
-
   const handleDownloadInvoice = async (order: Order) => {
     await downloadInvoice(
       order,
@@ -53,20 +55,16 @@ export function OrdersView({
     );
   }
 
-  const filteredOrders = orderStatusFilter 
-    ? orders.filter(order => order.status === orderStatusFilter)
-    : orders;
-
-  if (filteredOrders.length === 0) {
+  if (orders.length === 0) {
     return (
       <>
         <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Chip label="All" onClick={() => setOrderStatusFilter(null)} color={orderStatusFilter === null ? 'primary' : 'default'} variant={orderStatusFilter === null ? 'filled' : 'outlined'} size="small" />
-          <Chip label="Draft" onClick={() => setOrderStatusFilter('draft')} color={orderStatusFilter === 'draft' ? 'primary' : 'default'} variant={orderStatusFilter === 'draft' ? 'filled' : 'outlined'} size="small" />
-          <Chip label="Preparing" onClick={() => setOrderStatusFilter('preparing')} color={orderStatusFilter === 'preparing' ? 'primary' : 'default'} variant={orderStatusFilter === 'preparing' ? 'filled' : 'outlined'} size="small" />
-          <Chip label="In Transit" onClick={() => setOrderStatusFilter('in_transit')} color={orderStatusFilter === 'in_transit' ? 'primary' : 'default'} variant={orderStatusFilter === 'in_transit' ? 'filled' : 'outlined'} size="small" />
-          <Chip label="Delivered" onClick={() => setOrderStatusFilter('delivered')} color={orderStatusFilter === 'delivered' ? 'primary' : 'default'} variant={orderStatusFilter === 'delivered' ? 'filled' : 'outlined'} size="small" />
-          <Chip label="Cancelled" onClick={() => setOrderStatusFilter('cancelled')} color={orderStatusFilter === 'cancelled' ? 'primary' : 'default'} variant={orderStatusFilter === 'cancelled' ? 'filled' : 'outlined'} size="small" />
+          <Chip label="All" onClick={() => onFilterChange(null)} color={orderStatusFilter === null ? 'primary' : 'default'} variant={orderStatusFilter === null ? 'filled' : 'outlined'} size="small" />
+          <Chip label="Draft" onClick={() => onFilterChange('draft')} color={orderStatusFilter === 'draft' ? 'primary' : 'default'} variant={orderStatusFilter === 'draft' ? 'filled' : 'outlined'} size="small" />
+          <Chip label="Preparing" onClick={() => onFilterChange('preparing')} color={orderStatusFilter === 'preparing' ? 'primary' : 'default'} variant={orderStatusFilter === 'preparing' ? 'filled' : 'outlined'} size="small" />
+          <Chip label="In Transit" onClick={() => onFilterChange('in_transit')} color={orderStatusFilter === 'in_transit' ? 'primary' : 'default'} variant={orderStatusFilter === 'in_transit' ? 'filled' : 'outlined'} size="small" />
+          <Chip label="Delivered" onClick={() => onFilterChange('delivered')} color={orderStatusFilter === 'delivered' ? 'primary' : 'default'} variant={orderStatusFilter === 'delivered' ? 'filled' : 'outlined'} size="small" />
+          <Chip label="Cancelled" onClick={() => onFilterChange('cancelled')} color={orderStatusFilter === 'cancelled' ? 'primary' : 'default'} variant={orderStatusFilter === 'cancelled' ? 'filled' : 'outlined'} size="small" />
         </Box>
         <Card>
           <CardContent>
@@ -82,15 +80,15 @@ export function OrdersView({
   return (
     <>
       <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        <Chip label="All" onClick={() => setOrderStatusFilter(null)} color={orderStatusFilter === null ? 'primary' : 'default'} variant={orderStatusFilter === null ? 'filled' : 'outlined'} size="small" />
-        <Chip label="Draft" onClick={() => setOrderStatusFilter('draft')} color={orderStatusFilter === 'draft' ? 'primary' : 'default'} variant={orderStatusFilter === 'draft' ? 'filled' : 'outlined'} size="small" />
-        <Chip label="Preparing" onClick={() => setOrderStatusFilter('preparing')} color={orderStatusFilter === 'preparing' ? 'primary' : 'default'} variant={orderStatusFilter === 'preparing' ? 'filled' : 'outlined'} size="small" />
-        <Chip label="In Transit" onClick={() => setOrderStatusFilter('in_transit')} color={orderStatusFilter === 'in_transit' ? 'primary' : 'default'} variant={orderStatusFilter === 'in_transit' ? 'filled' : 'outlined'} size="small" />
-        <Chip label="Delivered" onClick={() => setOrderStatusFilter('delivered')} color={orderStatusFilter === 'delivered' ? 'primary' : 'default'} variant={orderStatusFilter === 'delivered' ? 'filled' : 'outlined'} size="small" />
-        <Chip label="Cancelled" onClick={() => setOrderStatusFilter('cancelled')} color={orderStatusFilter === 'cancelled' ? 'primary' : 'default'} variant={orderStatusFilter === 'cancelled' ? 'filled' : 'outlined'} size="small" />
+        <Chip label="All" onClick={() => onFilterChange(null)} color={orderStatusFilter === null ? 'primary' : 'default'} variant={orderStatusFilter === null ? 'filled' : 'outlined'} size="small" />
+        <Chip label="Draft" onClick={() => onFilterChange('draft')} color={orderStatusFilter === 'draft' ? 'primary' : 'default'} variant={orderStatusFilter === 'draft' ? 'filled' : 'outlined'} size="small" />
+        <Chip label="Preparing" onClick={() => onFilterChange('preparing')} color={orderStatusFilter === 'preparing' ? 'primary' : 'default'} variant={orderStatusFilter === 'preparing' ? 'filled' : 'outlined'} size="small" />
+        <Chip label="In Transit" onClick={() => onFilterChange('in_transit')} color={orderStatusFilter === 'in_transit' ? 'primary' : 'default'} variant={orderStatusFilter === 'in_transit' ? 'filled' : 'outlined'} size="small" />
+        <Chip label="Delivered" onClick={() => onFilterChange('delivered')} color={orderStatusFilter === 'delivered' ? 'primary' : 'default'} variant={orderStatusFilter === 'delivered' ? 'filled' : 'outlined'} size="small" />
+        <Chip label="Cancelled" onClick={() => onFilterChange('cancelled')} color={orderStatusFilter === 'cancelled' ? 'primary' : 'default'} variant={orderStatusFilter === 'cancelled' ? 'filled' : 'outlined'} size="small" />
       </Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {filteredOrders.map((order) => (
+        {orders.map((order) => (
           <Card 
             key={order.id}
             sx={{ 
@@ -134,6 +132,38 @@ export function OrdersView({
                   ₱{order.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Typography>
               </Box>
+              {order.payment_method && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, opacity: 0.7 }}>
+                    Payment Method:
+                  </Typography>
+                  <Typography variant="body2">
+                    {order.payment_method === 'cash_on_delivery' ? 'Cash on Delivery' : 
+                     order.payment_method === 'gcash' ? 'GCash' : 
+                     order.payment_method}
+                  </Typography>
+                </Box>
+              )}
+              {order.payment_status && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, opacity: 0.7 }}>
+                    Payment Status:
+                  </Typography>
+                  <Chip 
+                    label={order.payment_status === 'paid' ? 'Paid' : 
+                           order.payment_status === 'pending' ? 'Pending' : 
+                           order.payment_status === 'failed' ? 'Failed' : 
+                           order.payment_status}
+                    color={
+                      order.payment_status === 'paid' ? 'success' :
+                      order.payment_status === 'pending' ? 'warning' :
+                      order.payment_status === 'failed' ? 'error' :
+                      'default'
+                    }
+                    size="small"
+                  />
+                </Box>
+              )}
               {order.order_items && order.order_items.length > 0 && (
                 <Box sx={{ mt: 2 }}>
                   <Divider sx={{ mb: 1.5 }} />
@@ -199,41 +229,34 @@ export function OrdersView({
                   ))}
                 </Box>
               )}
-              <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<DownloadIcon />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownloadInvoice(order);
-                  }}
-                  fullWidth
-                >
-                  Download Invoice
-                </Button>
-              </Box>
-              {mobileUser?.role === 'supplier' && order.status === 'preparing' && (
-                <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+              {order.status === 'delivered' && (
+                <Box sx={{ mt: 2 }}>
                   <Button
                     variant="outlined"
                     size="small"
+                    startIcon={<DownloadIcon />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownloadInvoice(order);
+                    }}
+                    fullWidth
+                  >
+                    Download Invoice
+                  </Button>
+                </Box>
+              )}
+              {mobileUser?.role === 'supplier' && order.status === 'preparing' && (
+                <Box sx={{ mt: 2 }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    fullWidth
                     onClick={(e) => {
                       e.stopPropagation();
                       onUpdateStatus(order.id, 'in_transit');
                     }}
                   >
                     Mark In Transit
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMarkDeliveredClick(order.id);
-                    }}
-                  >
-                    Mark Delivered
                   </Button>
                 </Box>
               )}
@@ -252,19 +275,25 @@ export function OrdersView({
                   </Button>
                 </Box>
               )}
-              {mobileUser?.role === 'supplier' && order.status === 'delivered' && (
+              {mobileUser?.role === 'supplier' && order.payment_method === 'gcash' && order.payment_status === 'pending' && onMarkPaymentAsPaid && (
                 <Box sx={{ mt: 2 }}>
                   <Button
-                    variant="outlined"
+                    variant="contained"
                     fullWidth
                     size="small"
-                    color="warning"
-                    onClick={(e) => {
+                    color="success"
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      onUpdateStatus(order.id, 'in_transit');
+                      try {
+                        await onMarkPaymentAsPaid(order.id);
+                        onToast('Payment marked as paid', 'success');
+                      } catch (err: unknown) {
+                        const error = err as { response?: { data?: { error?: string } } };
+                        onToast(error.response?.data?.error || 'Failed to mark payment as paid', 'error');
+                      }
                     }}
                   >
-                    Revert to In Transit
+                    Mark Payment as Paid
                   </Button>
                 </Box>
               )}

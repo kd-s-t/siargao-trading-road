@@ -42,6 +42,7 @@ interface OrderDetailViewProps {
   onSendMessage: (content: string, imageUrl?: string) => Promise<void>;
   onUpdateStatus: (orderId: number, status: string) => Promise<void>;
   onMarkDeliveredClick: (orderId: number) => void;
+  onMarkPaymentAsPaid?: (orderId: number) => Promise<void>;
   onToast: (message: string, type: 'success' | 'error') => void;
 }
 
@@ -54,6 +55,7 @@ export function OrderDetailView({
   onSendMessage,
   onUpdateStatus,
   onMarkDeliveredClick,
+  onMarkPaymentAsPaid,
   onToast,
 }: OrderDetailViewProps) {
   const [chatMessage, setChatMessage] = useState('');
@@ -225,9 +227,21 @@ export function OrderDetailView({
       </Box>
       <Card sx={{ mb: 2 }}>
         <CardContent>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-            Order #{order.id}
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Order #{order.id}
+            </Typography>
+            {isDelivered && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<DownloadIcon />}
+                onClick={handleDownloadInvoice}
+              >
+                Download
+              </Button>
+            )}
+          </Box>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="body2" sx={{ fontWeight: 600, opacity: 0.7 }}>
@@ -273,6 +287,57 @@ export function OrderDetailView({
                  order.payment_method === 'gcash' ? 'GCash' : 
                  order.payment_method}
               </Typography>
+            </Box>
+          )}
+
+          {order.payment_status && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, opacity: 0.7 }}>
+                Payment Status:
+              </Typography>
+              <Chip 
+                label={order.payment_status === 'paid' ? 'Paid' : 
+                       order.payment_status === 'pending' ? 'Pending' : 
+                       order.payment_status === 'failed' ? 'Failed' : 
+                       order.payment_status}
+                color={
+                  order.payment_status === 'paid' ? 'success' :
+                  order.payment_status === 'pending' ? 'warning' :
+                  order.payment_status === 'failed' ? 'error' :
+                  'default'
+                }
+                size="small"
+              />
+            </Box>
+          )}
+
+          {order.payment_proof_url && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, opacity: 0.7, mb: 1 }}>
+                Payment Proof:
+              </Typography>
+              <Box
+                sx={{
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                  border: '1px solid #e0e0e0',
+                  maxWidth: 300,
+                  cursor: 'pointer',
+                  '&:hover': { opacity: 0.8 },
+                }}
+                onClick={() => window.open(order.payment_proof_url, '_blank')}
+              >
+                <img
+                  src={order.payment_proof_url}
+                  alt="Payment proof"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: 200,
+                    display: 'block',
+                    objectFit: 'contain',
+                  }}
+                />
+              </Box>
             </Box>
           )}
 
@@ -859,89 +924,81 @@ export function OrderDetailView({
         </Card>
       )}
 
-      <Card sx={{ mt: 3, mb: 2 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Button
-              variant="outlined"
-              size="medium"
-              startIcon={<DownloadIcon />}
-              onClick={handleDownloadInvoice}
-              fullWidth
-            >
-              Download Invoice
-            </Button>
 
-            {isDelivered && (
-              <Button
-                variant="contained"
-                size="medium"
-                startIcon={<StarIcon />}
-                onClick={() => {
-                  if (userRating) {
-                    onToast('You have already rated this order', 'error');
-                    return;
-                  }
-                  setRatingDialogOpen(true);
-                }}
-                fullWidth
-                disabled={!!userRating}
-                sx={{ 
-                  bgcolor: userRating ? '#9e9e9e' : '#ff9800', 
-                  '&:hover': { bgcolor: userRating ? '#9e9e9e' : '#f57c00' },
-                  '&.Mui-disabled': { bgcolor: '#9e9e9e', color: '#fff' }
-                }}
-              >
-                {userRating ? 'Already Rated' : `Rate ${mobileUser?.role === 'supplier' ? order.store?.name : order.supplier?.name}`}
-              </Button>
-            )}
-            
-            {mobileUser?.role === 'supplier' && order.status === 'preparing' && (
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  size="medium"
-                  onClick={() => onUpdateStatus(order.id, 'in_transit')}
-                >
-                  Mark In Transit
-                </Button>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  size="medium"
-                  onClick={() => onMarkDeliveredClick(order.id)}
-                >
-                  Mark Delivered
-                </Button>
-              </Box>
-            )}
-            
-            {mobileUser?.role === 'supplier' && order.status === 'in_transit' && (
-              <Button
-                variant="outlined"
-                fullWidth
-                size="medium"
-                onClick={() => onMarkDeliveredClick(order.id)}
-              >
-                Mark Delivered
-              </Button>
-            )}
+      <Box sx={{ mt: 3, mb: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {isDelivered && !userRating && (
+          <Button
+            variant="contained"
+            size="medium"
+            startIcon={<StarIcon />}
+            onClick={() => {
+              setRatingDialogOpen(true);
+            }}
+            fullWidth
+            sx={{ 
+              bgcolor: '#ff9800', 
+              '&:hover': { bgcolor: '#f57c00' }
+            }}
+          >
+            {`Rate ${mobileUser?.role === 'supplier' ? order.store?.name : order.supplier?.name}`}
+          </Button>
+        )}
 
-            {mobileUser?.role === 'supplier' && order.status === 'delivered' && (
-              <Button
-                variant="outlined"
-                fullWidth
-                size="medium"
-                color="warning"
-                onClick={() => onUpdateStatus(order.id, 'in_transit')}
-              >
-                Revert to In Transit
-              </Button>
-            )}
-          </Box>
-        </CardContent>
-      </Card>
+        {mobileUser?.role === 'supplier' && order.payment_method === 'gcash' && order.payment_status === 'pending' && onMarkPaymentAsPaid && (
+          <Button
+            variant="contained"
+            fullWidth
+            size="medium"
+            color="success"
+            onClick={async () => {
+              try {
+                await onMarkPaymentAsPaid(order.id);
+                onToast('Payment marked as paid', 'success');
+              } catch (err: unknown) {
+                const error = err as { response?: { data?: { error?: string } } };
+                onToast(error.response?.data?.error || 'Failed to mark payment as paid', 'error');
+              }
+            }}
+            sx={{ mt: 2, mb: 2 }}
+          >
+            Mark Payment as Paid
+          </Button>
+        )}
+        
+        {mobileUser?.role === 'supplier' && order.status === 'preparing' && (
+          <Button
+            variant="outlined"
+            fullWidth
+            size="medium"
+            onClick={() => onUpdateStatus(order.id, 'in_transit')}
+          >
+            Mark In Transit
+          </Button>
+        )}
+        
+        {mobileUser?.role === 'supplier' && order.status === 'in_transit' && (
+          <Button
+            variant="outlined"
+            fullWidth
+            size="medium"
+            onClick={() => onMarkDeliveredClick(order.id)}
+          >
+            Mark Delivered
+          </Button>
+        )}
+
+        {mobileUser?.role === 'supplier' && order.status === 'delivered' && order.payment_status !== 'paid' && (
+          <Button
+            variant="outlined"
+            fullWidth
+            size="medium"
+            color="warning"
+            onClick={() => onUpdateStatus(order.id, 'in_transit')}
+          >
+            Revert to In Transit
+          </Button>
+        )}
+      </Box>
 
       <Dialog 
         open={ratingDialogOpen && !userRating} 

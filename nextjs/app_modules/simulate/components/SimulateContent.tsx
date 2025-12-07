@@ -43,6 +43,7 @@ export function SimulateContent() {
   const [activeView, setActiveView] = useState<'suppliers' | 'stores' | 'orders' | 'supplier-products' | 'truck' | 'order-detail' | 'profile' | 'ratings-list' | 'my-products'>('profile');
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string | null>(null);
   
   const { suppliers, loading: loadingSuppliers, loadSuppliers } = useSuppliers();
   const { stores, loading: loadingStores, loadStores } = useStores();
@@ -101,9 +102,9 @@ export function SimulateContent() {
 
   useEffect(() => {
     if (mobileUser && (mobileUser.role === 'supplier' || mobileUser.role === 'store') && activeView === 'orders') {
-      loadOrders();
+      loadOrders(true, orderStatusFilter);
     }
-  }, [mobileUser?.id, mobileUser?.role, activeView, loadOrders]);
+  }, [mobileUser?.id, mobileUser?.role, activeView, orderStatusFilter, loadOrders]);
 
 
   const handleSupplierClick = async (supplier: Supplier) => {
@@ -118,7 +119,7 @@ export function SimulateContent() {
     try {
       await loadDraftOrder();
       setActiveView('orders');
-      await loadOrders(true);
+      await loadOrders(true, orderStatusFilter);
     } catch (err: unknown) {
       setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to reload order data');
       setTimeout(() => setError(''), 5000);
@@ -135,7 +136,7 @@ export function SimulateContent() {
     try {
       setError('');
       const updatedOrder = await mobileOrderService.updateOrderStatus(orderId, status);
-      await loadOrders(true);
+      await loadOrders(true, orderStatusFilter);
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder(updatedOrder);
       }
@@ -149,6 +150,23 @@ export function SimulateContent() {
   const handleMarkDeliveredClick = (orderId: number) => {
     setPendingStatusUpdate({ orderId, status: 'delivered' });
     setConfirmDialogOpen(true);
+  };
+
+  const handleMarkPaymentAsPaid = async (orderId: number) => {
+    try {
+      setError('');
+      const updatedOrder = await mobileOrderService.markPaymentAsPaid(orderId);
+      await loadOrders(true, orderStatusFilter);
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder(updatedOrder);
+      }
+      setToast({ message: 'Payment marked as paid', type: 'success' });
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to mark payment as paid');
+      setTimeout(() => setError(''), 5000);
+      throw err;
+    }
   };
 
   const handleConfirmStatusUpdate = () => {
@@ -400,12 +418,17 @@ export function SimulateContent() {
             orders={orders}
             loading={loadingOrders}
             mobileUser={mobileUser}
+            orderStatusFilter={orderStatusFilter}
             onOrderClick={(order) => {
                       setSelectedOrder(order);
                       setActiveView('order-detail');
             }}
             onUpdateStatus={handleUpdateOrderStatus}
             onMarkDeliveredClick={handleMarkDeliveredClick}
+            onMarkPaymentAsPaid={handleMarkPaymentAsPaid}
+            onFilterChange={(status) => {
+              setOrderStatusFilter(status);
+            }}
             onToast={(message, type) => {
               setToast({ message, type });
               setTimeout(() => setToast(null), 3000);
@@ -423,6 +446,7 @@ export function SimulateContent() {
             onSendMessage={sendMessage}
             onUpdateStatus={handleUpdateOrderStatus}
             onMarkDeliveredClick={handleMarkDeliveredClick}
+            onMarkPaymentAsPaid={handleMarkPaymentAsPaid}
             onToast={(message, type) => {
               setToast({ message, type });
               setTimeout(() => setToast(null), 3000);

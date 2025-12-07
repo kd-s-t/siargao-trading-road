@@ -3,8 +3,9 @@ import 'package:siargao_trading_road/models/order.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
 
 class OrderService {
-  static Future<List<Order>> getOrders() async {
-    final response = await ApiService.get('/orders');
+  static Future<List<Order>> getOrders({String? status}) async {
+    final endpoint = status != null ? '/orders?status=$status' : '/orders';
+    final response = await ApiService.get(endpoint);
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List<dynamic>;
@@ -135,6 +136,8 @@ class OrderService {
     required String deliveryOption,
     double deliveryFee = 0.0,
     double distance = 0.0,
+    String? shippingAddress,
+    String? paymentProofUrl,
     String? notes,
   }) async {
     final body = <String, dynamic>{
@@ -143,6 +146,12 @@ class OrderService {
       'delivery_fee': deliveryFee,
       'distance': distance,
     };
+    if (shippingAddress != null && shippingAddress.isNotEmpty) {
+      body['shipping_address'] = shippingAddress;
+    }
+    if (paymentProofUrl != null && paymentProofUrl.isNotEmpty) {
+      body['payment_proof_url'] = paymentProofUrl;
+    }
     if (notes != null && notes.isNotEmpty) {
       body['notes'] = notes;
     }
@@ -158,6 +167,18 @@ class OrderService {
     }
   }
 
+  static Future<Order> markPaymentAsPaid(int orderId) async {
+    final response = await ApiService.post('/orders/$orderId/payment/paid', body: {});
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return Order.fromJson(data);
+    } else {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Failed to mark payment as paid');
+    }
+  }
+
   static Future<List<Message>> getMessages(int orderId) async {
     final response = await ApiService.get('/orders/$orderId/messages');
 
@@ -169,10 +190,15 @@ class OrderService {
     }
   }
 
-  static Future<Message> createMessage(int orderId, String content) async {
+  static Future<Message> createMessage(int orderId, String content, {String? imageUrl}) async {
+    final body = <String, dynamic>{'content': content};
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      body['image_url'] = imageUrl;
+    }
+
     final response = await ApiService.post(
       '/orders/$orderId/messages',
-      body: {'content': content},
+      body: body,
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {

@@ -48,6 +48,12 @@ class Order {
   final User? supplier;
   final String status;
   final double totalAmount;
+  final String? paymentMethod;
+  final String? paymentStatus;
+  final String? paymentProofUrl;
+  final String? deliveryOption;
+  final double? deliveryFee;
+  final double? distance;
   final String? shippingAddress;
   final String? notes;
   final List<OrderItem> orderItems;
@@ -63,6 +69,12 @@ class Order {
     this.supplier,
     required this.status,
     required this.totalAmount,
+    this.paymentMethod,
+    this.paymentStatus,
+    this.paymentProofUrl,
+    this.deliveryOption,
+    this.deliveryFee,
+    this.distance,
     this.shippingAddress,
     this.notes,
     required this.orderItems,
@@ -80,6 +92,12 @@ class Order {
       supplier: json['supplier'] != null ? User.fromJson(json['supplier'] as Map<String, dynamic>) : null,
       status: json['status'] as String,
       totalAmount: (json['total_amount'] as num).toDouble(),
+      paymentMethod: json['payment_method'] as String?,
+      paymentStatus: json['payment_status'] as String?,
+      paymentProofUrl: json['payment_proof_url'] as String?,
+      deliveryOption: json['delivery_option'] as String?,
+      deliveryFee: json['delivery_fee'] != null ? (json['delivery_fee'] as num).toDouble() : null,
+      distance: json['distance'] != null ? (json['distance'] as num).toDouble() : null,
       shippingAddress: json['shipping_address'] as String?,
       notes: json['notes'] as String?,
       orderItems: (json['order_items'] as List<dynamic>?)
@@ -102,6 +120,7 @@ class Message {
   final int senderId;
   final MessageSender sender;
   final String content;
+  final String? imageUrl;
   final DateTime createdAt;
 
   Message({
@@ -110,6 +129,7 @@ class Message {
     required this.senderId,
     required this.sender,
     required this.content,
+    this.imageUrl,
     required this.createdAt,
   });
 
@@ -120,6 +140,7 @@ class Message {
       senderId: json['sender_id'] as int,
       sender: MessageSender.fromJson(json['sender'] as Map<String, dynamic>),
       content: json['content'] as String,
+      imageUrl: json['image_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }

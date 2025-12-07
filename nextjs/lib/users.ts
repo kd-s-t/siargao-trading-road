@@ -68,6 +68,8 @@ export interface Order {
   status: string;
   total_amount: number;
   payment_method?: string;
+  payment_status?: string;
+  payment_proof_url?: string;
   delivery_option?: string;
   delivery_fee?: number;
   distance?: number;

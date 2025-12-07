@@ -36,10 +36,16 @@ func getUserID(c *gin.Context) (uint, error) {
 func GetOrders(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 	role, _ := c.Get("role")
+	status := c.Query("status")
 
 	var orders []models.Order
-	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").
-		Where("status != ?", "draft")
+	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product")
+
+	if status != "" {
+		query = query.Where("status = ?", status)
+	} else {
+		query = query.Where("status != ?", "draft")
+	}
 
 	if role == "supplier" {
 		query = query.Where("supplier_id = ?", userID)
@@ -83,23 +89,25 @@ func GetOrder(c *gin.Context) {
 	log.Printf("GetOrder: order %d has %d ratings", order.ID, len(ratings))
 
 	orderResponse := gin.H{
-		"id":               order.ID,
-		"store_id":         order.StoreID,
-		"supplier_id":      order.SupplierID,
-		"store":            order.Store,
-		"supplier":         order.Supplier,
-		"status":           order.Status,
-		"total_amount":     order.TotalAmount,
-		"payment_method":   order.PaymentMethod,
-		"delivery_option":  order.DeliveryOption,
-		"delivery_fee":     order.DeliveryFee,
-		"distance":         order.Distance,
-		"shipping_address": order.ShippingAddress,
-		"notes":            order.Notes,
-		"order_items":      order.OrderItems,
-		"created_at":       order.CreatedAt,
-		"updated_at":       order.UpdatedAt,
-		"ratings":          ratings,
+		"id":                order.ID,
+		"store_id":          order.StoreID,
+		"supplier_id":       order.SupplierID,
+		"store":             order.Store,
+		"supplier":          order.Supplier,
+		"status":            order.Status,
+		"total_amount":      order.TotalAmount,
+		"payment_method":    order.PaymentMethod,
+		"payment_status":    order.PaymentStatus,
+		"payment_proof_url": order.PaymentProofURL,
+		"delivery_option":   order.DeliveryOption,
+		"delivery_fee":      order.DeliveryFee,
+		"distance":          order.Distance,
+		"shipping_address":  order.ShippingAddress,
+		"notes":             order.Notes,
+		"order_items":       order.OrderItems,
+		"created_at":        order.CreatedAt,
+		"updated_at":        order.UpdatedAt,
+		"ratings":           ratings,
 	}
 
 	c.JSON(http.StatusOK, orderResponse)
@@ -143,6 +151,16 @@ func UpdateOrderStatus(c *gin.Context) {
 
 	if !validStatuses[req.Status] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
+		return
+	}
+
+	if req.Status == "delivered" && order.Status != "in_transit" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "order must be in transit before it can be marked as delivered"})
+		return
+	}
+
+	if req.Status == "in_transit" && order.Status != "preparing" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "order must be preparing before it can be marked as in transit"})
 		return
 	}
 
@@ -454,6 +472,7 @@ func SubmitOrder(c *gin.Context) {
 		DeliveryFee     float64 `json:"delivery_fee"`
 		Distance        float64 `json:"distance"`
 		ShippingAddress string  `json:"shipping_address"`
+		PaymentProofURL string  `json:"payment_proof_url"`
 		Notes           string  `json:"notes"`
 	}
 
@@ -501,6 +520,17 @@ func SubmitOrder(c *gin.Context) {
 		return
 	}
 
+	if req.PaymentMethod == "gcash" {
+		if req.PaymentProofURL == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "payment proof is required for GCash payment"})
+			return
+		}
+		order.PaymentStatus = models.PaymentStatusPending
+		order.PaymentProofURL = req.PaymentProofURL
+	} else {
+		order.PaymentStatus = models.PaymentStatusPaid
+	}
+
 	order.Status = models.OrderStatusPreparing
 	order.PaymentMethod = models.PaymentMethod(req.PaymentMethod)
 	order.DeliveryOption = models.DeliveryOption(req.DeliveryOption)
@@ -532,6 +562,52 @@ func SubmitOrder(c *gin.Context) {
 		return
 	}
 
+	c.JSON(http.StatusOK, order)
+}
+
+func MarkPaymentAsPaid(c *gin.Context) {
+	orderID := c.Param("id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	role, _ := c.Get("role")
+	if role != "supplier" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers can mark payment as paid"})
+		return
+	}
+
+	var order models.Order
+	if err := database.DB.Where("id = ? AND supplier_id = ?", orderID, userID).First(&order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "order not found or access denied"})
+		return
+	}
+
+	if order.PaymentMethod != models.PaymentMethodGCash {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "payment confirmation is only applicable for GCash orders"})
+		return
+	}
+
+	if order.PaymentStatus == models.PaymentStatusPaid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "payment is already marked as paid"})
+		return
+	}
+
+	order.PaymentStatus = models.PaymentStatusPaid
+	if err := database.DB.Save(&order).Error; err != nil {
+		log.Printf("MarkPaymentAsPaid: failed to update payment status. orderID=%s, userID=%d, error=%v", orderID, userID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update payment status", "details": err.Error()})
+		return
+	}
+
+	if err := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").First(&order, order.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load order details"})
+		return
+	}
+
+	log.Printf("MarkPaymentAsPaid: payment marked as paid. orderID=%s, userID=%d", orderID, userID)
 	c.JSON(http.StatusOK, order)
 }
 

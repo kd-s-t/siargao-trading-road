@@ -551,26 +551,18 @@ export default function OrderDetailScreen() {
           </Card>
         )}
 
-        {order?.status === 'delivered' && (
+        {order?.status === 'delivered' && !hasRated(order) && (
           <Card style={styles.orderCard}>
             <Card.Content>
               <Button
                 mode="contained"
                 icon="star"
                 onPress={() => {
-                  if (hasRated(order)) {
-                    setSnackbar({ visible: true, message: 'You have already rated this order', type: 'error' });
-                    return;
-                  }
                   setShowRatingDialog(true);
                 }}
-                disabled={hasRated(order)}
-                style={[
-                  styles.rateButton,
-                  hasRated(order) && styles.rateButtonDisabled
-                ]}
+                style={styles.rateButton}
               >
-                {hasRated(order) ? 'Already Rated' : `Rate ${user?.role === 'store' ? order.supplier?.name : order.store?.name}`}
+                {`Rate ${user?.role === 'store' ? order.supplier?.name : order.store?.name}`}
               </Button>
             </Card.Content>
           </Card>
@@ -697,24 +689,14 @@ export default function OrderDetailScreen() {
           )}
 
           {user?.role === 'supplier' && order.status === 'preparing' && (
-            <>
-              <Button
-                mode="outlined"
-                onPress={() => handleUpdateStatus('in_transit')}
-                style={styles.actionButton}
-                disabled={updatingStatus}
-              >
-                Mark In Transit
-              </Button>
-              <Button
-                mode="outlined"
-                onPress={handleMarkDelivered}
-                style={styles.actionButton}
-                disabled={updatingStatus}
-              >
-                Mark Delivered
-              </Button>
-            </>
+            <Button
+              mode="outlined"
+              onPress={() => handleUpdateStatus('in_transit')}
+              style={styles.actionButton}
+              disabled={updatingStatus}
+            >
+              Mark In Transit
+            </Button>
           )}
 
           {user?.role === 'supplier' && order.status === 'in_transit' && (
@@ -728,7 +710,7 @@ export default function OrderDetailScreen() {
             </Button>
           )}
 
-          {user?.role === 'supplier' && order.status === 'delivered' && (
+          {user?.role === 'supplier' && order.status === 'delivered' && order.payment_status !== 'paid' && (
             <Button
               mode="outlined"
               onPress={() => handleUpdateStatus('in_transit')}

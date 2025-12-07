@@ -62,8 +62,9 @@ export interface Order {
 }
 
 export const orderService = {
-  getOrders: async (): Promise<Order[]> => {
-    const { data } = await api.get<Order[]>('/orders');
+  getOrders: async (status?: string | null): Promise<Order[]> => {
+    const params = status ? { status } : {};
+    const { data } = await api.get<Order[]>('/orders', { params });
     return data;
   },
 

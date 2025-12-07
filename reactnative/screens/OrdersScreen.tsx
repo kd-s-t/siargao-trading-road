@@ -54,7 +54,7 @@ export default function OrdersScreen() {
     try {
       setError(null);
       console.log('Loading orders...');
-      const data = await orderService.getOrders();
+      const data = await orderService.getOrders(statusFilter);
       console.log('Orders loaded:', data?.length || 0, 'orders');
       setOrders(data || []);
     } catch (error: any) {
@@ -74,7 +74,7 @@ export default function OrdersScreen() {
 
   useEffect(() => {
     loadOrders();
-  }, []);
+  }, [statusFilter]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -165,9 +165,6 @@ export default function OrdersScreen() {
     );
   };
 
-  const filteredOrders = statusFilter
-    ? orders.filter(order => order.status === statusFilter)
-    : orders;
 
   if (loading) {
     return (
@@ -203,7 +200,9 @@ export default function OrdersScreen() {
         <View style={styles.filterContainer}>
           <Chip
             selected={statusFilter === null}
-            onPress={() => setStatusFilter(null)}
+            onPress={() => {
+              setStatusFilter(null);
+            }}
             style={[
               styles.filterChip,
               statusFilter === null && styles.filterChipSelected,
@@ -214,7 +213,9 @@ export default function OrdersScreen() {
           </Chip>
           <Chip
             selected={statusFilter === 'draft'}
-            onPress={() => setStatusFilter('draft')}
+            onPress={() => {
+              setStatusFilter('draft');
+            }}
             style={[
               styles.filterChip,
               statusFilter === 'draft' && styles.filterChipSelected,
@@ -225,7 +226,9 @@ export default function OrdersScreen() {
           </Chip>
           <Chip
             selected={statusFilter === 'preparing'}
-            onPress={() => setStatusFilter('preparing')}
+            onPress={() => {
+              setStatusFilter('preparing');
+            }}
             style={[
               styles.filterChip,
               statusFilter === 'preparing' && styles.filterChipSelected,
@@ -236,7 +239,9 @@ export default function OrdersScreen() {
           </Chip>
           <Chip
             selected={statusFilter === 'in_transit'}
-            onPress={() => setStatusFilter('in_transit')}
+            onPress={() => {
+              setStatusFilter('in_transit');
+            }}
             style={[
               styles.filterChip,
               statusFilter === 'in_transit' && styles.filterChipSelected,
@@ -247,7 +252,9 @@ export default function OrdersScreen() {
           </Chip>
           <Chip
             selected={statusFilter === 'delivered'}
-            onPress={() => setStatusFilter('delivered')}
+            onPress={() => {
+              setStatusFilter('delivered');
+            }}
             style={[
               styles.filterChip,
               statusFilter === 'delivered' && styles.filterChipSelected,
@@ -258,7 +265,9 @@ export default function OrdersScreen() {
           </Chip>
           <Chip
             selected={statusFilter === 'cancelled'}
-            onPress={() => setStatusFilter('cancelled')}
+            onPress={() => {
+              setStatusFilter('cancelled');
+            }}
             style={[
               styles.filterChip,
               statusFilter === 'cancelled' && styles.filterChipSelected,
@@ -287,7 +296,7 @@ export default function OrdersScreen() {
               </Button>
             </Card.Content>
           </Card>
-        ) : filteredOrders.length === 0 ? (
+        ) : orders.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Card.Content>
               <Text variant="bodyLarge" style={styles.emptyText}>
@@ -299,7 +308,7 @@ export default function OrdersScreen() {
             </Card.Content>
           </Card>
         ) : (
-          filteredOrders.map((order) => {
+          orders.map((order) => {
             const isStore = user?.role === 'store';
             const entity = isStore ? order.supplier : order.store;
             const entityName = isStore ? 'Supplier' : 'Store';
@@ -371,6 +380,41 @@ export default function OrdersScreen() {
                       ₱{order.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </Text>
                   </View>
+                  {order.payment_method && (
+                    <View style={styles.infoRow}>
+                      <Text variant="bodySmall" style={styles.label}>
+                        Payment Method:
+                      </Text>
+                      <Text variant="bodySmall">
+                        {order.payment_method === 'cash_on_delivery' ? 'Cash on Delivery' :
+                         order.payment_method === 'gcash' ? 'GCash' :
+                         order.payment_method}
+                      </Text>
+                    </View>
+                  )}
+                  {order.payment_status && (
+                    <View style={styles.infoRow}>
+                      <Text variant="bodySmall" style={styles.label}>
+                        Payment Status:
+                      </Text>
+                      <Chip
+                        style={[
+                          { backgroundColor: (order.payment_status === 'paid' ? '#4caf50' : order.payment_status === 'pending' ? '#ff9800' : '#f44336') + '20' }
+                        ]}
+                        textStyle={{ 
+                          color: order.payment_status === 'paid' ? '#4caf50' : 
+                                 order.payment_status === 'pending' ? '#ff9800' : 
+                                 '#f44336',
+                          fontSize: 12
+                        }}
+                      >
+                        {order.payment_status === 'paid' ? 'Paid' :
+                         order.payment_status === 'pending' ? 'Pending' :
+                         order.payment_status === 'failed' ? 'Failed' :
+                         order.payment_status}
+                      </Chip>
+                    </View>
+                  )}
                   <View style={styles.infoRow}>
                     <Text variant="bodySmall" style={styles.label}>
                       Items:
@@ -485,43 +529,32 @@ export default function OrdersScreen() {
                 <Divider style={styles.divider} />
 
                 <View style={styles.actionsContainer}>
-                  <Button
-                    mode="outlined"
-                    icon="download"
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleDownloadInvoice(order);
-                    }}
-                    style={styles.actionButton}
-                  >
-                    Download Invoice
-                  </Button>
+                  {order.status === 'delivered' && (
+                    <Button
+                      mode="outlined"
+                      icon="download"
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDownloadInvoice(order);
+                      }}
+                      style={styles.actionButton}
+                    >
+                      Download Invoice
+                    </Button>
+                  )}
 
                   {user?.role === 'supplier' && order.status === 'preparing' && (
-                    <View style={styles.statusButtons}>
-                      <Button
-                        mode="outlined"
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleUpdateStatus(order.id, 'in_transit');
-                        }}
-                        style={styles.statusButton}
-                        disabled={updatingStatus === order.id}
-                      >
-                        Mark In Transit
-                      </Button>
-                      <Button
-                        mode="outlined"
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleMarkDelivered(order.id);
-                        }}
-                        style={styles.statusButton}
-                        disabled={updatingStatus === order.id}
-                      >
-                        Mark Delivered
-                      </Button>
-                    </View>
+                    <Button
+                      mode="outlined"
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleUpdateStatus(order.id, 'in_transit');
+                      }}
+                      style={styles.actionButton}
+                      disabled={updatingStatus === order.id}
+                    >
+                      Mark In Transit
+                    </Button>
                   )}
 
                   {user?.role === 'supplier' && order.status === 'in_transit' && (
@@ -538,7 +571,7 @@ export default function OrdersScreen() {
                     </Button>
                   )}
 
-                  {user?.role === 'supplier' && order.status === 'delivered' && (
+                  {user?.role === 'supplier' && order.status === 'delivered' && order.payment_status !== 'paid' && (
                     <Button
                       mode="outlined"
                       onPress={(e) => {

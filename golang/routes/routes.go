@@ -49,6 +49,7 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 			protected.POST("/orders/:id/submit", handlers.SubmitOrder)
 			protected.POST("/orders/:id/items", handlers.AddOrderItem)
 			protected.PUT("/orders/:id/status", handlers.UpdateOrderStatus)
+			protected.POST("/orders/:id/payment/paid", handlers.MarkPaymentAsPaid)
 			protected.GET("/orders/:id", handlers.GetOrder)
 			protected.PUT("/orders/items/:item_id", handlers.UpdateOrderItem)
 			protected.DELETE("/orders/items/:item_id", handlers.RemoveOrderItem)
