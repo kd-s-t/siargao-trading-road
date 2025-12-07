@@ -30,6 +30,14 @@ const (
 	DeliveryOptionDeliver DeliveryOption = "deliver"
 )
 
+type PaymentStatus string
+
+const (
+	PaymentStatusPending PaymentStatus = "pending"
+	PaymentStatusPaid    PaymentStatus = "paid"
+	PaymentStatusFailed  PaymentStatus = "failed"
+)
+
 type Order struct {
 	ID              uint           `gorm:"primaryKey" json:"id"`
 	StoreID         uint           `gorm:"not null;index" json:"store_id"`
@@ -39,6 +47,8 @@ type Order struct {
 	Status          OrderStatus    `gorm:"type:varchar(20);not null;default:'draft'" json:"status"`
 	TotalAmount     float64        `gorm:"type:decimal(10,2);default:0" json:"total_amount"`
 	PaymentMethod   PaymentMethod  `gorm:"type:varchar(20)" json:"payment_method"`
+	PaymentStatus   PaymentStatus  `gorm:"type:varchar(20);default:'pending'" json:"payment_status"`
+	PaymentProofURL string         `gorm:"type:varchar(500)" json:"payment_proof_url,omitempty"`
 	DeliveryOption  DeliveryOption `gorm:"type:varchar(20)" json:"delivery_option"`
 	DeliveryFee     float64        `gorm:"type:decimal(10,2);default:0" json:"delivery_fee"`
 	Distance        float64        `gorm:"type:decimal(10,2);default:0" json:"distance"`

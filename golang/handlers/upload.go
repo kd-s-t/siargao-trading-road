@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"time"
 
@@ -17,8 +16,8 @@ import (
 )
 
 func UploadImage(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
+	userID, err := getUserID(c)
+	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
 		return
 	}
@@ -100,12 +99,10 @@ func UploadImage(c *gin.Context) {
 		return
 	}
 
-	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", config.S3Bucket, config.AWSRegion, key)
-	
-	url = fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", config.S3Bucket, config.AWSRegion, key)
+	imageURL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", config.S3Bucket, config.AWSRegion, key)
 
 	c.JSON(http.StatusOK, gin.H{
-		"url": url,
+		"url": imageURL,
 		"key": key,
 	})
 }

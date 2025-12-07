@@ -351,6 +351,7 @@ This document outlines the complete business workflows for each user role in the
     "delivery_option": "pickup" | "deliver",
     "delivery_fee": 0.0,
     "distance": 0.0,
+    "shipping_address": "string",
     "notes": "string"
   }
   ```
@@ -366,9 +367,10 @@ This document outlines the complete business workflows for each user role in the
   - When `delivery_option` is `"pickup"`, delivery fee is ₱0.00
   - Final total = Subtotal + Delivery Fee
 - **Shipping Address**:
-  - Automatically set from the store's address in the database when `delivery_option` is `"deliver"`
-  - Stores have fixed addresses and cannot change shipping location
-  - Not required in request body
+  - **Required** when `delivery_option` is `"deliver"`
+  - User must provide the delivery address in the `shipping_address` field
+  - Not required when `delivery_option` is `"pickup"`
+  - Validation: Backend will reject order submission if delivery is selected but shipping address is missing
 
 #### Update Order Status
 - **Action**: Change order status (cancelled only for stores)
@@ -549,6 +551,12 @@ The order status flow follows this progression:
   - Example: If order contains 300 sacks, delivery fee = 300 × ₱20.00 = ₱6,000.00
   - When `delivery_option` is `"pickup"`, delivery fee is ₱0.00
   - Final order total = Subtotal + Delivery Fee
+
+- **Shipping Address Requirement**:
+  - When `delivery_option` is `"deliver"`, the `shipping_address` field is **required**
+  - Users must provide a valid delivery address when submitting orders for delivery
+  - Backend validation will reject orders with delivery option but missing shipping address
+  - Shipping address is not required when `delivery_option` is `"pickup"`
 
 ---
 

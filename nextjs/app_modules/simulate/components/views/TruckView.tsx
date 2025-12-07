@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Box,
   Card,
@@ -23,9 +23,11 @@ import {
   Add as AddIcon,
   Remove as RemoveIcon,
   Delete as DeleteIcon,
+  Image as ImageIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { Order } from '@/lib/users';
-import { mobileOrderService } from '../../services/mobileApi';
+import { mobileOrderService, mobileAuthService } from '../../services/mobileApi';
 import { Supplier } from '@/lib/suppliers';
 
 interface TruckViewProps {
@@ -49,7 +51,12 @@ export function TruckView({
 }: TruckViewProps) {
   const [paymentMethod, setPaymentMethod] = useState<string>('cash_on_delivery');
   const [deliveryOption, setDeliveryOption] = useState<string>('pickup');
+  const [shippingAddress, setShippingAddress] = useState<string>('');
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
   const [notes, setNotes] = useState<string>('');
+  const paymentProofInputRef = useRef<HTMLInputElement>(null);
 
   const calculateDeliveryFee = () => {
     if (deliveryOption !== 'deliver' || !draftOrder?.order_items) return 0;
@@ -79,6 +86,26 @@ export function TruckView({
       }
     } catch (err: unknown) {
       onError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to update quantity');
+    }
+  };
+
+  const handlePaymentProofSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPaymentProof(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPaymentProofPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePaymentProof = () => {
+    setPaymentProof(null);
+    setPaymentProofPreview(null);
+    if (paymentProofInputRef.current) {
+      paymentProofInputRef.current.value = '';
     }
   };
 
@@ -186,6 +213,17 @@ export function TruckView({
               <FormControlLabel value="deliver" control={<Radio />} label="Deliver" />
             </RadioGroup>
           </FormControl>
+          {deliveryOption === 'deliver' && (
+            <TextField
+              fullWidth
+              label="Shipping Address"
+              value={shippingAddress}
+              onChange={(e) => setShippingAddress(e.target.value)}
+              required
+              sx={{ mt: 2 }}
+              placeholder="Enter delivery address"
+            />
+          )}
         </CardContent>
       </Card>
       <Card sx={{ bgcolor: '#e3f2fd', mt: 2 }}>
@@ -227,12 +265,84 @@ export function TruckView({
             <FormLabel component="legend">Payment Method</FormLabel>
             <RadioGroup
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => {
+                setPaymentMethod(e.target.value);
+                if (e.target.value !== 'gcash') {
+                  setPaymentProof(null);
+                  setPaymentProofPreview(null);
+                  if (paymentProofInputRef.current) {
+                    paymentProofInputRef.current.value = '';
+                  }
+                }
+              }}
             >
               <FormControlLabel value="cash_on_delivery" control={<Radio />} label="Cash on Delivery" />
               <FormControlLabel value="gcash" control={<Radio />} label="GCash" />
             </RadioGroup>
           </FormControl>
+          {paymentMethod === 'gcash' && (
+            <Box sx={{ mb: 2 }}>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Please upload your GCash payment proof. Wait for supplier to confirm receipt. They will mark it as paid.
+              </Alert>
+              <input
+                type="file"
+                accept="image/*"
+                ref={paymentProofInputRef}
+                onChange={handlePaymentProofSelect}
+                style={{ display: 'none' }}
+                disabled={uploadingProof}
+              />
+              {paymentProofPreview && (
+                <Box sx={{ mb: 2, position: 'relative', display: 'inline-block' }}>
+                  <Box
+                    sx={{
+                      position: 'relative',
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                      border: '1px solid #e0e0e0',
+                      maxWidth: 200,
+                    }}
+                  >
+                    <img
+                      src={paymentProofPreview}
+                      alt="Payment proof preview"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: 150,
+                        display: 'block',
+                        objectFit: 'contain',
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={handleRemovePaymentProof}
+                      sx={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        bgcolor: 'rgba(0, 0, 0, 0.5)',
+                        color: 'white',
+                        '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </Box>
+              )}
+              <Button
+                variant="outlined"
+                startIcon={<ImageIcon />}
+                onClick={() => paymentProofInputRef.current?.click()}
+                disabled={uploadingProof}
+                fullWidth
+                sx={{ mb: 1 }}
+              >
+                {paymentProof ? 'Change Payment Proof' : 'Upload Payment Proof'}
+              </Button>
+            </Box>
+          )}
           <TextField
             fullWidth
             label="Notes (Optional)"
@@ -248,9 +358,31 @@ export function TruckView({
             onClick={async () => {
               if (draftOrder) {
                 try {
+                  let paymentProofUrl: string | undefined;
+                  
+                  if (paymentMethod === 'gcash') {
+                    if (!paymentProof) {
+                      onError('Payment proof is required for GCash payment');
+                      return;
+                    }
+                    setUploadingProof(true);
+                    try {
+                      const result = await mobileAuthService.uploadImage(paymentProof, 'user');
+                      paymentProofUrl = result.url;
+                    } catch (err: unknown) {
+                      const error = err as { response?: { data?: { error?: string } } };
+                      onError(error.response?.data?.error || 'Failed to upload payment proof');
+                      setUploadingProof(false);
+                      return;
+                    }
+                    setUploadingProof(false);
+                  }
+
                   await mobileOrderService.submitOrder(draftOrder.id, {
                     payment_method: paymentMethod,
                     delivery_option: deliveryOption,
+                    shipping_address: deliveryOption === 'deliver' ? shippingAddress : undefined,
+                    payment_proof_url: paymentProofUrl,
                     notes: notes,
                     delivery_fee: deliveryFee,
                     distance: 0,
@@ -261,7 +393,7 @@ export function TruckView({
                 }
               }
             }}
-            disabled={draftOrder.total_amount < 5000}
+            disabled={draftOrder.total_amount < 5000 || (deliveryOption === 'deliver' && !shippingAddress.trim()) || (paymentMethod === 'gcash' && !paymentProof) || uploadingProof}
             sx={{ mt: 2 }}
           >
             Submit Order
