@@ -34,7 +34,11 @@ type UpdateProductRequest struct {
 }
 
 func GetProducts(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
 	role, _ := c.Get("role")
 	includeDeleted := c.Query("include_deleted") == "true"
 
@@ -59,7 +63,11 @@ func GetProducts(c *gin.Context) {
 
 func GetProduct(c *gin.Context) {
 	id := c.Param("id")
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
 	role, _ := c.Get("role")
 
 	var product models.Product
@@ -78,7 +86,11 @@ func GetProduct(c *gin.Context) {
 }
 
 func CreateProduct(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
 	role, _ := c.Get("role")
 
 	var req CreateProductRequest
@@ -100,7 +112,7 @@ func CreateProduct(c *gin.Context) {
 		}
 		supplierID = *req.SupplierID
 	} else if role == "supplier" {
-		supplierID = userID.(uint)
+		supplierID = userID
 	} else {
 		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers and admins can create products"})
 		return
@@ -139,7 +151,11 @@ func CreateProduct(c *gin.Context) {
 
 func UpdateProduct(c *gin.Context) {
 	id := c.Param("id")
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
 	role, _ := c.Get("role")
 
 	var product models.Product
@@ -201,7 +217,11 @@ func UpdateProduct(c *gin.Context) {
 
 func DeleteProduct(c *gin.Context) {
 	id := c.Param("id")
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
 	role, _ := c.Get("role")
 
 	var product models.Product
@@ -226,7 +246,11 @@ func DeleteProduct(c *gin.Context) {
 
 func RestoreProduct(c *gin.Context) {
 	id := c.Param("id")
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
 	role, _ := c.Get("role")
 
 	var product models.Product
@@ -250,7 +274,11 @@ func RestoreProduct(c *gin.Context) {
 }
 
 func BulkCreateProducts(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
 	role, _ := c.Get("role")
 
 	var req []CreateProductRequest
@@ -281,7 +309,7 @@ func BulkCreateProducts(c *gin.Context) {
 			}
 			supplierID = *productReq.SupplierID
 		} else if role == "supplier" {
-			supplierID = userID.(uint)
+			supplierID = userID
 		} else {
 			errors = append(errors, fmt.Sprintf("Product %d: only suppliers and admins can create products", i+1))
 			continue
