@@ -8,4 +8,5 @@ export { OrdersView } from './OrdersView';
 export { OrderDetailView } from './OrderDetailView';
 export { ProfileView } from './ProfileView';
 export { RatingsListView } from './RatingsListView';
+export { ImageUpload } from '../ImageUpload';
 

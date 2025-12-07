@@ -394,32 +394,6 @@ class _TruckScreenState extends State<TruckScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      'Payment Method',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    RadioListTile<String>(
-                      title: const Text('Cash on Delivery'),
-                      value: 'cash_on_delivery',
-                      groupValue: _paymentMethod,
-                      onChanged: (value) {
-                        setState(() {
-                          _paymentMethod = value!;
-                        });
-                      },
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('GCash'),
-                      value: 'gcash',
-                      groupValue: _paymentMethod,
-                      onChanged: (value) {
-                        setState(() {
-                          _paymentMethod = value!;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
                       'Delivery Method',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
@@ -545,6 +519,32 @@ class _TruckScreenState extends State<TruckScreen> {
                         ),
                       ),
                     ],
+                    const Divider(height: 24),
+                    const Text(
+                      'Payment Method',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    RadioListTile<String>(
+                      title: const Text('Cash on Delivery'),
+                      value: 'cash_on_delivery',
+                      groupValue: _paymentMethod,
+                      onChanged: (value) {
+                        setState(() {
+                          _paymentMethod = value!;
+                        });
+                      },
+                    ),
+                    RadioListTile<String>(
+                      title: const Text('GCash'),
+                      value: 'gcash',
+                      groupValue: _paymentMethod,
+                      onChanged: (value) {
+                        setState(() {
+                          _paymentMethod = value!;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: _notesController,

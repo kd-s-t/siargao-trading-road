@@ -276,17 +276,6 @@ export default function TruckScreen() {
         <Card style={styles.optionsCard}>
           <Card.Content>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              Payment Method
-            </Text>
-            <RadioButton.Group
-              onValueChange={setPaymentMethod}
-              value={paymentMethod}
-            >
-              <RadioButton.Item label="Cash on Delivery" value="cash_on_delivery" />
-              <RadioButton.Item label="GCash" value="gcash" />
-            </RadioButton.Group>
-            <Divider style={styles.divider} />
-            <Text variant="titleMedium" style={styles.sectionTitle}>
               Delivery Method
             </Text>
             <RadioButton.Group
@@ -359,6 +348,17 @@ export default function TruckScreen() {
                 </Text>
               </Surface>
             )}
+            <Divider style={styles.divider} />
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Payment Method
+            </Text>
+            <RadioButton.Group
+              onValueChange={setPaymentMethod}
+              value={paymentMethod}
+            >
+              <RadioButton.Item label="Cash on Delivery" value="cash_on_delivery" />
+              <RadioButton.Item label="GCash" value="gcash" />
+            </RadioButton.Group>
             <Divider style={styles.divider} />
             <TextInput
               label="Notes (Optional)"

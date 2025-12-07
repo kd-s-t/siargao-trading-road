@@ -4,7 +4,9 @@
 
 # Siargao Trading Road
 
-Siargao Trading Road marketplace app connecting suppliers and stores in Siargao.
+Marketplace app connecting suppliers and stores in Siargao.
+
+Siargao Trading Road is a comprehensive B2B marketplace platform designed to streamline the trading ecosystem in Siargao. The platform enables suppliers to manage their product catalogs, process orders, and track deliveries, while stores can browse supplier inventories, place orders, and manage their purchases. With features including real-time order tracking, route visualization, inventory management, and multi-platform support (web admin panel, React Native, and Flutter mobile apps), the platform provides a seamless trading experience for all stakeholders. The system includes role-based access control, secure authentication, order status management, messaging between parties, and comprehensive analytics dashboards for administrators.
 
 <div align="center">
 

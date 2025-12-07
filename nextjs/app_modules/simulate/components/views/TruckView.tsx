@@ -178,16 +178,6 @@ export function TruckView({
       <Card sx={{ mt: 2 }}>
         <CardContent>
           <FormControl component="fieldset" sx={{ mb: 2 }}>
-            <FormLabel component="legend">Payment Method</FormLabel>
-            <RadioGroup
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-            >
-              <FormControlLabel value="cash_on_delivery" control={<Radio />} label="Cash on Delivery" />
-              <FormControlLabel value="gcash" control={<Radio />} label="GCash" />
-            </RadioGroup>
-          </FormControl>
-          <FormControl component="fieldset" sx={{ mb: 2 }}>
             <FormLabel component="legend">Delivery Method</FormLabel>
             <RadioGroup
               value={deliveryOption}
@@ -244,6 +234,17 @@ export function TruckView({
               Minimum order amount is ₱5,000.00. Add ₱{(5000 - draftOrder.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more to submit.
             </Alert>
           )}
+          <Divider sx={{ my: 2 }} />
+          <FormControl component="fieldset" sx={{ mb: 2 }}>
+            <FormLabel component="legend">Payment Method</FormLabel>
+            <RadioGroup
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <FormControlLabel value="cash_on_delivery" control={<Radio />} label="Cash on Delivery" />
+              <FormControlLabel value="gcash" control={<Radio />} label="GCash" />
+            </RadioGroup>
+          </FormControl>
           <TextField
             fullWidth
             label="Notes (Optional)"
@@ -251,7 +252,7 @@ export function TruckView({
             onChange={(e) => setNotes(e.target.value)}
             multiline
             rows={2}
-            sx={{ mb: 2, mt: 2 }}
+            sx={{ mb: 2 }}
           />
           <Button
             fullWidth
