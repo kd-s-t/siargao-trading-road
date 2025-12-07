@@ -246,35 +246,20 @@ jobs:
               IMAGES_TO_DELETE=$((IMAGE_COUNT - KEEP_IMAGES))
               echo "🗑️ Deleting $IMAGES_TO_DELETE old images from $REPO_NAME..."
               
-              aws ecr describe-images \
+              aws ecr list-images \
                 --repository-name $REPO_NAME \
                 --region us-east-1 \
-                --query "sort_by(imageDetails,&imagePushedAt)[:-$KEEP_IMAGES].[imageTags[0],imageDigest]" \
-                --output json | \
-              jq -r '.[] | select(.[0] != null and .[0] != "latest") | "--image-ids imageTag=" + .[0]' | \
-              while read image_id; do
-                if [ ! -z "$image_id" ]; then
-                  echo "  Deleting image: $image_id"
+                --filter "tagStatus=TAGGED" \
+                --query "sort_by(imageIds[?imageTag!='latest'],&imageTag)[:-$KEEP_IMAGES].imageTag" \
+                --output text | \
+              tr '\t' '\n' | \
+              while read tag; do
+                if [ ! -z "$tag" ] && [ "$tag" != "latest" ]; then
+                  echo "  Deleting image tag: $tag"
                   aws ecr batch-delete-image \
                     --repository-name $REPO_NAME \
                     --region us-east-1 \
-                    $image_id || true
-                fi
-              done
-              
-              aws ecr describe-images \
-                --repository-name $REPO_NAME \
-                --region us-east-1 \
-                --query "sort_by(imageDetails,&imagePushedAt)[:-$KEEP_IMAGES].imageDigest" \
-                --output json | \
-              jq -r '.[]' | \
-              while read digest; do
-                if [ ! -z "$digest" ]; then
-                  echo "  Deleting image digest: $digest"
-                  aws ecr batch-delete-image \
-                    --repository-name $REPO_NAME \
-                    --region us-east-1 \
-                    --image-ids imageDigest=$digest || true
+                    --image-ids imageTag=$tag || true
                 fi
               done
               
