@@ -115,16 +115,12 @@ export function SimulateContent() {
 
 
   const handleSubmitOrder = async () => {
-    if (!draftOrder) return;
-
     try {
-      setError('');
-      await mobileOrderService.submitOrder(draftOrder.id);
       await loadDraftOrder();
       setActiveView('orders');
       await loadOrders(true);
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to submit order');
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to reload order data');
       setTimeout(() => setError(''), 5000);
     }
   };
