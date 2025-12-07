@@ -33,6 +33,10 @@ func setupTestDB(t *testing.T) *config.Config {
 	}
 
 	database.DB.Exec("TRUNCATE TABLE order_items, orders, products, users CASCADE")
+	database.DB.Exec("ALTER SEQUENCE users_id_seq RESTART WITH 1")
+	database.DB.Exec("ALTER SEQUENCE products_id_seq RESTART WITH 1")
+	database.DB.Exec("ALTER SEQUENCE orders_id_seq RESTART WITH 1")
+	database.DB.Exec("ALTER SEQUENCE order_items_id_seq RESTART WITH 1")
 
 	return cfg
 }
@@ -40,6 +44,10 @@ func setupTestDB(t *testing.T) *config.Config {
 func cleanupTestDB(t *testing.T) {
 	if database.DB != nil {
 		database.DB.Exec("TRUNCATE TABLE order_items, orders, products, users CASCADE")
+		database.DB.Exec("ALTER SEQUENCE users_id_seq RESTART WITH 1")
+		database.DB.Exec("ALTER SEQUENCE products_id_seq RESTART WITH 1")
+		database.DB.Exec("ALTER SEQUENCE orders_id_seq RESTART WITH 1")
+		database.DB.Exec("ALTER SEQUENCE order_items_id_seq RESTART WITH 1")
 	}
 }
 
