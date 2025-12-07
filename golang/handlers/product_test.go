@@ -64,7 +64,6 @@ func setupProductTest(t *testing.T) (*gin.Engine, *config.Config, models.User) {
 	return r, cfg, supplier
 }
 
-
 func TestCreateProduct(t *testing.T) {
 	r, cfg, supplier := setupProductTest(t)
 
