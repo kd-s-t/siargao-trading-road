@@ -6,7 +6,6 @@ import Image from 'next/image';
 import {
   Container,
   Typography,
-  Button,
   Box,
   Card,
   CardContent,
@@ -21,8 +20,6 @@ import {
   TrendingUp as TrendingUpIcon,
   Security as SecurityIcon,
   Speed as SpeedIcon,
-  PhoneAndroid as AndroidIcon,
-  PhoneIphone as IOSIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -210,7 +207,7 @@ export default function Home() {
       <AppBar position="static" elevation={0} sx={{ bgcolor: 'transparent', color: 'text.primary', position: 'relative', zIndex: 1 }}>
         <Toolbar>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
-            <Image src="/logo.png" alt="Logo" width={150} height={40} style={{ height: 40, width: 'auto' }} />
+            <Image src="/logo.png" alt="Logo" width={350} height={96} style={{ height: 96, width: 'auto' }} />
           </Box>
         </Toolbar>
       </AppBar>
@@ -241,53 +238,61 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<AndroidIcon />}
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
+              <Box
+                component="a"
                 href={DOWNLOAD_URLS.android}
                 download
                 sx={{
-                  py: 1.5,
-                  px: 4,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  boxShadow: 4,
-                  backgroundColor: '#3DDC84',
+                  display: 'inline-block',
+                  transition: 'transform 0.2s',
                   '&:hover': {
-                    boxShadow: 6,
-                    backgroundColor: '#2EB872',
+                    transform: 'scale(1.05)',
                   },
                 }}
               >
-                Download Android
-              </Button>
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<IOSIcon />}
-                href={DOWNLOAD_URLS.ios}
-                download
+                <Image
+                  src="/googleplay.png"
+                  alt="Get it on Google Play"
+                  width={180}
+                  height={70}
+                  style={{ height: 'auto' }}
+                />
+              </Box>
+              <Box
                 sx={{
-                  py: 1.5,
-                  px: 4,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  boxShadow: 4,
-                  backgroundColor: '#000000',
-                  '&:hover': {
-                    boxShadow: 6,
-                    backgroundColor: '#1a1a1a',
-                  },
+                  display: 'inline-block',
+                  position: 'relative',
+                  opacity: 0.6,
+                  cursor: 'not-allowed',
                 }}
               >
-                Download iOS
-              </Button>
+                <Image
+                  src="/appstore.png"
+                  alt="Download on the App Store - Coming Soon"
+                  width={180}
+                  height={70}
+                  style={{ height: 'auto' }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    bgcolor: 'rgba(0, 0, 0, 0.8)',
+                    color: 'white',
+                    px: 2,
+                    py: 0.5,
+                    borderRadius: 1,
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Coming Soon
+                </Box>
+              </Box>
             </Box>
           </motion.div>
         </Box>
@@ -316,46 +321,6 @@ export default function Home() {
                   Download our mobile app to start connecting with suppliers and stores.
                   Available for Android and iOS devices.
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={<AndroidIcon />}
-                    href={DOWNLOAD_URLS.android}
-                    download
-                    sx={{
-                      bgcolor: 'background.paper',
-                      color: 'primary.main',
-                      '&:hover': {
-                        bgcolor: 'background.paper',
-                        opacity: 0.9,
-                      },
-                      textTransform: 'none',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Download Android
-                  </Button>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={<IOSIcon />}
-                    href={DOWNLOAD_URLS.ios}
-                    download
-                    sx={{
-                      bgcolor: 'background.paper',
-                      color: 'primary.main',
-                      '&:hover': {
-                        bgcolor: 'background.paper',
-                        opacity: 0.9,
-                      },
-                      textTransform: 'none',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Download iOS
-                  </Button>
-                </Box>
               </Box>
             </Box>
           </Paper>
@@ -414,68 +379,6 @@ export default function Home() {
           </Box>
         </Box>
 
-        <Box sx={{ py: 8, textAlign: 'center' }}>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 1.2 }}
-          >
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-              Ready to Get Started?
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-              Download the mobile app and join Siargao Trading Road today.
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<AndroidIcon />}
-                href={DOWNLOAD_URLS.android}
-                download
-                sx={{
-                  py: 1.5,
-                  px: 4,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  boxShadow: 4,
-                  backgroundColor: '#3DDC84',
-                  '&:hover': {
-                    boxShadow: 6,
-                    backgroundColor: '#2EB872',
-                  },
-                }}
-              >
-                Download Android
-              </Button>
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<IOSIcon />}
-                href={DOWNLOAD_URLS.ios}
-                download
-                sx={{
-                  py: 1.5,
-                  px: 4,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  boxShadow: 4,
-                  backgroundColor: '#000000',
-                  '&:hover': {
-                    boxShadow: 6,
-                    backgroundColor: '#1a1a1a',
-                  },
-                }}
-              >
-                Download iOS
-              </Button>
-            </Box>
-          </motion.div>
-        </Box>
       </Container>
 
       <Box
