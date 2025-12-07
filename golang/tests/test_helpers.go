@@ -99,7 +99,20 @@ func NewTestClient(t *testing.T, cfg *config.Config) *TestClient {
 func (tc *TestClient) Register(email, password, name, role string) map[string]interface{} {
 	hash := sha256.Sum256([]byte(email))
 	hashStr := hex.EncodeToString(hash[:])
-	phone := "1" + hashStr[:9]
+	phoneDigits := ""
+	for _, char := range hashStr {
+		if char >= '0' && char <= '9' {
+			phoneDigits += string(char)
+			if len(phoneDigits) >= 10 {
+				break
+			}
+		}
+	}
+	if len(phoneDigits) < 10 {
+		phoneDigits = phoneDigits + "0000000000"
+		phoneDigits = phoneDigits[:10]
+	}
+	phone := "1" + phoneDigits[:9]
 	reqBody := map[string]interface{}{
 		"email":    email,
 		"password": password,
