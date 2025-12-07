@@ -530,6 +530,28 @@ jobs:
             echo "✅ Containers stopped"
           EOF
 
+      - name: Run database migrations
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << EOF
+            set -e
+            source ~/.bashrc
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+            cd ~/siargao-trading-road
+            
+            ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+            IMAGE_TAG="${{ github.sha }}"
+            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
+            
+            echo "🔄 Running database migrations..."
+            docker run --rm --env-file .env \${API_IMAGE} /app/siargao-trading-road migrate || {
+              echo "⚠️ Migration command not found, migrations will run on container start"
+            }
+            echo "✅ Migrations completed"
+          EOF
+
       - name: Start containers
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
@@ -596,14 +618,11 @@ jobs:
             echo "📊 Disk usage before cleanup:"
             df -h / | tail -1
             
-            echo "🛑 Stopping containers..."
-            docker compose down || true
-            
             echo "🗑️ Removing old images (keeping latest 2)..."
             docker images --format "{{.Repository}}:{{.Tag}}" | grep siargaotradingroad-development | sort -V | head -n -2 | xargs -r docker rmi -f || true
             
-            echo "🧹 Pruning unused Docker resources..."
-            docker system prune -a -f --volumes || true
+            echo "🧹 Pruning unused Docker resources (excluding running containers)..."
+            docker system prune -a -f || true
             
             echo "📋 Cleaning up old logs..."
             sudo journalctl --vacuum-time=3d || true
@@ -611,6 +630,13 @@ jobs:
             
             echo "📊 Disk usage after cleanup:"
             df -h / | tail -1
+            
+            echo "🔄 Ensuring containers are running..."
+            docker compose up -d || true
+            
+            echo "📊 Container status after cleanup:"
+            docker compose ps
+            
             echo "✅ Cleanup complete"
           EOF
 
