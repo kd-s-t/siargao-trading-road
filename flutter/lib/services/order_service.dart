@@ -135,7 +135,6 @@ class OrderService {
     required String deliveryOption,
     double deliveryFee = 0.0,
     double distance = 0.0,
-    String? shippingAddress,
     String? notes,
   }) async {
     final body = <String, dynamic>{
@@ -144,9 +143,6 @@ class OrderService {
       'delivery_fee': deliveryFee,
       'distance': distance,
     };
-    if (shippingAddress != null && shippingAddress.isNotEmpty) {
-      body['shipping_address'] = shippingAddress;
-    }
     if (notes != null && notes.isNotEmpty) {
       body['notes'] = notes;
     }

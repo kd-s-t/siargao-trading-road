@@ -19,7 +19,6 @@ class _TruckScreenState extends State<TruckScreen> {
   int? _supplierId;
   String _paymentMethod = 'cash_on_delivery';
   String _deliveryOption = 'pickup';
-  final TextEditingController _shippingAddressController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
   @override
@@ -36,7 +35,6 @@ class _TruckScreenState extends State<TruckScreen> {
 
   @override
   void dispose() {
-    _shippingAddressController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -182,7 +180,6 @@ class _TruckScreenState extends State<TruckScreen> {
           paymentMethod: _paymentMethod,
           deliveryOption: _deliveryOption,
           deliveryFee: deliveryFee,
-          shippingAddress: _deliveryOption == 'deliver' ? _shippingAddressController.text.trim() : null,
           notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
         );
         if (mounted) {
@@ -418,17 +415,6 @@ class _TruckScreenState extends State<TruckScreen> {
                         });
                       },
                     ),
-                    if (_deliveryOption == 'deliver') ...[
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _shippingAddressController,
-                        decoration: const InputDecoration(
-                          labelText: 'Shipping Address',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 2,
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -561,7 +547,7 @@ class _TruckScreenState extends State<TruckScreen> {
             ElevatedButton(
               onPressed: (_submitting || 
                           _draftOrder!.totalAmount < 5000 || 
-                          (_deliveryOption == 'deliver' && _shippingAddressController.text.trim().isEmpty)) 
+                          false) 
                   ? null 
                   : _handleSubmitOrder,
               style: ElevatedButton.styleFrom(

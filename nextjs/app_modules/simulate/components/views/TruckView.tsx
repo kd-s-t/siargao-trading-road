@@ -49,7 +49,6 @@ export function TruckView({
 }: TruckViewProps) {
   const [paymentMethod, setPaymentMethod] = useState<string>('cash_on_delivery');
   const [deliveryOption, setDeliveryOption] = useState<string>('pickup');
-  const [shippingAddress, setShippingAddress] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
 
   const calculateDeliveryFee = () => {
@@ -187,17 +186,6 @@ export function TruckView({
               <FormControlLabel value="deliver" control={<Radio />} label="Deliver" />
             </RadioGroup>
           </FormControl>
-          {deliveryOption === 'deliver' && (
-            <TextField
-              fullWidth
-              label="Shipping Address"
-              value={shippingAddress}
-              onChange={(e) => setShippingAddress(e.target.value)}
-              multiline
-              rows={2}
-              sx={{ mb: 2 }}
-            />
-          )}
         </CardContent>
       </Card>
       <Card sx={{ bgcolor: '#e3f2fd', mt: 2 }}>
@@ -263,7 +251,6 @@ export function TruckView({
                   await mobileOrderService.submitOrder(draftOrder.id, {
                     payment_method: paymentMethod,
                     delivery_option: deliveryOption,
-                    shipping_address: shippingAddress,
                     notes: notes,
                     delivery_fee: deliveryFee,
                     distance: 0,
@@ -274,7 +261,7 @@ export function TruckView({
                 }
               }
             }}
-            disabled={draftOrder.total_amount < 5000 || (deliveryOption === 'deliver' && !shippingAddress.trim())}
+            disabled={draftOrder.total_amount < 5000}
             sx={{ mt: 2 }}
           >
             Submit Order

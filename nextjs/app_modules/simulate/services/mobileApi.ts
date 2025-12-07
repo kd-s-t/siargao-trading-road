@@ -222,7 +222,6 @@ export const mobileOrderService = {
     delivery_option: string;
     delivery_fee?: number;
     distance?: number;
-    shipping_address?: string;
     notes?: string;
   }): Promise<Order> => {
     const { data: response } = await mobileApi.post<Order>(`/orders/${orderId}/submit`, data);

@@ -119,7 +119,6 @@ export const orderService = {
       delivery_option: string;
       delivery_fee?: number;
       distance?: number;
-      shipping_address?: string;
       notes?: string;
     }
   ): Promise<Order> => {

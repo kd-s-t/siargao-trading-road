@@ -97,3 +97,18 @@ output "mobile_builds_download_url" {
   value       = "${module.s3_mobile.public_url}/android/app-release.apk"
 }
 
+output "messaging_images_bucket_name" {
+  description = "S3 bucket name for messaging images"
+  value       = length(module.s3_messaging_images) > 0 ? module.s3_messaging_images[0].bucket_name : null
+}
+
+output "messaging_images_bucket_arn" {
+  description = "ARN of the messaging images S3 bucket"
+  value       = length(module.s3_messaging_images) > 0 ? module.s3_messaging_images[0].bucket_arn : null
+}
+
+output "messaging_images_public_url" {
+  description = "Public URL for accessing messaging images"
+  value       = length(module.s3_messaging_images) > 0 ? module.s3_messaging_images[0].public_url : null
+}
+

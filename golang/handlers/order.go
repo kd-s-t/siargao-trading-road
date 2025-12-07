@@ -449,12 +449,11 @@ func SubmitOrder(c *gin.Context) {
 	}
 
 	var req struct {
-		PaymentMethod   string  `json:"payment_method" binding:"required"`
-		DeliveryOption  string  `json:"delivery_option" binding:"required"`
-		DeliveryFee     float64 `json:"delivery_fee"`
-		Distance        float64 `json:"distance"`
-		ShippingAddress string  `json:"shipping_address"`
-		Notes           string  `json:"notes"`
+		PaymentMethod  string  `json:"payment_method" binding:"required"`
+		DeliveryOption string  `json:"delivery_option" binding:"required"`
+		DeliveryFee    float64 `json:"delivery_fee"`
+		Distance       float64 `json:"distance"`
+		Notes          string  `json:"notes"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -495,14 +494,20 @@ func SubmitOrder(c *gin.Context) {
 		return
 	}
 
+	var store models.User
+	if err := database.DB.First(&store, order.StoreID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "store not found"})
+		return
+	}
+
 	order.Status = models.OrderStatusPreparing
 	order.PaymentMethod = models.PaymentMethod(req.PaymentMethod)
 	order.DeliveryOption = models.DeliveryOption(req.DeliveryOption)
 	order.DeliveryFee = req.DeliveryFee
 	order.Distance = req.Distance
 	order.TotalAmount = subtotal + req.DeliveryFee
-	if req.ShippingAddress != "" {
-		order.ShippingAddress = req.ShippingAddress
+	if req.DeliveryOption == "deliver" {
+		order.ShippingAddress = store.Address
 	}
 	if req.Notes != "" {
 		order.Notes = req.Notes

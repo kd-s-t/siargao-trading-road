@@ -351,7 +351,6 @@ This document outlines the complete business workflows for each user role in the
     "delivery_option": "pickup" | "deliver",
     "delivery_fee": 0.0,
     "distance": 0.0,
-    "shipping_address": "string",
     "notes": "string"
   }
   ```
@@ -367,8 +366,9 @@ This document outlines the complete business workflows for each user role in the
   - When `delivery_option` is `"pickup"`, delivery fee is ₱0.00
   - Final total = Subtotal + Delivery Fee
 - **Shipping Address**:
-  - Required when `delivery_option` is `"deliver"`
-  - Optional when `delivery_option` is `"pickup"`
+  - Automatically set from the store's address in the database when `delivery_option` is `"deliver"`
+  - Stores have fixed addresses and cannot change shipping location
+  - Not required in request body
 
 #### Update Order Status
 - **Action**: Change order status (cancelled only for stores)

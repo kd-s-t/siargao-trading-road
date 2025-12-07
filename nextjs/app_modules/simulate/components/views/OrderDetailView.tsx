@@ -66,6 +66,7 @@ export function OrderDetailView({
   const [ratingComment, setRatingComment] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
   const [orderRatings, setOrderRatings] = useState<OrderRating[]>(order.ratings || []);
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch fresh order details to get latest ratings when component mounts
@@ -629,18 +630,62 @@ export function OrderDetailView({
                       <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5, opacity: isCurrentUser ? 0.9 : 0.7 }}>
                         {message.sender.name}
                       </Typography>
-                      {message.image_url && (
-                        <Box sx={{ mb: 1, borderRadius: 1, overflow: 'hidden' }}>
+                      {message.image_url && message.image_url.trim() !== '' && !failedImages.has(message.id) && (
+                        <Box 
+                          sx={{ 
+                            mb: message.content ? 1 : 0, 
+                            borderRadius: 1, 
+                            overflow: 'hidden',
+                            bgcolor: isCurrentUser ? 'rgba(0, 0, 0, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+                            maxWidth: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            position: 'relative',
+                            '&:hover': {
+                              opacity: 0.9,
+                            },
+                          }}
+                        >
                           <img
                             src={message.image_url}
                             alt="Message attachment"
+                            onError={() => {
+                              setFailedImages(prev => new Set(prev).add(message.id));
+                            }}
                             style={{
                               maxWidth: '100%',
-                              maxHeight: 200,
+                              maxHeight: 250,
+                              width: 'auto',
+                              height: 'auto',
                               objectFit: 'contain',
                               display: 'block',
+                              cursor: 'pointer',
+                              borderRadius: '4px',
                             }}
+                            onClick={() => window.open(message.image_url, '_blank')}
+                            title="Click to view full size"
                           />
+                        </Box>
+                      )}
+                      {message.image_url && message.image_url.trim() !== '' && failedImages.has(message.id) && (
+                        <Box 
+                          sx={{ 
+                            mb: message.content ? 1 : 0, 
+                            p: 1,
+                            borderRadius: 1,
+                            bgcolor: isCurrentUser ? 'rgba(0, 0, 0, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+                          }}
+                        >
+                          <Typography 
+                            variant="caption" 
+                            sx={{ 
+                              color: isCurrentUser ? 'rgba(255,255,255,0.7)' : '#666',
+                              display: 'block',
+                            }}
+                          >
+                            Failed to load image
+                          </Typography>
                         </Box>
                       )}
                       {message.content && (

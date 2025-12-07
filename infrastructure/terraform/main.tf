@@ -135,3 +135,13 @@ module "s3_uploads" {
   upload_retention_days = 365
 }
 
+module "s3_messaging_images" {
+  source = "./modules/s3-messaging-images"
+  
+  count = contains(["development", "production"], var.environment) ? 1 : 0
+  
+  environment    = var.environment
+  ec2_role_arn   = module.iam.ec2_role_arn
+  retention_days = 365
+}
+

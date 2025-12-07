@@ -29,7 +29,6 @@ export default function TruckScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>('cash_on_delivery');
   const [deliveryOption, setDeliveryOption] = useState<string>('pickup');
-  const [shippingAddress, setShippingAddress] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
 
   const loadDraftOrder = async () => {
@@ -111,7 +110,6 @@ export default function TruckScreen() {
               await orderService.submitOrder(draftOrder.id, {
                 payment_method: paymentMethod,
                 delivery_option: deliveryOption,
-                shipping_address: deliveryOption === 'deliver' ? shippingAddress : undefined,
                 notes: notes.trim() || undefined,
                 delivery_fee: deliveryFee,
                 distance: 0,
@@ -285,20 +283,6 @@ export default function TruckScreen() {
               <RadioButton.Item label="Pickup" value="pickup" />
               <RadioButton.Item label="Deliver" value="deliver" />
             </RadioButton.Group>
-            {deliveryOption === 'deliver' && (
-              <>
-                <Divider style={styles.divider} />
-                <TextInput
-                  label="Shipping Address"
-                  value={shippingAddress}
-                  onChangeText={setShippingAddress}
-                  multiline
-                  numberOfLines={2}
-                  mode="outlined"
-                  style={styles.textInput}
-                />
-              </>
-            )}
           </Card.Content>
         </Card>
 
@@ -378,7 +362,7 @@ export default function TruckScreen() {
           loading={submitting}
           disabled={submitting || 
                    draftOrder.total_amount < 5000 || 
-                   (deliveryOption === 'deliver' && !shippingAddress.trim())}
+                   false}
           style={styles.submitButton}
           contentStyle={styles.submitButtonContent}
         >

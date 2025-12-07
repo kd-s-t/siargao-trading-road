@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"time"
 
@@ -100,6 +101,8 @@ func UploadImage(c *gin.Context) {
 	}
 
 	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", config.S3Bucket, config.AWSRegion, key)
+	
+	url = fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", config.S3Bucket, config.AWSRegion, key)
 
 	c.JSON(http.StatusOK, gin.H{
 		"url": url,
