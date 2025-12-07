@@ -12,6 +12,7 @@ export interface Message {
     role: string;
   };
   content: string;
+  image_url?: string;
   created_at: string;
 }
 
@@ -53,6 +54,12 @@ export interface Order {
   };
   status: 'draft' | 'preparing' | 'in_transit' | 'delivered' | 'cancelled';
   total_amount: number;
+  payment_method?: string;
+  payment_status?: string;
+  payment_proof_url?: string;
+  delivery_option?: string;
+  delivery_fee?: number;
+  distance?: number;
   shipping_address?: string;
   notes?: string;
   order_items: OrderItem[];
@@ -120,6 +127,8 @@ export const orderService = {
       delivery_option: string;
       delivery_fee?: number;
       distance?: number;
+      shipping_address?: string;
+      payment_proof_url?: string;
       notes?: string;
     }
   ): Promise<Order> => {
@@ -127,13 +136,22 @@ export const orderService = {
     return response;
   },
 
+  markPaymentAsPaid: async (orderId: number): Promise<Order> => {
+    const { data } = await api.post<Order>(`/orders/${orderId}/payment/paid`);
+    return data;
+  },
+
   getMessages: async (orderId: number): Promise<Message[]> => {
     const { data } = await api.get<Message[]>(`/orders/${orderId}/messages`);
     return data;
   },
 
-  createMessage: async (orderId: number, content: string): Promise<Message> => {
-    const { data } = await api.post<Message>(`/orders/${orderId}/messages`, { content });
+  createMessage: async (orderId: number, content: string, imageUrl?: string): Promise<Message> => {
+    const body: { content: string; image_url?: string } = { content };
+    if (imageUrl) {
+      body.image_url = imageUrl;
+    }
+    const { data } = await api.post<Message>(`/orders/${orderId}/messages`, body);
     return data;
   },
 };
