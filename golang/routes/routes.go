@@ -78,6 +78,12 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 			protected.GET("/bug-reports/:id", handlers.GetBugReport)
 			protected.PUT("/bug-reports/:id", handlers.UpdateBugReport)
 			protected.DELETE("/bug-reports/:id", handlers.DeleteBugReport)
+
+			protected.GET("/schedule/exceptions", handlers.GetScheduleExceptions)
+			protected.POST("/schedule/exceptions", handlers.CreateScheduleException)
+			protected.POST("/schedule/exceptions/bulk", handlers.BulkCreateScheduleExceptions)
+			protected.PUT("/schedule/exceptions/:id", handlers.UpdateScheduleException)
+			protected.DELETE("/schedule/exceptions/:id", handlers.DeleteScheduleException)
 		}
 	}
 }

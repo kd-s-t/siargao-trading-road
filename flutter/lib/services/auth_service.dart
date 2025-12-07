@@ -88,9 +88,9 @@ class AuthService {
     String? youtube,
     String? tiktok,
     String? website,
-    String? workingDays,
     String? openingTime,
     String? closingTime,
+    String? closedDaysOfWeek,
     bool? isOpen,
   }) async {
     final body = <String, dynamic>{};
@@ -105,9 +105,9 @@ class AuthService {
     if (youtube != null) body['youtube'] = youtube;
     if (tiktok != null) body['tiktok'] = tiktok;
     if (website != null) body['website'] = website;
-    if (workingDays != null) body['working_days'] = workingDays;
     if (openingTime != null) body['opening_time'] = openingTime;
     if (closingTime != null) body['closing_time'] = closingTime;
+    if (closedDaysOfWeek != null) body['closed_days_of_week'] = closedDaysOfWeek;
     if (isOpen != null) body['is_open'] = isOpen;
 
     final response = await ApiService.put('/me', body: body);

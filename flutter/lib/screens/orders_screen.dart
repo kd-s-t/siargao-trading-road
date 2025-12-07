@@ -12,7 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key});
+  final bool? useScaffold;
+  
+  const OrdersScreen({super.key, this.useScaffold});
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -208,17 +210,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBody() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
 
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Orders'),
-      ),
-      body: _loading
+    return _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
@@ -372,7 +368,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                     ),
                                                     Chip(
                                                       label: Text(_getStatusLabel(order.status)),
-                                                      backgroundColor: _getStatusColor(order.status).withOpacity(0.2),
+                                                      backgroundColor: _getStatusColor(order.status).withValues(alpha: 0.2),
                                                       labelStyle: TextStyle(
                                                         color: _getStatusColor(order.status),
                                                         fontSize: 12,
@@ -433,10 +429,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                           order.paymentStatus!,
                                                           style: const TextStyle(fontSize: 12),
                                                         ),
-                                                        backgroundColor: order.paymentStatus == 'paid' ? Colors.green.withOpacity(0.2) :
-                                                                        order.paymentStatus == 'pending' ? Colors.orange.withOpacity(0.2) :
-                                                                        order.paymentStatus == 'failed' ? Colors.red.withOpacity(0.2) :
-                                                                        Colors.grey.withOpacity(0.2),
+                                                        backgroundColor: order.paymentStatus == 'paid' ? Colors.green.withValues(alpha: 0.2) :
+                                                                        order.paymentStatus == 'pending' ? Colors.orange.withValues(alpha: 0.2) :
+                                                                        order.paymentStatus == 'failed' ? Colors.red.withValues(alpha: 0.2) :
+                                                                        Colors.grey.withValues(alpha: 0.2),
                                                         labelStyle: TextStyle(
                                                           color: order.paymentStatus == 'paid' ? Colors.green :
                                                                  order.paymentStatus == 'pending' ? Colors.orange :
@@ -632,7 +628,23 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       ),
                     ),
                   ],
-                ),
+                );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final body = _buildBody();
+    final useScaffold = widget.useScaffold ?? true;
+    
+    if (!useScaffold) {
+      return body;
+    }
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Orders'),
+      ),
+      body: body,
     );
   }
 

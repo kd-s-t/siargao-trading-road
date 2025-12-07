@@ -1,5 +1,3 @@
-import 'package:siargao_trading_road/models/user.dart';
-
 class RatingUser {
   final int id;
   final String name;

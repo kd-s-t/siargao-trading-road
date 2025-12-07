@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:motion/motion.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/services/auth_service.dart';
 import 'package:siargao_trading_road/models/user.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool? useScaffold;
+  
+  const ProfileScreen({super.key, this.useScaffold});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
   bool _editing = false;
   bool _editingHours = false;
   bool _loading = false;
@@ -27,7 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _youtubeController = TextEditingController();
   final _tiktokController = TextEditingController();
   final _websiteController = TextEditingController();
-  final _workingDaysController = TextEditingController();
   final _openingTimeController = TextEditingController();
   final _closingTimeController = TextEditingController();
 
@@ -45,6 +47,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
   }
 
+  Set<int> _closedDays = {};
+
   void _loadUserData() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
@@ -58,9 +62,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _youtubeController.text = user.youtube ?? '';
       _tiktokController.text = user.tiktok ?? '';
       _websiteController.text = user.website ?? '';
-      _workingDaysController.text = user.workingDays ?? '';
       _openingTimeController.text = user.openingTime ?? '';
       _closingTimeController.text = user.closingTime ?? '';
+      if (user.closedDaysOfWeek != null && user.closedDaysOfWeek!.isNotEmpty) {
+        _closedDays = user.closedDaysOfWeek!.split(',').map((d) => int.parse(d.trim())).toSet();
+      } else {
+        _closedDays = {};
+      }
     }
   }
 
@@ -75,7 +83,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _youtubeController.dispose();
     _tiktokController.dispose();
     _websiteController.dispose();
-    _workingDaysController.dispose();
     _openingTimeController.dispose();
     _closingTimeController.dispose();
     super.dispose();
@@ -130,10 +137,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final closedDaysList = _closedDays.toList()..sort();
+      final closedDaysStr = closedDaysList.isEmpty ? null : closedDaysList.join(',');
       await AuthService.updateMe(
-        workingDays: _workingDaysController.text.trim().isEmpty ? null : _workingDaysController.text.trim(),
         openingTime: _openingTimeController.text.trim().isEmpty ? null : _openingTimeController.text.trim(),
         closingTime: _closingTimeController.text.trim().isEmpty ? null : _closingTimeController.text.trim(),
+        closedDaysOfWeek: closedDaysStr,
       );
       await authProvider.refreshUser();
       _loadUserData();
@@ -200,6 +209,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       final result = await AuthService.uploadImage(filePath);
+      if (!mounted) return;
+      
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
       await AuthService.updateMe(
@@ -241,20 +252,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return months[month - 1];
   }
 
+  Widget _buildBody(AuthProvider authProvider, User user) {
+    return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildBanner(user),
+                Transform.translate(
+                  offset: const Offset(0, -40),
+                  child: _buildProfileCard(user),
+                ),
+                if ((user.role == 'store' || user.role == 'supplier') && !_editing)
+                  _buildOpenCloseCard(user, authProvider),
+                _buildDetailsCard(user),
+                if ((user.role == 'store' || user.role == 'supplier'))
+                  _buildHoursCard(user),
+                if (!_editing) _buildAnalyticsButton(),
+                if (!_editing) _buildLogoutButton(authProvider),
+                const SizedBox(height: 32),
+              ],
+            ),
+          );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         final user = authProvider.user;
+        final useScaffold = widget.useScaffold ?? true;
+        
         if (user == null) {
+          if (!useScaffold) {
+            return const Center(child: CircularProgressIndicator());
+          }
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
+        final body = _buildBody(authProvider, user);
+        
+        if (!useScaffold) {
+          return body;
+        }
+
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Profile'),
             actions: [
               if (_editing)
                 TextButton(
@@ -288,25 +332,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
             ],
           ),
-          body: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildBanner(user),
-                Transform.translate(
-                  offset: const Offset(0, -40),
-                  child: _buildProfileCard(user),
-                ),
-                if ((user.role == 'store' || user.role == 'supplier') && !_editing)
-                  _buildOpenCloseCard(user, authProvider),
-                _buildDetailsCard(user),
-                if ((user.role == 'store' || user.role == 'supplier'))
-                  _buildHoursCard(user),
-                if (!_editing) _buildLogoutButton(authProvider),
-                const SizedBox(height: 32),
-              ],
-            ),
-          ),
+          body: body,
         );
       },
     );
@@ -361,7 +387,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildProfileCard(User user) {
     return Card(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 0),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -370,24 +396,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: _editing ? () => _pickImage('logo') : null,
               child: Stack(
                 children: [
-                  if (user.logoUrl != null && user.logoUrl!.isNotEmpty)
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundImage: NetworkImage(user.logoUrl!),
-                    )
-                  else
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Theme.of(context).primaryColor,
-                      child: Text(
-                        user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  Motion(
+                    child: user.logoUrl != null && user.logoUrl!.isNotEmpty
+                        ? CircleAvatar(
+                            radius: 40,
+                            backgroundImage: NetworkImage(user.logoUrl!),
+                          )
+                        : CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Theme.of(context).primaryColor,
+                            child: Text(
+                              user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                              style: const TextStyle(
+                                fontSize: 32,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                  ),
                   if (_editing)
                     Positioned(
                       bottom: 0,
@@ -666,87 +693,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _toggleStoreStatus(User user, AuthProvider authProvider) async {
+    setState(() {
+      _loading = true;
+    });
+    try {
+      if (user.isOpen) {
+        await AuthService.closeStore();
+      } else {
+        await AuthService.openStore();
+      }
+      await authProvider.refreshUser();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              user.isOpen
+                  ? 'Store closed successfully'
+                  : 'Store opened successfully',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update status: ${e.toString()}'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
   Widget _buildOpenCloseCard(User user, AuthProvider authProvider) {
+    final isOpen = user.isOpen;
+    
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.isOpen ? 'Currently Open' : 'Currently Closed',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+      margin: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: isOpen ? Colors.green.shade50 : Colors.red.shade50,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isOpen ? 'Currently Open' : 'Currently Closed',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isOpen
+                          ? 'Your ${user.role} is open for business'
+                          : 'Your ${user.role} is closed',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  user.isOpen
-                      ? 'Your ${user.role} is open for business'
-                      : 'Your ${user.role} is closed',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-            ElevatedButton(
-              onPressed: _loading
-                  ? null
-                  : () async {
-                      setState(() {
-                        _loading = true;
-                      });
-                      try {
-                        if (user.isOpen) {
-                          await AuthService.closeStore();
-                        } else {
-                          await AuthService.openStore();
-                        }
-                        await authProvider.refreshUser();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                user.isOpen
-                                    ? 'Store closed successfully'
-                                    : 'Store opened successfully',
-                              ),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Failed to update status: ${e.toString()}'),
-                            ),
-                          );
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState(() {
-                            _loading = false;
-                          });
-                        }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: user.isOpen ? Colors.red : Colors.green,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-              child: Text(
-                user.isOpen ? 'Close' : 'Open',
-                style: const TextStyle(color: Colors.white),
+              Switch(
+                value: isOpen,
+                onChanged: _loading ? null : (value) async {
+                  await _toggleStoreStatus(user, authProvider);
+                },
+                activeThumbColor: Colors.green,
+                activeTrackColor: Colors.green.shade200,
+                inactiveThumbColor: Colors.red.shade700,
+                inactiveTrackColor: Colors.red.shade200,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -763,36 +799,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Operating Hours',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                const Flexible(
+                  child: Text(
+                    'Operating Hours',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                if (!_editingHours)
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _editingHours = true;
-                      });
-                    },
-                    child: const Text('Edit'),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!_editingHours)
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/schedule');
+                        },
+                        icon: const Icon(Icons.calendar_today, size: 18),
+                        label: const Text('Calendar'),
+                      ),
+                    if (!_editingHours)
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _editingHours = true;
+                          });
+                        },
+                        child: const Text('Edit'),
+                      ),
+                  ],
+                ),
               ],
             ),
             const Divider(),
             if (_editingHours) ...[
-              TextField(
-                controller: _workingDaysController,
-                decoration: const InputDecoration(
-                  labelText: 'Working Days',
-                  border: OutlineInputBorder(),
-                  hintText: 'e.g., Mon-Fri, Mon-Sat, All days',
-                  helperText: 'Enter your working days',
-                ),
-              ),
-              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -831,6 +872,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
               const SizedBox(height: 16),
+              const Text(
+                'Closed Days of Week',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Select days when you are closed. Unselected days are your working days.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  _buildDayCheckbox(0, 'Sunday'),
+                  _buildDayCheckbox(1, 'Monday'),
+                  _buildDayCheckbox(2, 'Tuesday'),
+                  _buildDayCheckbox(3, 'Wednesday'),
+                  _buildDayCheckbox(4, 'Thursday'),
+                  _buildDayCheckbox(5, 'Friday'),
+                  _buildDayCheckbox(6, 'Saturday'),
+                ],
+              ),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -859,16 +929,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ] else ...[
               Builder(
                 builder: (context) {
-                  final hasWorkingDays = user.workingDays != null && user.workingDays!.trim().isNotEmpty;
                   final hasOpeningTime = user.openingTime != null && user.openingTime!.trim().isNotEmpty;
                   final hasClosingTime = user.closingTime != null && user.closingTime!.trim().isNotEmpty;
                   
-                  if (hasWorkingDays || hasOpeningTime || hasClosingTime) {
+                  if (hasOpeningTime || hasClosingTime) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (hasWorkingDays)
-                          _buildDetailRow('Working Days', user.workingDays!),
                         if (hasOpeningTime)
                           _buildDetailRow('Opening Time', user.openingTime!),
                         if (hasClosingTime)
@@ -892,6 +959,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDayCheckbox(int day, String label) {
+    return FilterChip(
+      label: Text(label),
+      selected: _closedDays.contains(day),
+      onSelected: (selected) {
+        setState(() {
+          if (selected) {
+            _closedDays.add(day);
+          } else {
+            _closedDays.remove(day);
+          }
+        });
+      },
+    );
+  }
+
+  Widget _buildAnalyticsButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ElevatedButton.icon(
+        onPressed: () {
+          Navigator.pushNamed(context, '/analytics');
+        },
+        icon: const Icon(Icons.analytics, color: Colors.white),
+        label: const Text('View Analytics', style: TextStyle(color: Colors.white)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 12),
         ),
       ),
     );

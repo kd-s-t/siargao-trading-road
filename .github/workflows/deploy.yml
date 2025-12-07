@@ -46,7 +46,7 @@ jobs:
             -t $ECR_REPOSITORY-api:$IMAGE_TAG \
             -t $ECR_REPOSITORY-api:latest \
             --load \
-            -f Dockerfile.go \
+            -f golang.Dockerfile \
             .
           echo "✅ API image built: $ECR_REPOSITORY-api:$IMAGE_TAG"
 

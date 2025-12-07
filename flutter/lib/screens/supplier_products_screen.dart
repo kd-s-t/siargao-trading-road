@@ -22,7 +22,7 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
   bool _loading = true;
   bool _refreshing = false;
   String? _error;
-  Map<int, String> _quantities = {};
+  final Map<int, String> _quantities = {};
   int? _addingToTruck;
   bool _isLoading = false;
   bool _hasLoaded = false;
@@ -189,9 +189,7 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
     try {
       Order? draftOrder = await OrderService.getDraftOrder(supplierId: widget.supplierId);
 
-      if (draftOrder == null) {
-        draftOrder = await OrderService.createDraftOrder(widget.supplierId);
-      }
+      draftOrder ??= await OrderService.createDraftOrder(widget.supplierId);
 
       final existingItems = draftOrder.orderItems.where(
         (item) => item.productId == product.id,
@@ -227,9 +225,11 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
           _addingToTruck = null;
         });
         await _loadProducts();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Item added to truck')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Item added to truck')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -332,14 +332,14 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
+                          const Text(
                             'Error loading products',
                             style: TextStyle(fontSize: 18, color: Colors.red),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             _error!,
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                            style: const TextStyle(fontSize: 14, color: Colors.grey),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
@@ -351,15 +351,15 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
                       ),
                     )
                   : _products.isEmpty
-                      ? Center(
+                      ? const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text(
+                              Text(
                                 'No products available',
                                 style: TextStyle(fontSize: 18),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               Text(
                                 'This supplier has no products yet',
                                 style: TextStyle(fontSize: 14, color: Colors.grey),

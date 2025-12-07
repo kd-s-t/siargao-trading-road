@@ -8,7 +8,6 @@ class Supplier {
   final String? logoUrl;
   final String? bannerUrl;
   final bool? isOpen;
-  final String? workingDays;
   final String? openingTime;
   final String? closingTime;
 
@@ -22,7 +21,6 @@ class Supplier {
     this.logoUrl,
     this.bannerUrl,
     this.isOpen,
-    this.workingDays,
     this.openingTime,
     this.closingTime,
   });
@@ -51,7 +49,6 @@ class Supplier {
       logoUrl: json['logo_url'] as String?,
       bannerUrl: json['banner_url'] as String?,
       isOpen: parseIsOpen(),
-      workingDays: json['working_days'] as String?,
       openingTime: json['opening_time'] as String?,
       closingTime: json['closing_time'] as String?,
     );

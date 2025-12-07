@@ -169,6 +169,8 @@ class _TruckScreenState extends State<TruckScreen> {
     );
 
     if (confirmed == true) {
+      if (!mounted) return;
+      
       setState(() {
         _submitting = true;
       });
@@ -177,6 +179,7 @@ class _TruckScreenState extends State<TruckScreen> {
         final totalQuantity = _draftOrder!.orderItems.fold<int>(0, (sum, item) => sum + item.quantity);
         final deliveryFee = _deliveryOption == 'deliver' ? totalQuantity * 20.0 : 0.0;
 
+        if (!mounted) return;
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final user = authProvider.user;
         final shippingAddress = _deliveryOption == 'deliver' && user?.address != null && user!.address!.isNotEmpty
@@ -404,25 +407,25 @@ class _TruckScreenState extends State<TruckScreen> {
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    RadioListTile<String>(
-                      title: const Text('Pickup'),
-                      value: 'pickup',
+                    RadioGroup<String>(
                       groupValue: _deliveryOption,
                       onChanged: (value) {
                         setState(() {
                           _deliveryOption = value!;
                         });
                       },
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('Deliver'),
-                      value: 'deliver',
-                      groupValue: _deliveryOption,
-                      onChanged: (value) {
-                        setState(() {
-                          _deliveryOption = value!;
-                        });
-                      },
+                      child: const Column(
+                        children: [
+                          RadioListTile<String>(
+                            title: Text('Pickup'),
+                            value: 'pickup',
+                          ),
+                          RadioListTile<String>(
+                            title: Text('Deliver'),
+                            value: 'deliver',
+                          ),
+                        ],
+                      ),
                     ),
                     if (_deliveryOption == 'deliver') ...[
                       const SizedBox(height: 16),
@@ -557,25 +560,25 @@ class _TruckScreenState extends State<TruckScreen> {
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    RadioListTile<String>(
-                      title: const Text('Cash on Delivery'),
-                      value: 'cash_on_delivery',
+                    RadioGroup<String>(
                       groupValue: _paymentMethod,
                       onChanged: (value) {
                         setState(() {
                           _paymentMethod = value!;
                         });
                       },
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('GCash'),
-                      value: 'gcash',
-                      groupValue: _paymentMethod,
-                      onChanged: (value) {
-                        setState(() {
-                          _paymentMethod = value!;
-                        });
-                      },
+                      child: const Column(
+                        children: [
+                          RadioListTile<String>(
+                            title: Text('Cash on Delivery'),
+                            value: 'cash_on_delivery',
+                          ),
+                          RadioListTile<String>(
+                            title: Text('GCash'),
+                            value: 'gcash',
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     TextField(

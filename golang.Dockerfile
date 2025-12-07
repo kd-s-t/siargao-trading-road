@@ -21,6 +21,12 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -a -installsuffix cgo \
     -o main .
 
+# Build the seed/migration binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -a -installsuffix cgo \
+    -o seed ./cmd/seed
+
 # Final stage
 FROM alpine:latest
 
@@ -28,8 +34,9 @@ RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /root/
 
-# Copy the binary from builder
+# Copy the binaries from builder
 COPY --from=builder /app/main .
+COPY --from=builder /app/seed .
 
 # Expose port
 EXPOSE 3020

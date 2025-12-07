@@ -53,33 +53,33 @@ func GetMe(c *gin.Context) {
 		}
 
 		response := map[string]interface{}{
-			"id":             user.ID,
-			"email":          user.Email,
-			"name":           user.Name,
-			"phone":          user.Phone,
-			"address":        user.Address,
-			"latitude":       user.Latitude,
-			"longitude":      user.Longitude,
-			"logo_url":       user.LogoURL,
-			"banner_url":     user.BannerURL,
-			"facebook":       user.Facebook,
-			"instagram":      user.Instagram,
-			"twitter":        user.Twitter,
-			"linkedin":       user.LinkedIn,
-			"youtube":        user.YouTube,
-			"tiktok":         user.TikTok,
-			"website":        user.Website,
-			"role":           user.Role,
-			"admin_level":    user.AdminLevel,
-			"working_days":   user.WorkingDays,
-			"opening_time":   user.OpeningTime,
-			"closing_time":   user.ClosingTime,
-			"is_open":        user.IsOpen,
-			"created_at":     user.CreatedAt,
-			"updated_at":     user.UpdatedAt,
-			"last_login":     user.LastLogin,
-			"average_rating": averageRating,
-			"rating_count":   ratingStats.RatingCount,
+			"id":                  user.ID,
+			"email":               user.Email,
+			"name":                user.Name,
+			"phone":               user.Phone,
+			"address":             user.Address,
+			"latitude":            user.Latitude,
+			"longitude":           user.Longitude,
+			"logo_url":            user.LogoURL,
+			"banner_url":          user.BannerURL,
+			"facebook":            user.Facebook,
+			"instagram":           user.Instagram,
+			"twitter":             user.Twitter,
+			"linkedin":            user.LinkedIn,
+			"youtube":             user.YouTube,
+			"tiktok":              user.TikTok,
+			"website":             user.Website,
+			"role":                user.Role,
+			"admin_level":         user.AdminLevel,
+			"opening_time":        user.OpeningTime,
+			"closed_days_of_week": user.ClosedDaysOfWeek,
+			"closing_time":        user.ClosingTime,
+			"is_open":             user.IsOpen,
+			"created_at":          user.CreatedAt,
+			"updated_at":          user.UpdatedAt,
+			"last_login":          user.LastLogin,
+			"average_rating":      averageRating,
+			"rating_count":        ratingStats.RatingCount,
 		}
 
 		c.JSON(http.StatusOK, response)
@@ -103,24 +103,24 @@ func UpdateMe(c *gin.Context) {
 	}
 
 	var req struct {
-		Name        string   `json:"name"`
-		Phone       string   `json:"phone"`
-		Address     string   `json:"address"`
-		Latitude    *float64 `json:"latitude"`
-		Longitude   *float64 `json:"longitude"`
-		LogoURL     string   `json:"logo_url"`
-		BannerURL   string   `json:"banner_url"`
-		Facebook    string   `json:"facebook"`
-		Instagram   string   `json:"instagram"`
-		Twitter     string   `json:"twitter"`
-		LinkedIn    string   `json:"linkedin"`
-		YouTube     string   `json:"youtube"`
-		TikTok      string   `json:"tiktok"`
-		Website     string   `json:"website"`
-		WorkingDays string   `json:"working_days"`
-		OpeningTime string   `json:"opening_time"`
-		ClosingTime string   `json:"closing_time"`
-		IsOpen      *bool    `json:"is_open"`
+		Name             string   `json:"name"`
+		Phone            string   `json:"phone"`
+		Address          string   `json:"address"`
+		Latitude         *float64 `json:"latitude"`
+		Longitude        *float64 `json:"longitude"`
+		LogoURL          string   `json:"logo_url"`
+		BannerURL        string   `json:"banner_url"`
+		Facebook         string   `json:"facebook"`
+		Instagram        string   `json:"instagram"`
+		Twitter          string   `json:"twitter"`
+		LinkedIn         string   `json:"linkedin"`
+		YouTube          string   `json:"youtube"`
+		TikTok           string   `json:"tiktok"`
+		Website          string   `json:"website"`
+		OpeningTime      string   `json:"opening_time"`
+		ClosedDaysOfWeek string   `json:"closed_days_of_week"`
+		ClosingTime      string   `json:"closing_time"`
+		IsOpen           *bool    `json:"is_open"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -170,12 +170,10 @@ func UpdateMe(c *gin.Context) {
 	if req.Website != "" {
 		user.Website = req.Website
 	}
-	if req.WorkingDays != "" {
-		user.WorkingDays = req.WorkingDays
-	}
 	if req.OpeningTime != "" {
 		user.OpeningTime = req.OpeningTime
 	}
+	user.ClosedDaysOfWeek = req.ClosedDaysOfWeek
 	if req.ClosingTime != "" {
 		user.ClosingTime = req.ClosingTime
 	}

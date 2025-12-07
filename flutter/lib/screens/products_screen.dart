@@ -4,7 +4,9 @@ import 'package:siargao_trading_road/services/product_service.dart';
 import 'package:siargao_trading_road/models/product.dart';
 
 class ProductsScreen extends StatefulWidget {
-  const ProductsScreen({super.key});
+  final bool? useScaffold;
+  
+  const ProductsScreen({super.key, this.useScaffold});
 
   @override
   State<ProductsScreen> createState() => _ProductsScreenState();
@@ -58,28 +60,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Products'),
-        actions: [
-          Switch(
-            value: _showDeleted,
-            onChanged: (value) {
-              setState(() {
-                _showDeleted = value;
-              });
-              _loadProducts(force: true);
-            },
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 8.0),
-            child: Text('Show deleted'),
-          ),
-        ],
-      ),
-      body: _loading
+  Widget _buildBody() {
+    return _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () => _loadProducts(force: true),
@@ -97,7 +79,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             _showDeleted
                                 ? 'Turn off the filter to see active products'
                                 : 'Tap the + button to add your first product',
-                            style: TextStyle(color: Colors.grey),
+                            style: const TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
@@ -135,9 +117,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     onPressed: () async {
                                       try {
                                         await ProductService.restoreProduct(product.id);
+                                        if (!mounted) return;
                                         _loadProducts(force: true);
                                       } catch (e) {
-                                        if (mounted) {
+                                        if (!mounted) return;
+                                        if (context.mounted) {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(content: Text('Failed to restore: $e')),
                                           );
@@ -183,9 +167,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                       if (confirmed == true) {
                                         try {
                                           await ProductService.deleteProduct(product.id);
+                                          if (!mounted) return;
                                           _loadProducts(force: true);
                                         } catch (e) {
-                                          if (mounted) {
+                                          if (!mounted) return;
+                                          if (context.mounted) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(content: Text('Failed to delete: $e')),
                                             );
@@ -200,7 +186,38 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         );
                       },
                     ),
-            ),
+            );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final body = _buildBody();
+    final useScaffold = widget.useScaffold ?? true;
+    
+    if (!useScaffold) {
+      return body;
+    }
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Products'),
+        actions: [
+          Switch(
+            value: _showDeleted,
+            onChanged: (value) {
+              setState(() {
+                _showDeleted = value;
+              });
+              _loadProducts(force: true);
+            },
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 8.0),
+            child: Text('Show deleted'),
+          ),
+        ],
+      ),
+      body: body,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pushNamed(context, '/add-product');

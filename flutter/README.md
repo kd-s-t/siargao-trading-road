@@ -64,7 +64,8 @@ flutter/
 │
 ├── assets/                               # App assets
 │   ├── str.png                           # App logo
-│   ├── icon.png                          # App icon
+│   ├── logo_full.png                     # Full brand logo
+│   ├── logov2.png                        # App icon
 │   └── splash.png                        # Splash screen
 │
 ├── pubspec.yaml                          # Dependencies & project config

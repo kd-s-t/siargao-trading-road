@@ -41,6 +41,13 @@ func main() {
 				log.Fatal("Failed to update locations:", err)
 			}
 			log.Println("User locations updated successfully")
+		case "seed-orders":
+			log.Println("Seeding orders...")
+			err = database.SeedOrders()
+			if err != nil {
+				log.Fatal("Failed to seed orders:", err)
+			}
+			log.Println("Orders seeded successfully")
 		default:
 			log.Println("Seeders completed successfully")
 		}

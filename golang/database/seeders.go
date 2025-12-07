@@ -23,7 +23,7 @@ func ResetDatabase() error {
 		return fmt.Errorf("database connection not initialized")
 	}
 
-	if err := DB.Exec("TRUNCATE TABLE audit_logs, ratings, order_items, orders, products, business_documents, users CASCADE").Error; err != nil {
+	if err := DB.Exec("TRUNCATE TABLE audit_logs, ratings, order_items, orders, products, business_documents, schedule_exceptions, users CASCADE").Error; err != nil {
 		return fmt.Errorf("failed to truncate tables: %w", err)
 	}
 
@@ -130,16 +130,15 @@ func SeedSuppliers() error {
 		youtube     string
 		tiktok      string
 		website     string
-		workingDays string
 		openingTime string
 		closingTime string
 	}{
-		{"nike@example.com", "Nike", "09123456781", fmt.Sprintf("%s/assets/nikelogo.png", s3BaseURL), fmt.Sprintf("%s/assets/nikebanner.jpg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772), "https://facebook.com/nike", "https://instagram.com/nike", "https://twitter.com/nike", "https://linkedin.com/company/nike", "https://youtube.com/nike", "https://tiktok.com/@nike", "https://nike.com", "Monday-Friday", "09:00", "18:00"},
-		{"toms@example.com", "Toms and Toms Coffee Shop", "09123456782", fmt.Sprintf("%s/assets/tomslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/tomsbanner.jpg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8430472), floatPtr(126.1347197), "https://facebook.com/tomscoffee", "https://instagram.com/tomscoffee", "", "", "", "https://tiktok.com/@tomscoffee", "https://tomscoffee.com", "Monday-Sunday", "07:00", "21:00"},
-		{"711@example.com", "7-Eleven", "09123456783", fmt.Sprintf("%s/assets/711logo.png", s3BaseURL), fmt.Sprintf("%s/assets/711banner.webp", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "https://facebook.com/7eleven", "https://instagram.com/7eleven", "https://twitter.com/7eleven", "", "", "", "https://7-eleven.com", "Monday-Sunday", "00:00", "23:59"},
-		{"walmart@example.com", "Walmart", "09123456784", fmt.Sprintf("%s/assets/walmartlogo.png", s3BaseURL), fmt.Sprintf("%s/assets/walmartbanner.jpg", s3BaseURL), "Del Carmen Road, Del Carmen, Surigao del Norte", floatPtr(9.7739032), floatPtr(126.1304724), "https://facebook.com/walmart", "https://instagram.com/walmart", "https://twitter.com/walmart", "https://linkedin.com/company/walmart", "https://youtube.com/walmart", "", "https://walmart.com", "Monday-Sunday", "08:00", "22:00"},
-		{"arons@example.com", "Arons Consumer goods store", "09123456785", fmt.Sprintf("%s/assets/aronslogo.png", s3BaseURL), fmt.Sprintf("%s/assets/aronsbanner.png", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772), "", "", "", "", "", "", "", "Monday-Friday", "08:00", "18:00"},
-		{"arniestore@example.com", "Arnie Store", "09123456786", fmt.Sprintf("%s/assets/arniestorelogo.png", s3BaseURL), fmt.Sprintf("%s/assets/arniestorebanner.png", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "", "", "", "", "", "", "", "Monday-Friday", "08:00", "18:00"},
+		{"nike@example.com", "Nike", "09123456781", fmt.Sprintf("%s/assets/nikelogo.png", s3BaseURL), fmt.Sprintf("%s/assets/nikebanner.jpg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772), "https://facebook.com/nike", "https://instagram.com/nike", "https://twitter.com/nike", "https://linkedin.com/company/nike", "https://youtube.com/nike", "https://tiktok.com/@nike", "https://nike.com", "09:00", "18:00"},
+		{"toms@example.com", "Toms and Toms Coffee Shop", "09123456782", fmt.Sprintf("%s/assets/tomslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/tomsbanner.jpg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8430472), floatPtr(126.1347197), "https://facebook.com/tomscoffee", "https://instagram.com/tomscoffee", "", "", "", "https://tiktok.com/@tomscoffee", "https://tomscoffee.com", "07:00", "21:00"},
+		{"711@example.com", "7-Eleven", "09123456783", fmt.Sprintf("%s/assets/711logo.png", s3BaseURL), fmt.Sprintf("%s/assets/711banner.webp", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "https://facebook.com/7eleven", "https://instagram.com/7eleven", "https://twitter.com/7eleven", "", "", "", "https://7-eleven.com", "00:00", "23:59"},
+		{"walmart@example.com", "Walmart", "09123456784", fmt.Sprintf("%s/assets/walmartlogo.png", s3BaseURL), fmt.Sprintf("%s/assets/walmartbanner.jpg", s3BaseURL), "Del Carmen Road, Del Carmen, Surigao del Norte", floatPtr(9.7739032), floatPtr(126.1304724), "https://facebook.com/walmart", "https://instagram.com/walmart", "https://twitter.com/walmart", "https://linkedin.com/company/walmart", "https://youtube.com/walmart", "", "https://walmart.com", "08:00", "22:00"},
+		{"arons@example.com", "Arons Consumer goods store", "09123456785", fmt.Sprintf("%s/assets/aronslogo.png", s3BaseURL), fmt.Sprintf("%s/assets/aronsbanner.png", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772), "", "", "", "", "", "", "", "08:00", "18:00"},
+		{"arniestore@example.com", "Arnie Store", "09123456786", fmt.Sprintf("%s/assets/arniestorelogo.png", s3BaseURL), fmt.Sprintf("%s/assets/arniestorebanner.png", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "", "", "", "", "", "", "", "08:00", "18:00"},
 	}
 
 	for _, s := range suppliers {
@@ -159,7 +158,6 @@ func SeedSuppliers() error {
 			existing.YouTube = s.youtube
 			existing.TikTok = s.tiktok
 			existing.Website = s.website
-			existing.WorkingDays = s.workingDays
 			existing.OpeningTime = s.openingTime
 			existing.ClosingTime = s.closingTime
 			if err := DB.Save(&existing).Error; err != nil {
@@ -190,7 +188,6 @@ func SeedSuppliers() error {
 			YouTube:     s.youtube,
 			TikTok:      s.tiktok,
 			Website:     s.website,
-			WorkingDays: s.workingDays,
 			OpeningTime: s.openingTime,
 			ClosingTime: s.closingTime,
 			Role:        models.RoleSupplier,
@@ -223,13 +220,12 @@ func SeedStores() error {
 		youtube     string
 		tiktok      string
 		website     string
-		workingDays string
 		openingTime string
 		closingTime string
 	}{
-		{"ervies@example.com", "Ervies", "09223456781", fmt.Sprintf("%s/assets/ervieslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/ervieslogobanner.jpeg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772), "https://facebook.com/ervies", "https://instagram.com/ervies", "", "", "", "https://tiktok.com/@ervies", "", "Monday-Saturday", "08:00", "19:00"},
-		{"sarisari@example.com", "Sarisari", "09223456782", fmt.Sprintf("%s/assets/sarisarilogo.png", s3BaseURL), fmt.Sprintf("%s/assets/sarisarilogobanner.png", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "https://facebook.com/sarisari", "https://instagram.com/sarisari", "", "", "", "", "", "Monday-Sunday", "07:00", "20:00"},
-		{"kicks@example.com", "Kicks", "09223456783", fmt.Sprintf("%s/assets/kickslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/kicksbanner.jpeg", s3BaseURL), "Del Carmen Road, Del Carmen, Surigao del Norte", floatPtr(9.7739032), floatPtr(126.1304724), "https://facebook.com/kicks", "https://instagram.com/kicks", "https://twitter.com/kicks", "", "", "https://tiktok.com/@kicks", "https://kicks.com", "Monday-Saturday", "09:00", "19:00"},
+		{"ervies@example.com", "Ervies", "09223456781", fmt.Sprintf("%s/assets/ervieslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/ervieslogobanner.jpeg", s3BaseURL), "Tourism Road, General Luna, Surigao del Norte", floatPtr(9.8404527), floatPtr(126.1356772), "https://facebook.com/ervies", "https://instagram.com/ervies", "", "", "", "https://tiktok.com/@ervies", "", "08:00", "19:00"},
+		{"sarisari@example.com", "Sarisari", "09223456782", fmt.Sprintf("%s/assets/sarisarilogo.png", s3BaseURL), fmt.Sprintf("%s/assets/sarisarilogobanner.png", s3BaseURL), "National Highway, Dapa, Surigao del Norte", floatPtr(9.8098413), floatPtr(126.1375574), "https://facebook.com/sarisari", "https://instagram.com/sarisari", "", "", "", "", "", "07:00", "20:00"},
+		{"kicks@example.com", "Kicks", "09223456783", fmt.Sprintf("%s/assets/kickslogo.jpeg", s3BaseURL), fmt.Sprintf("%s/assets/kicksbanner.jpeg", s3BaseURL), "Del Carmen Road, Del Carmen, Surigao del Norte", floatPtr(9.7739032), floatPtr(126.1304724), "https://facebook.com/kicks", "https://instagram.com/kicks", "https://twitter.com/kicks", "", "", "https://tiktok.com/@kicks", "https://kicks.com", "09:00", "19:00"},
 	}
 
 	for _, s := range stores {
@@ -249,7 +245,6 @@ func SeedStores() error {
 			existing.YouTube = s.youtube
 			existing.TikTok = s.tiktok
 			existing.Website = s.website
-			existing.WorkingDays = s.workingDays
 			existing.OpeningTime = s.openingTime
 			existing.ClosingTime = s.closingTime
 			if err := DB.Save(&existing).Error; err != nil {
@@ -280,7 +275,6 @@ func SeedStores() error {
 			YouTube:     s.youtube,
 			TikTok:      s.tiktok,
 			Website:     s.website,
-			WorkingDays: s.workingDays,
 			OpeningTime: s.openingTime,
 			ClosingTime: s.closingTime,
 			Role:        models.RoleStore,
@@ -304,7 +298,51 @@ func SeedProducts() error {
 		unit        string
 		category    string
 		imageURL    string
-	}{}
+	}{
+		"nike@example.com": {
+			{"Nike Air Max Running Shoes", "Premium running shoes with air cushioning", "NIKE-SHOE-001", 5500.00, 50, "pair", "Footwear", ""},
+			{"Nike Dri-FIT T-Shirt", "Moisture-wicking athletic t-shirt", "NIKE-APP-001", 1200.00, 100, "piece", "Apparel", ""},
+			{"Nike Basketball", "Official size basketball", "NIKE-EQP-001", 2500.00, 75, "piece", "Equipment", ""},
+			{"Nike Sports Socks Pack", "Pack of 3 athletic socks", "NIKE-ACC-001", 450.00, 200, "pack", "Accessories", ""},
+			{"Nike Water Bottle", "Reusable sports water bottle", "NIKE-ACC-002", 800.00, 150, "piece", "Accessories", ""},
+			{"Nike Backpack", "Sports backpack with multiple compartments", "NIKE-ACC-003", 3500.00, 60, "piece", "Accessories", ""},
+		},
+		"toms@example.com": {
+			{"Premium Arabica Coffee Beans 1kg", "High quality Arabica coffee beans", "TOMS-COF-001", 850.00, 100, "kg", "Coffee", ""},
+			{"Espresso Blend 500g", "Dark roast espresso blend", "TOMS-COF-002", 650.00, 150, "kg", "Coffee", ""},
+			{"Coffee Filters 100pcs", "Paper coffee filters", "TOMS-ACC-001", 120.00, 300, "pack", "Accessories", ""},
+			{"French Press Coffee Maker", "Stainless steel French press", "TOMS-EQP-001", 2500.00, 40, "piece", "Equipment", ""},
+			{"Coffee Grinder", "Electric coffee bean grinder", "TOMS-EQP-002", 3500.00, 30, "piece", "Equipment", ""},
+			{"Coffee Cups Set of 4", "Ceramic coffee cups", "TOMS-ACC-002", 800.00, 80, "set", "Accessories", ""},
+		},
+		"711@example.com": {
+			{"Coca Cola 1.5L", "Carbonated soft drink", "711-BEV-001", 75.00, 500, "bottle", "Beverages", ""},
+			{"Instant Noodles Pack", "Pack of instant noodles", "711-FOD-001", 25.00, 1000, "pack", "Food", ""},
+			{"Chips Variety Pack", "Assorted chips pack", "711-SNK-001", 150.00, 300, "pack", "Snacks", ""},
+			{"Mineral Water 500ml", "Purified drinking water", "711-BEV-002", 25.00, 1000, "bottle", "Beverages", ""},
+			{"Energy Drink", "Caffeinated energy drink", "711-BEV-003", 95.00, 400, "can", "Beverages", ""},
+			{"Sandwich", "Ready-to-eat sandwich", "711-FOD-002", 120.00, 200, "piece", "Food", ""},
+		},
+		"walmart@example.com": {
+			{"Premium Rice 50kg", "High quality premium rice", "WAL-GRN-001", 2500.00, 100, "bag", "Grains", ""},
+			{"Fresh Chicken Whole", "Fresh whole chicken", "WAL-MT-001", 180.00, 200, "piece", "Meat", ""},
+			{"Tomatoes Fresh", "Fresh red tomatoes", "WAL-VEG-001", 80.00, 300, "kg", "Vegetables", ""},
+			{"Pork Belly", "Fresh pork belly", "WAL-MT-002", 350.00, 150, "kg", "Meat", ""},
+			{"Onions", "Fresh white onions", "WAL-VEG-002", 60.00, 250, "kg", "Vegetables", ""},
+			{"Beef Steak", "Premium beef steak cuts", "WAL-MT-003", 450.00, 100, "kg", "Meat", ""},
+		},
+		"arons@example.com": {},
+		"arniestore@example.com": {
+			{"Premium Rice 25kg", "High quality premium rice", "ARNIE-GRN-001", 1300.00, 150, "bag", "Grains", ""},
+			{"Cooking Oil 1L", "Vegetable cooking oil", "ARNIE-CON-001", 120.00, 200, "bottle", "Condiments", ""},
+			{"Sugar 1kg", "White refined sugar", "ARNIE-CON-002", 65.00, 300, "kg", "Condiments", ""},
+			{"Salt 500g", "Iodized salt", "ARNIE-CON-003", 25.00, 400, "pack", "Condiments", ""},
+			{"Canned Sardines 155g", "Canned sardines in oil", "ARNIE-CAN-001", 35.00, 500, "can", "Canned Goods", ""},
+			{"Instant Coffee 200g", "Instant coffee powder", "ARNIE-BEV-001", 85.00, 250, "pack", "Beverages", ""},
+			{"Bread Loaf", "Fresh white bread", "ARNIE-BAK-001", 45.00, 100, "loaf", "Bakery", ""},
+			{"Eggs 1 Dozen", "Fresh chicken eggs", "ARNIE-DAI-001", 90.00, 200, "dozen", "Dairy", ""},
+		},
+	}
 
 	for email, products := range supplierProducts {
 		var supplier models.User

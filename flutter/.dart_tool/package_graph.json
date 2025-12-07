@@ -7,10 +7,14 @@
       "name": "siargao_trading_road",
       "version": "1.0.0+1",
       "dependencies": [
+        "animate_gradient",
         "cross_file",
         "cupertino_icons",
+        "curved_navigation_bar",
         "file_picker",
+        "fl_chart",
         "flutter",
+        "flutter_map",
         "flutter_pdfview",
         "flutter_svg",
         "geolocator",
@@ -18,11 +22,14 @@
         "http",
         "image_picker",
         "intl",
+        "latlong2",
+        "motion",
         "path_provider",
         "permission_handler",
         "provider",
         "share_plus",
         "shared_preferences",
+        "table_calendar",
         "url_launcher"
       ],
       "devDependencies": [
@@ -67,6 +74,47 @@
         "stream_channel",
         "test_api",
         "vector_math"
+      ]
+    },
+    {
+      "name": "motion",
+      "version": "2.0.1",
+      "dependencies": [
+        "flutter",
+        "motion_platform_interface",
+        "motion_web"
+      ]
+    },
+    {
+      "name": "table_calendar",
+      "version": "3.1.3",
+      "dependencies": [
+        "flutter",
+        "intl",
+        "simple_gesture_detector"
+      ]
+    },
+    {
+      "name": "animate_gradient",
+      "version": "0.0.4",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "fl_chart",
+      "version": "0.66.2",
+      "dependencies": [
+        "equatable",
+        "flutter"
+      ]
+    },
+    {
+      "name": "curved_navigation_bar",
+      "version": "1.0.6",
+      "dependencies": [
+        "flutter",
+        "meta"
       ]
     },
     {
@@ -201,6 +249,30 @@
         "geolocator_platform_interface",
         "geolocator_web",
         "geolocator_windows"
+      ]
+    },
+    {
+      "name": "latlong2",
+      "version": "0.9.1",
+      "dependencies": [
+        "intl"
+      ]
+    },
+    {
+      "name": "flutter_map",
+      "version": "7.0.2",
+      "dependencies": [
+        "async",
+        "collection",
+        "dart_earcut",
+        "flutter",
+        "http",
+        "latlong2",
+        "logger",
+        "meta",
+        "polylabel",
+        "proj4dart",
+        "vector_math"
       ]
     },
     {
@@ -397,6 +469,40 @@
         "stream_channel",
         "string_scanner",
         "term_glyph"
+      ]
+    },
+    {
+      "name": "motion_platform_interface",
+      "version": "2.0.1",
+      "dependencies": [
+        "flutter",
+        "meta",
+        "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "motion_web",
+      "version": "2.0.1",
+      "dependencies": [
+        "flutter",
+        "flutter_web_plugins",
+        "motion_platform_interface",
+        "web"
+      ]
+    },
+    {
+      "name": "simple_gesture_detector",
+      "version": "0.2.1",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "equatable",
+      "version": "2.0.7",
+      "dependencies": [
+        "collection",
+        "meta"
       ]
     },
     {
@@ -750,6 +856,42 @@
       ]
     },
     {
+      "name": "proj4dart",
+      "version": "2.1.0",
+      "dependencies": [
+        "meta",
+        "mgrs_dart",
+        "wkt_parser"
+      ]
+    },
+    {
+      "name": "polylabel",
+      "version": "1.0.1",
+      "dependencies": [
+        "collection"
+      ]
+    },
+    {
+      "name": "logger",
+      "version": "2.6.2",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
+      "name": "dart_earcut",
+      "version": "1.2.0",
+      "dependencies": []
+    },
+    {
+      "name": "async",
+      "version": "2.13.0",
+      "dependencies": [
+        "collection",
+        "meta"
+      ]
+    },
+    {
       "name": "google_maps_flutter_web",
       "version": "0.5.14+3",
       "dependencies": [
@@ -858,14 +1000,6 @@
         "source_span",
         "string_scanner",
         "typed_data"
-      ]
-    },
-    {
-      "name": "async",
-      "version": "2.13.0",
-      "dependencies": [
-        "collection",
-        "meta"
       ]
     },
     {
@@ -1027,6 +1161,18 @@
       ]
     },
     {
+      "name": "wkt_parser",
+      "version": "2.0.0",
+      "dependencies": []
+    },
+    {
+      "name": "mgrs_dart",
+      "version": "2.0.0",
+      "dependencies": [
+        "unicode"
+      ]
+    },
+    {
       "name": "stream_transform",
       "version": "2.1.1",
       "dependencies": []
@@ -1089,11 +1235,25 @@
       "dependencies": []
     },
     {
+      "name": "unicode",
+      "version": "0.3.1",
+      "dependencies": [
+        "lists"
+      ]
+    },
+    {
       "name": "html",
       "version": "0.15.6",
       "dependencies": [
         "csslib",
         "source_span"
+      ]
+    },
+    {
+      "name": "lists",
+      "version": "1.0.1",
+      "dependencies": [
+        "meta"
       ]
     },
     {

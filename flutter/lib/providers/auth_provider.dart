@@ -74,6 +74,7 @@ class AuthProvider with ChangeNotifier {
     try {
       await AuthService.logout();
     } catch (e) {
+      // Ignore logout errors - proceed with local logout
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
@@ -86,6 +87,7 @@ class AuthProvider with ChangeNotifier {
       _user = await AuthService.getMe();
       notifyListeners();
     } catch (e) {
+      // Ignore refresh errors - keep existing user data
     }
   }
 }

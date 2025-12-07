@@ -16,9 +16,9 @@ class User {
   final String? tiktok;
   final String? website;
   final String role;
-  final String? workingDays;
   final String? openingTime;
   final String? closingTime;
+  final String? closedDaysOfWeek;
   final bool isOpen;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -43,9 +43,9 @@ class User {
     this.tiktok,
     this.website,
     required this.role,
-    this.workingDays,
     this.openingTime,
     this.closingTime,
+    this.closedDaysOfWeek,
     this.isOpen = true,
     required this.createdAt,
     required this.updatedAt,
@@ -72,9 +72,9 @@ class User {
       tiktok: json['tiktok'] as String?,
       website: json['website'] as String?,
       role: json['role'] as String,
-      workingDays: json['working_days'] as String?,
       openingTime: json['opening_time'] as String?,
       closingTime: json['closing_time'] as String?,
+      closedDaysOfWeek: json['closed_days_of_week'] as String?,
       isOpen: json['is_open'] as bool? ?? true,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -102,9 +102,9 @@ class User {
       'tiktok': tiktok,
       'website': website,
       'role': role,
-      'working_days': workingDays,
       'opening_time': openingTime,
       'closing_time': closingTime,
+      'closed_days_of_week': closedDaysOfWeek,
       'is_open': isOpen,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),

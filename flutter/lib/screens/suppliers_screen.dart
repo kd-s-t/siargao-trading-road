@@ -3,7 +3,9 @@ import 'package:siargao_trading_road/services/supplier_service.dart';
 import 'package:siargao_trading_road/models/supplier.dart';
 
 class SuppliersScreen extends StatefulWidget {
-  const SuppliersScreen({super.key});
+  final bool? useScaffold;
+  
+  const SuppliersScreen({super.key, this.useScaffold});
 
   @override
   State<SuppliersScreen> createState() => _SuppliersScreenState();
@@ -76,13 +78,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Suppliers'),
-      ),
-      body: _loading && _suppliers.isEmpty
+  Widget _buildBody() {
+    return _loading && _suppliers.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _handleRefresh,
@@ -91,14 +88,14 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
+                          const Text(
                             'Error loading suppliers',
                             style: TextStyle(fontSize: 18, color: Colors.red),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             _error!,
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                            style: const TextStyle(fontSize: 14, color: Colors.grey),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
@@ -110,15 +107,15 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                       ),
                     )
                   : _suppliers.isEmpty
-                      ? Center(
+                      ? const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text(
+                              Text(
                                 'No suppliers available',
                                 style: TextStyle(fontSize: 18),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               Text(
                                 'Suppliers will appear here once they register',
                                 style: TextStyle(fontSize: 14, color: Colors.grey),
@@ -279,8 +276,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                               ],
                                             ),
                                           ],
-                                          if (supplier.workingDays != null ||
-                                              supplier.openingTime != null ||
+                                          if (supplier.openingTime != null ||
                                               supplier.closingTime != null) ...[
                                             const SizedBox(height: 8),
                                             const Divider(),
@@ -313,29 +309,6 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                                     ],
                                                   ),
                                                   const SizedBox(height: 8),
-                                                  if (supplier.workingDays != null && supplier.workingDays!.trim().isNotEmpty)
-                                                    Padding(
-                                                      padding: const EdgeInsets.only(bottom: 6),
-                                                      child: Row(
-                                                        children: [
-                                                          Icon(
-                                                            Icons.calendar_today,
-                                                            size: 14,
-                                                            color: Colors.grey[700],
-                                                          ),
-                                                          const SizedBox(width: 6),
-                                                          Expanded(
-                                                            child: Text(
-                                                              supplier.workingDays!,
-                                                              style: TextStyle(
-                                                                fontSize: 13,
-                                                                color: Colors.grey[800],
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
                                                   if (supplier.openingTime != null && supplier.openingTime!.trim().isNotEmpty &&
                                                       supplier.closingTime != null && supplier.closingTime!.trim().isNotEmpty)
                                                     Row(
@@ -405,7 +378,23 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                             );
                           },
                         ),
-            ),
+            );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final body = _buildBody();
+    final useScaffold = widget.useScaffold ?? true;
+    
+    if (!useScaffold) {
+      return body;
+    }
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Suppliers'),
+      ),
+      body: body,
     );
   }
 }

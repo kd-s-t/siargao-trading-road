@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:animate_gradient/animate_gradient.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -50,17 +51,15 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1A3A5F),
-              Color(0xFF38B2AC),
-            ],
-          ),
-        ),
+      body: AnimateGradient(
+        primaryColors: const [
+          Color(0xFF1A3A5F),
+          Color(0xFF38B2AC),
+        ],
+        secondaryColors: const [
+          Color(0xFF38B2AC),
+          Color(0xFF1A3A5F),
+        ],
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -146,6 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: _loading ? null : _handleSubmit,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF1A3A5F),
+                                foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
                               child: _loading
@@ -157,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                       ),
                                     )
-                                  : const Text('Sign In'),
+                                  : const Text('Sign In', style: TextStyle(color: Colors.white)),
                             ),
                             const SizedBox(height: 16),
                             Row(

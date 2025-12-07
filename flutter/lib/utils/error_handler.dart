@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:siargao_trading_road/services/bug_report_service.dart';
 
 class ErrorHandler {

@@ -5,16 +5,16 @@ import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/services/order_service.dart';
 import 'package:siargao_trading_road/services/rating_service.dart';
-import 'package:siargao_trading_road/models/order.dart';
-import 'package:siargao_trading_road/models/user.dart';
+import 'package:siargao_trading_road/models/order.dart' show Order, Message;
+import 'package:siargao_trading_road/models/user.dart' show User;
 import 'package:siargao_trading_road/widgets/order_map.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
-import 'package:siargao_trading_road/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:siargao_trading_road/services/auth_service.dart';
 import 'dart:io';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -28,7 +28,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Order? _order;
   bool _loading = true;
   bool _loadingMessages = false;
-  bool _sendingMessage = false;
   bool _updatingStatus = false;
   bool _submittingRating = false;
   List<Message> _messages = [];
@@ -39,7 +38,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   int _ratingValue = 5;
   final _ratingCommentController = TextEditingController();
   String? _errorMessage;
-  File? _selectedImage;
 
   @override
   void initState() {
@@ -199,7 +197,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             _loadingMessages = false;
           });
           _scrollToBottom();
-        } catch (e) {
+        } catch (_) {
         }
       }
     } catch (e) {
@@ -208,7 +206,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           setState(() {
             _loadingMessages = false;
           });
-        } catch (e) {
+        } catch (_) {
         }
       }
     }
@@ -226,58 +224,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     });
   }
 
-  Future<void> _handleSendMessage() async {
-    if (_order?.id == null || (_messageController.text.trim().isEmpty && _selectedImage == null) || _sendingMessage) return;
 
-    setState(() {
-      _sendingMessage = true;
-    });
-
-    try {
-      String? imageUrl;
-      if (_selectedImage != null) {
-        final uploadResult = await AuthService.uploadImage(_selectedImage!.path);
-        imageUrl = uploadResult['url'];
-      }
-
-      await OrderService.createMessage(
-        _order!.id,
-        _messageController.text.trim().isEmpty ? '' : _messageController.text.trim(),
-        imageUrl: imageUrl,
-      );
-      _messageController.clear();
-      setState(() {
-        _selectedImage = null;
-      });
-      await _loadMessages();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send message: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _sendingMessage = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
-
-    if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-      });
-    }
-  }
 
   Future<void> _handleUpdateStatus(String status) async {
     if (_order?.id == null) return;
@@ -508,6 +455,59 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return hoursSinceDelivery >= 12;
   }
 
+  Future<void> _handleSendTextMessage(String text) async {
+    if (_order?.id == null || _isMessagingClosed() || text.isEmpty) return;
+
+    _messageController.clear();
+    setState(() {});
+
+    try {
+      await OrderService.createMessage(_order!.id, text);
+      await _loadMessages();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send message: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleAttachmentPressed() async {
+    if (_order?.id == null || _isMessagingClosed()) return;
+
+    try {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(source: ImageSource.gallery);
+      
+      if (image == null) return;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Uploading image...')),
+        );
+      }
+
+      final uploadResult = await AuthService.uploadImage(image.path);
+      final imageUrl = uploadResult['url'];
+
+      await OrderService.createMessage(_order!.id, '', imageUrl: imageUrl);
+      await _loadMessages();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image sent')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send image: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Builder(
@@ -572,6 +572,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (_order!.store != null && _order!.supplier != null)
+                    _buildMapCard(),
                   _buildOrderCard(entity, entityName, user),
                   _buildItemsCard(),
                   if (_order!.store != null && _order!.supplier != null)
@@ -775,7 +777,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
                 Chip(
                   label: Text(_getStatusLabel(_order!.status)),
-                  backgroundColor: _getStatusColor(_order!.status).withOpacity(0.2),
+                  backgroundColor: _getStatusColor(_order!.status).withValues(alpha: 0.2),
                   labelStyle: TextStyle(
                     color: _getStatusColor(_order!.status),
                     fontSize: 12,
@@ -832,6 +834,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMapCard() {
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+      ),
+      child: OrderMap(
+        store: _order!.store,
+        supplier: _order!.supplier,
+        status: _order!.status,
+        height: 300,
       ),
     );
   }
@@ -1089,223 +1107,125 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
             Container(
-              height: 200,
+              height: 300,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
+                color: Colors.grey[50],
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: _loadingMessages && _messages.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : _messages.isEmpty
-                      ? const Center(child: Text('No messages yet'))
-                      : ListView.builder(
-                          controller: _messagesScrollController,
-                          padding: const EdgeInsets.all(8),
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            final message = _messages[index];
-                            final isCurrentUser = message.senderId == user?.id;
-                            return Align(
-                              alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: _loadingMessages && _messages.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                        : _messages.isEmpty
+                        ? const Center(child: Text('No messages yet'))
+                        : ListView.builder(
+                                controller: _messagesScrollController,
                                 padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: isCurrentUser ? Colors.blue[100] : Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (!isCurrentUser)
-                                      Text(
-                                        message.sender.name,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                itemCount: _messages.length,
+                                itemBuilder: (context, index) {
+                                  final message = _messages[index];
+                                  final isCurrentUser = message.senderId == (user?.id ?? 0);
+                                  
+                                  return Align(
+                                    alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: isCurrentUser ? Colors.blue : Colors.grey[300],
+                                        borderRadius: BorderRadius.circular(16),
                                       ),
-                                    if (message.imageUrl != null && message.imageUrl!.isNotEmpty) ...[
-                                      GestureDetector(
-                                        onTap: () {
-                                          showDialog(
-                                            context: context,
-                                            builder: (context) => Dialog(
-                                              backgroundColor: Colors.transparent,
-                                              insetPadding: const EdgeInsets.all(16),
-                                              child: Stack(
-                                                children: [
-                                                  Center(
-                                                    child: InteractiveViewer(
-                                                      minScale: 0.5,
-                                                      maxScale: 4.0,
-                                                      child: Image.network(
-                                                        message.imageUrl!,
-                                                        fit: BoxFit.contain,
-                                                        loadingBuilder: (context, child, loadingProgress) {
-                                                          if (loadingProgress == null) return child;
-                                                          return Container(
-                                                            width: 300,
-                                                            height: 300,
-                                                            color: Colors.black87,
-                                                            child: const Center(
-                                                              child: CircularProgressIndicator(
-                                                                color: Colors.white,
-                                                              ),
-                                                            ),
-                                                          );
-                                                        },
-                                                        errorBuilder: (context, error, stackTrace) {
-                                                          return Container(
-                                                            width: 300,
-                                                            height: 300,
-                                                            color: Colors.black87,
-                                                            child: const Center(
-                                                              child: Icon(
-                                                                Icons.image_not_supported,
-                                                                color: Colors.white,
-                                                                size: 50,
-                                                              ),
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Positioned(
-                                                    top: 8,
-                                                    right: 8,
-                                                    child: IconButton(
-                                                      icon: const Icon(Icons.close, color: Colors.white),
-                                                      onPressed: () => Navigator.of(context).pop(),
-                                                      style: IconButton.styleFrom(
-                                                        backgroundColor: Colors.black54,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
+                                      constraints: BoxConstraints(
+                                        maxWidth: MediaQuery.of(context).size.width * 0.7,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          if (!isCurrentUser)
+                                            Text(
+                                              message.sender.name,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.grey[700],
                                               ),
                                             ),
-                                          );
-                                        },
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(4),
-                                          child: Image.network(
-                                            message.imageUrl!,
-                                            width: 200,
-                                            fit: BoxFit.cover,
-                                            loadingBuilder: (context, child, loadingProgress) {
-                                              if (loadingProgress == null) return child;
-                                              return Container(
+                                          if (message.imageUrl != null && message.imageUrl!.isNotEmpty)
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: Image.network(
+                                                message.imageUrl!,
+                                                fit: BoxFit.cover,
                                                 width: 200,
-                                                height: 150,
-                                                color: Colors.grey[200],
-                                                child: Center(
-                                                  child: CircularProgressIndicator(
-                                                    value: loadingProgress.expectedTotalBytes != null
-                                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                                        : null,
-                                                    strokeWidth: 2,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Container(
-                                                width: 200,
-                                                height: 150,
-                                                color: Colors.grey[300],
-                                                child: const Icon(Icons.image_not_supported, size: 40),
-                                              );
-                                            },
+                                                height: 200,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return const Icon(Icons.broken_image);
+                                                },
+                                              ),
+                                            )
+                                          else if (message.content.isNotEmpty)
+                                            Text(
+                                              message.content,
+                                              style: TextStyle(
+                                                color: isCurrentUser ? Colors.white : Colors.black87,
+                                              ),
+                                            ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            DateFormat('HH:mm').format(message.createdAt),
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: isCurrentUser ? Colors.white70 : Colors.grey[600],
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                      if (message.content.isNotEmpty) const SizedBox(height: 4),
-                                    ],
-                                    if (message.content.isNotEmpty)
-                                      Text(message.content),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _formatTime(message.createdAt),
-                                      style: const TextStyle(fontSize: 10, color: Colors.grey),
                                     ),
-                                  ],
-                                ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
+              ),
             ),
-            const SizedBox(height: 8),
-            if (_selectedImage != null) ...[
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        _selectedImage!,
-                        width: 200,
-                        height: 150,
-                        fit: BoxFit.cover,
+            if (!messagingClosed) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.attach_file),
+                    onPressed: _handleAttachmentPressed,
+                    color: Colors.blue,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: const InputDecoration(
+                        hintText: 'Type a message...',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
+                      maxLines: null,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (text) {
+                        if (text.trim().isNotEmpty) {
+                          _handleSendTextMessage(text.trim());
+                        }
+                      },
                     ),
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 18),
-                        onPressed: () {
-                          setState(() {
-                            _selectedImage = null;
-                          });
-                        },
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.black54,
-                          padding: const EdgeInsets.all(4),
-                          iconSize: 18,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: _messageController.text.trim().isEmpty || _loadingMessages
+                        ? null
+                        : () {
+                            _handleSendTextMessage(_messageController.text.trim());
+                          },
+                    color: Colors.blue,
+                  ),
+                ],
               ),
             ],
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.image),
-                  onPressed: messagingClosed || _sendingMessage ? null : _pickImage,
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      hintText: messagingClosed ? 'Messaging closed' : 'Type a message...',
-                      border: const OutlineInputBorder(),
-                      enabled: !messagingClosed,
-                    ),
-                    maxLines: null,
-                    maxLength: 500,
-                  ),
-                ),
-                IconButton(
-                  icon: _sendingMessage
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.send),
-                  onPressed: messagingClosed || (_messageController.text.trim().isEmpty && _selectedImage == null) || _sendingMessage
-                      ? null
-                      : _handleSendMessage,
-                ),
-              ],
-            ),
             const SizedBox(height: 8),
             ElevatedButton.icon(
               onPressed: () => _handleCall(entity),
@@ -1403,9 +1323,5 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
-  }
-
-  String _formatTime(DateTime date) {
-    return '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

@@ -38,7 +38,12 @@ func Connect(cfg *config.Config) error {
 		return fmt.Errorf("failed to migrate audit_logs.action column: %w", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{})
+	err = migrateRemoveWorkingDaysColumn()
+	if err != nil {
+		return fmt.Errorf("failed to remove working_days column: %w", err)
+	}
+
+	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{})
 	if err != nil {
 		return err
 	}
@@ -63,7 +68,12 @@ func Migrate() error {
 		return fmt.Errorf("failed to migrate audit_logs.action column: %w", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{})
+	err = migrateRemoveWorkingDaysColumn()
+	if err != nil {
+		return fmt.Errorf("failed to remove working_days column: %w", err)
+	}
+
+	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{})
 	if err != nil {
 		return err
 	}
@@ -98,6 +108,36 @@ func migrateAuditLogsActionColumn() error {
 	err = DB.Exec("ALTER TABLE audit_logs ALTER COLUMN action TYPE VARCHAR(255)").Error
 	if err != nil {
 		return fmt.Errorf("failed to alter column: %w", err)
+	}
+
+	return nil
+}
+
+func migrateRemoveWorkingDaysColumn() error {
+	if DB == nil {
+		return fmt.Errorf("database connection not initialized")
+	}
+
+	var exists bool
+	err := DB.Raw(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_name = 'users' AND column_name = 'working_days'
+		)
+	`).Row().Scan(&exists)
+
+	if err != nil {
+		return fmt.Errorf("failed to check column existence: %w", err)
+	}
+
+	if !exists {
+		return nil
+	}
+
+	err = DB.Exec("ALTER TABLE users DROP COLUMN IF EXISTS working_days").Error
+	if err != nil {
+		return fmt.Errorf("failed to drop working_days column: %w", err)
 	}
 
 	return nil

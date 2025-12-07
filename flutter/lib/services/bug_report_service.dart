@@ -25,7 +25,7 @@ class BugReportService {
         'os_version': Platform.operatingSystemVersion,
       });
     } catch (e) {
-      print('Failed to report bug: $e');
+      // Silently fail - bug reporting should not interrupt app flow
     }
   }
 }

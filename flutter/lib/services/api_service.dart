@@ -1,13 +1,27 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class ApiService {
-  static const String baseUrl = String.fromEnvironment(
-    'API_URL',
-    defaultValue: 'http://localhost:3020/api',
-  );
+  static String get baseUrl {
+    const apiUrlKey = 'API_URL';
+    const envUrl = String.fromEnvironment(apiUrlKey);
+    if (envUrl.isNotEmpty) {
+      return envUrl;
+    }
+    
+    if (kDebugMode) {
+      if (Platform.isAndroid) {
+        return 'http://localhost:3020/api';
+      } else if (Platform.isIOS) {
+        return 'http://localhost:3020/api';
+      }
+    }
+    
+    return 'https://siargaotradingroad.com/api';
+  }
 
   static Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
