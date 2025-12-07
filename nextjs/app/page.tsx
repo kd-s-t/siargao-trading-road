@@ -47,7 +47,7 @@ const getDownloadUrls = () => {
     'application-0ba3caf8-40a9-4291-a0e9-407285f3c9f6.tar.gz';
   
   return {
-    android: process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL || `${s3BaseUrl}/${androidFileName}`,
+    android: process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL || 'https://siargaotradingroad-mobile-builds-production.s3.us-east-1.amazonaws.com/app-release.apk',
     ios: process.env.NEXT_PUBLIC_IOS_DOWNLOAD_URL || `${s3BaseUrl}/${iosFileName}`,
   };
 };
