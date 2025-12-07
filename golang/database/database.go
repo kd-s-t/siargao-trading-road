@@ -43,9 +43,11 @@ func Connect(cfg *config.Config) error {
 		return err
 	}
 
-	err = SeedAll()
-	if err != nil {
-		return err
+	if os.Getenv("CI") == "" && os.Getenv("GITHUB_ACTIONS") == "" {
+		err = SeedAll()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

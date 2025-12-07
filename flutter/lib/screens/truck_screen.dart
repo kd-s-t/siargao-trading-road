@@ -174,10 +174,14 @@ class _TruckScreenState extends State<TruckScreen> {
       });
 
       try {
+        final totalQuantity = _draftOrder!.orderItems.fold<int>(0, (sum, item) => sum + item.quantity);
+        final deliveryFee = _deliveryOption == 'deliver' ? totalQuantity * 20.0 : 0.0;
+
         await OrderService.submitOrder(
           _draftOrder!.id,
           paymentMethod: _paymentMethod,
           deliveryOption: _deliveryOption,
+          deliveryFee: deliveryFee,
           shippingAddress: _deliveryOption == 'deliver' ? _shippingAddressController.text.trim() : null,
           notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
         );
@@ -384,56 +388,6 @@ class _TruckScreenState extends State<TruckScreen> {
             }),
             Card(
               margin: const EdgeInsets.only(top: 8, bottom: 16),
-              color: Colors.blue[50],
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Total:',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '₱${NumberFormat('#,##0.00').format(_draftOrder!.totalAmount)}',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_draftOrder!.totalAmount < 5000) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange[200]!),
-                        ),
-                        child: Text(
-                          'Minimum order amount is ₱5,000.00. Add ₱${NumberFormat('#,##0.00').format(5000 - _draftOrder!.totalAmount)} more to submit.',
-                          style: TextStyle(
-                            color: Colors.orange[900],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.only(top: 8, bottom: 16),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -499,6 +453,96 @@ class _TruckScreenState extends State<TruckScreen> {
                           border: OutlineInputBorder(),
                         ),
                         maxLines: 2,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            Card(
+              margin: const EdgeInsets.only(top: 8, bottom: 16),
+              color: Colors.blue[50],
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Subtotal:',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '₱${NumberFormat('#,##0.00').format(_draftOrder!.totalAmount)}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_deliveryOption == 'deliver') ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Delivery Fee:',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Text(
+                            '₱${NumberFormat('#,##0.00').format(_draftOrder!.orderItems.fold<int>(0, (sum, item) => sum + item.quantity) * 20.0)}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const Divider(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total:',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '₱${NumberFormat('#,##0.00').format(_draftOrder!.totalAmount + (_deliveryOption == 'deliver' ? _draftOrder!.orderItems.fold<int>(0, (sum, item) => sum + item.quantity) * 20.0 : 0.0))}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_draftOrder!.totalAmount < 5000) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange[200]!),
+                        ),
+                        child: Text(
+                          'Minimum order amount is ₱5,000.00. Add ₱${NumberFormat('#,##0.00').format(5000 - _draftOrder!.totalAmount)} more to submit.',
+                          style: TextStyle(
+                            color: Colors.orange[900],
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
                     ],
                     const SizedBox(height: 16),

@@ -52,6 +52,15 @@ export function TruckView({
   const [shippingAddress, setShippingAddress] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
 
+  const calculateDeliveryFee = () => {
+    if (deliveryOption !== 'deliver' || !draftOrder?.order_items) return 0;
+    const totalQuantity = draftOrder.order_items.reduce((sum, item) => sum + item.quantity, 0);
+    return totalQuantity * 20;
+  };
+
+  const deliveryFee = calculateDeliveryFee();
+  const finalTotal = (draftOrder?.total_amount || 0) + deliveryFee;
+
   const handleRemoveItem = async (itemId: number) => {
     try {
       await mobileOrderService.removeOrderItem(itemId);
@@ -166,22 +175,8 @@ export function TruckView({
           </CardContent>
         </Card>
       ))}
-      <Card sx={{ bgcolor: '#e3f2fd', mt: 2 }}>
+      <Card sx={{ mt: 2 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              Total:
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-              ₱{draftOrder.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </Typography>
-          </Box>
-          {draftOrder.total_amount < 5000 && (
-            <Alert severity="warning" sx={{ mt: 2 }}>
-              Minimum order amount is ₱5,000.00. Add ₱{(5000 - draftOrder.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more to submit.
-            </Alert>
-          )}
-          <Divider sx={{ my: 2 }} />
           <FormControl component="fieldset" sx={{ mb: 2 }}>
             <FormLabel component="legend">Payment Method</FormLabel>
             <RadioGroup
@@ -213,6 +208,42 @@ export function TruckView({
               sx={{ mb: 2 }}
             />
           )}
+        </CardContent>
+      </Card>
+      <Card sx={{ bgcolor: '#e3f2fd', mt: 2 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Subtotal:
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+              ₱{draftOrder.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Typography>
+          </Box>
+          {deliveryOption === 'deliver' && deliveryFee > 0 && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+              <Typography variant="body1">
+                Delivery Fee:
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                ₱{deliveryFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Typography>
+            </Box>
+          )}
+          <Divider sx={{ my: 1.5 }} />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Total:
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+              ₱{finalTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Typography>
+          </Box>
+          {draftOrder.total_amount < 5000 && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              Minimum order amount is ₱5,000.00. Add ₱{(5000 - draftOrder.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more to submit.
+            </Alert>
+          )}
           <TextField
             fullWidth
             label="Notes (Optional)"
@@ -220,7 +251,7 @@ export function TruckView({
             onChange={(e) => setNotes(e.target.value)}
             multiline
             rows={2}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, mt: 2 }}
           />
           <Button
             fullWidth
@@ -233,7 +264,7 @@ export function TruckView({
                     delivery_option: deliveryOption,
                     shipping_address: shippingAddress,
                     notes: notes,
-                    delivery_fee: 0,
+                    delivery_fee: deliveryFee,
                     distance: 0,
                   });
                   await onSubmitOrder();

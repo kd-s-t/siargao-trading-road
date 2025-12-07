@@ -105,12 +105,15 @@ export default function TruckScreen() {
           onPress: async () => {
             setSubmitting(true);
             try {
+              const totalQuantity = draftOrder.order_items.reduce((sum, item) => sum + item.quantity, 0);
+              const deliveryFee = deliveryOption === 'deliver' ? totalQuantity * 20 : 0;
+
               await orderService.submitOrder(draftOrder.id, {
                 payment_method: paymentMethod,
                 delivery_option: deliveryOption,
                 shipping_address: deliveryOption === 'deliver' ? shippingAddress : undefined,
                 notes: notes.trim() || undefined,
-                delivery_fee: 0,
+                delivery_fee: deliveryFee,
                 distance: 0,
               });
               Alert.alert(
@@ -270,26 +273,6 @@ export default function TruckScreen() {
           </Card>
         ))}
 
-        <Card style={styles.totalCard}>
-          <Card.Content>
-            <View style={styles.totalRow}>
-              <Text variant="titleLarge" style={styles.totalLabel}>
-                Total:
-              </Text>
-              <Text variant="titleLarge" style={styles.totalAmount}>
-                ₱{draftOrder.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </Text>
-            </View>
-            {draftOrder.total_amount < 5000 && (
-              <Surface style={{ marginTop: 12, padding: 12, backgroundColor: '#fff3cd', borderRadius: 8, borderWidth: 1, borderColor: '#ffc107' }}>
-                <Text style={{ color: '#856404', fontSize: 14 }}>
-                  Minimum order amount is ₱5,000.00. Add ₱{(5000 - draftOrder.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more to submit.
-                </Text>
-              </Surface>
-            )}
-          </Card.Content>
-        </Card>
-
         <Card style={styles.optionsCard}>
           <Card.Content>
             <Text variant="titleMedium" style={styles.sectionTitle}>
@@ -326,6 +309,55 @@ export default function TruckScreen() {
                   style={styles.textInput}
                 />
               </>
+            )}
+          </Card.Content>
+        </Card>
+
+        <Card style={styles.totalCard}>
+          <Card.Content>
+            <View style={styles.totalRow}>
+              <Text variant="titleLarge" style={styles.totalLabel}>
+                Subtotal:
+              </Text>
+              <Text variant="titleLarge" style={styles.totalAmount}>
+                ₱{draftOrder.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+            </View>
+            {deliveryOption === 'deliver' && (() => {
+              const totalQuantity = draftOrder.order_items.reduce((sum, item) => sum + item.quantity, 0);
+              const deliveryFee = totalQuantity * 20;
+              return (
+                <>
+                  <View style={[styles.totalRow, { marginTop: 8 }]}>
+                    <Text variant="bodyLarge" style={styles.totalLabel}>
+                      Delivery Fee:
+                    </Text>
+                    <Text variant="bodyLarge" style={styles.totalAmount}>
+                      ₱{deliveryFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Text>
+                  </View>
+                  <Divider style={styles.divider} />
+                </>
+              );
+            })()}
+            <View style={styles.totalRow}>
+              <Text variant="titleLarge" style={styles.totalLabel}>
+                Total:
+              </Text>
+              <Text variant="titleLarge" style={styles.totalAmount}>
+                ₱{(() => {
+                  const totalQuantity = draftOrder.order_items.reduce((sum, item) => sum + item.quantity, 0);
+                  const deliveryFee = deliveryOption === 'deliver' ? totalQuantity * 20 : 0;
+                  return (draftOrder.total_amount + deliveryFee).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                })()}
+              </Text>
+            </View>
+            {draftOrder.total_amount < 5000 && (
+              <Surface style={{ marginTop: 12, padding: 12, backgroundColor: '#fff3cd', borderRadius: 8, borderWidth: 1, borderColor: '#ffc107' }}>
+                <Text style={{ color: '#856404', fontSize: 14 }}>
+                  Minimum order amount is ₱5,000.00. Add ₱{(5000 - draftOrder.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more to submit.
+                </Text>
+              </Surface>
             )}
             <Divider style={styles.divider} />
             <TextInput
