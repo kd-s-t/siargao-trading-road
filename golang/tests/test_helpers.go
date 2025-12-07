@@ -95,11 +95,15 @@ func NewTestClient(t *testing.T, cfg *config.Config) *TestClient {
 }
 
 func (tc *TestClient) Register(email, password, name, role string) map[string]interface{} {
+	phone := fmt.Sprintf("1%09d", len(email)+len(name))
+	if len(phone) > 10 {
+		phone = phone[:10]
+	}
 	reqBody := map[string]interface{}{
 		"email":    email,
 		"password": password,
 		"name":     name,
-		"phone":    "1234567890",
+		"phone":    phone,
 		"role":     role,
 	}
 
