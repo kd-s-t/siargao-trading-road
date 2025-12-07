@@ -27,8 +27,11 @@ import {
   Save as SaveIcon,
   Cancel as CancelIcon,
   Star as StarIcon,
+  AccessTime as AccessTimeIcon,
+  CalendarToday as CalendarTodayIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import { Button, Rating } from '@mui/material';
+import { Button, Rating, Chip } from '@mui/material';
 import { User } from '@/lib/auth';
 import { mobileAuthService, mobileOrderService } from '../../services/mobileApi';
 
@@ -50,6 +53,7 @@ export function ProfileView({
   onToast,
 }: ProfileViewProps) {
   const [editingProfile, setEditingProfile] = useState(false);
+  const [editingHours, setEditingHours] = useState(false);
 
   const getUrlEnd = (url: string): string => {
     try {
@@ -78,7 +82,14 @@ export function ProfileView({
     tiktok: '',
     website: '',
   });
+  const [hoursFormData, setHoursFormData] = useState({
+    working_days: '',
+    opening_time: '',
+    closing_time: '',
+  });
   const [savingProfile, setSavingProfile] = useState(false);
+  const [savingHours, setSavingHours] = useState(false);
+  const [togglingStatus, setTogglingStatus] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -95,7 +106,13 @@ export function ProfileView({
         tiktok: mobileUser.tiktok || '',
         website: mobileUser.website || '',
       });
+      setHoursFormData({
+        working_days: mobileUser.working_days || '',
+        opening_time: mobileUser.opening_time || '',
+        closing_time: mobileUser.closing_time || '',
+      });
       setEditingProfile(false);
+      setEditingHours(false);
     }
   }, [mobileUser]);
 
@@ -142,6 +159,61 @@ export function ProfileView({
       });
     }
     setEditingProfile(false);
+  };
+
+  const handleToggleOpenClose = async () => {
+    if (!mobileUser || (mobileUser.role !== 'store' && mobileUser.role !== 'supplier')) return;
+
+    setTogglingStatus(true);
+    try {
+      const updatedUser = mobileUser.is_open
+        ? await mobileAuthService.closeStore()
+        : await mobileAuthService.openStore();
+      onUserUpdate(updatedUser);
+      onToast(
+        updatedUser.is_open
+          ? 'Store opened successfully'
+          : 'Store closed successfully',
+        'success'
+      );
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      onToast(err.response?.data?.error || 'Failed to update store status', 'error');
+    } finally {
+      setTogglingStatus(false);
+    }
+  };
+
+  const handleSaveHours = async () => {
+    if (!mobileUser) return;
+
+    setSavingHours(true);
+    try {
+      const updatedUser = await mobileAuthService.updateMe({
+        working_days: hoursFormData.working_days || undefined,
+        opening_time: hoursFormData.opening_time || undefined,
+        closing_time: hoursFormData.closing_time || undefined,
+      });
+      onUserUpdate(updatedUser);
+      setEditingHours(false);
+      onToast('Available hours updated successfully', 'success');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      onToast(err.response?.data?.error || 'Failed to update available hours', 'error');
+    } finally {
+      setSavingHours(false);
+    }
+  };
+
+  const handleCancelEditHours = () => {
+    if (mobileUser) {
+      setHoursFormData({
+        working_days: mobileUser.working_days || '',
+        opening_time: mobileUser.opening_time || '',
+        closing_time: mobileUser.closing_time || '',
+      });
+    }
+    setEditingHours(false);
   };
 
   return (
@@ -352,9 +424,19 @@ export function ProfileView({
               />
             ) : (
               <Box>
-                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                  {mobileUser.name}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                    {mobileUser.name}
+                  </Typography>
+                  {(mobileUser.role === 'store' || mobileUser.role === 'supplier') && mobileUser.is_open !== undefined && (
+                    <Chip
+                      label={mobileUser.is_open ? 'Open' : 'Closed'}
+                      size="small"
+                      color={mobileUser.is_open ? 'success' : 'error'}
+                      sx={{ height: 24, fontSize: '0.75rem' }}
+                    />
+                  )}
+                </Box>
                 <Box 
                   sx={{ 
                     display: 'flex', 
@@ -582,6 +664,32 @@ export function ProfileView({
         </CardContent>
       </Card>
 
+      {(mobileUser.role === 'store' || mobileUser.role === 'supplier') && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                  {mobileUser.is_open ? 'Currently Open' : 'Currently Closed'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Your {mobileUser.role} is {mobileUser.is_open ? 'open' : 'closed'} for business
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                color={mobileUser.is_open ? 'error' : 'success'}
+                onClick={handleToggleOpenClose}
+                disabled={togglingStatus}
+                sx={{ minWidth: 100 }}
+              >
+                {togglingStatus ? '...' : mobileUser.is_open ? 'Close' : 'Open'}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -683,6 +791,140 @@ export function ProfileView({
                 })}
               </Typography>
             </Box>
+            <>
+              <Divider sx={{ my: 2 }} />
+              <Box
+                sx={{
+                  p: 2,
+                  bgcolor: 'primary.50',
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'primary.200',
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <AccessTimeIcon sx={{ fontSize: 18, color: 'primary.main', mr: 1 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                      Available Hours
+                    </Typography>
+                  </Box>
+                  {!editingHours ? (
+                    <Button
+                      startIcon={<EditIcon />}
+                      onClick={() => setEditingHours(true)}
+                      size="small"
+                      sx={{ color: 'primary.main' }}
+                    >
+                      Edit
+                    </Button>
+                  ) : (
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        startIcon={<SaveIcon />}
+                        onClick={handleSaveHours}
+                        disabled={savingHours}
+                        size="small"
+                        variant="contained"
+                        color="primary"
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        startIcon={<CancelIcon />}
+                        onClick={handleCancelEditHours}
+                        disabled={savingHours}
+                        size="small"
+                      >
+                        Cancel
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+                {editingHours ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="Working Days"
+                      value={hoursFormData.working_days}
+                      onChange={(e) => setHoursFormData({ ...hoursFormData, working_days: e.target.value })}
+                      size="small"
+                      placeholder="e.g., Mon-Fri, Mon-Sat, All days"
+                      helperText="Enter your working days"
+                    />
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <TextField
+                        fullWidth
+                        label="Opening Time"
+                        value={hoursFormData.opening_time}
+                        onChange={(e) => setHoursFormData({ ...hoursFormData, opening_time: e.target.value })}
+                        size="small"
+                        placeholder="e.g., 08:00, 9:00 AM"
+                        helperText="Opening time"
+                      />
+                      <TextField
+                        fullWidth
+                        label="Closing Time"
+                        value={hoursFormData.closing_time}
+                        onChange={(e) => setHoursFormData({ ...hoursFormData, closing_time: e.target.value })}
+                        size="small"
+                        placeholder="e.g., 17:00, 6:00 PM"
+                        helperText="Closing time"
+                      />
+                    </Box>
+                  </Box>
+                ) : (
+                  <>
+                    {mobileUser.working_days || mobileUser.opening_time || mobileUser.closing_time ? (
+                      <>
+                        {mobileUser.working_days ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <CalendarTodayIcon sx={{ fontSize: 14, color: 'text.secondary', mr: 1 }} />
+                        <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                          {mobileUser.working_days}
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic', mb: 1 }}>
+                        No working days set
+                      </Typography>
+                    )}
+                    {mobileUser.opening_time && mobileUser.closing_time ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <ScheduleIcon sx={{ fontSize: 14, color: 'text.secondary', mr: 1 }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                          {mobileUser.opening_time} - {mobileUser.closing_time}
+                        </Typography>
+                      </Box>
+                    ) : mobileUser.opening_time ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <ScheduleIcon sx={{ fontSize: 14, color: 'text.secondary', mr: 1 }} />
+                        <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                          Opens: {mobileUser.opening_time}
+                        </Typography>
+                      </Box>
+                    ) : mobileUser.closing_time ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <ScheduleIcon sx={{ fontSize: 14, color: 'text.secondary', mr: 1 }} />
+                        <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                          Closes: {mobileUser.closing_time}
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                        No time range set
+                      </Typography>
+                    )}
+                      </>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                        No available hours set. Click Edit to add.
+                      </Typography>
+                    )}
+                  </>
+                )}
+              </Box>
+            </>
             {editingProfile && (
               <>
                 <Divider sx={{ my: 2 }} />

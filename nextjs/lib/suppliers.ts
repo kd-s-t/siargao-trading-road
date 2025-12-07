@@ -12,6 +12,10 @@ export interface Supplier {
   banner_url?: string;
   average_rating?: number;
   rating_count: number;
+  working_days?: string;
+  opening_time?: string;
+  closing_time?: string;
+  is_open?: boolean;
 }
 
 export const suppliersService = {

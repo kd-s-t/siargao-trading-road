@@ -37,6 +37,7 @@ type User struct {
 	WorkingDays string         `json:"working_days"`
 	OpeningTime string         `json:"opening_time"`
 	ClosingTime string         `json:"closing_time"`
+	IsOpen      bool           `gorm:"default:true" json:"is_open"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	LastLogin   *time.Time     `json:"last_login,omitempty"`

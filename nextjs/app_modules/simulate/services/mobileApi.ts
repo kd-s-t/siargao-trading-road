@@ -132,6 +132,10 @@ export const mobileAuthService = {
     youtube?: string;
     tiktok?: string;
     website?: string;
+    working_days?: string;
+    opening_time?: string;
+    closing_time?: string;
+    is_open?: boolean;
   }): Promise<User> => {
     const { data } = await mobileApi.put<User>('/me', updates);
     return data;
@@ -145,6 +149,14 @@ export const mobileAuthService = {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return data;
+  },
+  openStore: async (): Promise<User> => {
+    const { data } = await mobileApi.post<User>('/me/open');
+    return data;
+  },
+  closeStore: async (): Promise<User> => {
+    const { data } = await mobileApi.post<User>('/me/close');
     return data;
   },
 };
@@ -204,9 +216,16 @@ export const mobileOrderService = {
   removeOrderItem: async (itemId: number): Promise<void> => {
     await mobileApi.delete(`/orders/items/${itemId}`);
   },
-  submitOrder: async (orderId: number): Promise<Order> => {
-    const { data } = await mobileApi.post<Order>(`/orders/${orderId}/submit`);
-    return data;
+  submitOrder: async (orderId: number, data: {
+    payment_method: string;
+    delivery_option: string;
+    delivery_fee?: number;
+    distance?: number;
+    shipping_address?: string;
+    notes?: string;
+  }): Promise<Order> => {
+    const { data: response } = await mobileApi.post<Order>(`/orders/${orderId}/submit`, data);
+    return response;
   },
   getOrders: async (): Promise<Order[]> => {
     const { data } = await mobileApi.get<Order[]>('/orders');

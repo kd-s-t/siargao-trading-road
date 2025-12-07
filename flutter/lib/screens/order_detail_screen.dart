@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/services/order_service.dart';
 import 'package:siargao_trading_road/services/rating_service.dart';
 import 'package:siargao_trading_road/models/order.dart';
-import 'package:siargao_trading_road/models/rating.dart';
 import 'package:siargao_trading_road/models/user.dart';
 import 'package:siargao_trading_road/widgets/order_map.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
@@ -36,11 +36,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   bool _showRatingDialog = false;
   int _ratingValue = 5;
   final _ratingCommentController = TextEditingController();
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadOrder();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            _loadOrder();
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -53,65 +62,147 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _loadOrder() async {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final order = args?['order'] as Order?;
-    final orderId = args?['orderId'] as int?;
+    if (!mounted) return;
+    
+    try {
+      final route = ModalRoute.of(context);
+      if (route == null) {
+        if (mounted) {
+          setState(() {
+            _loading = false;
+            _order = null;
+            _errorMessage = 'Route not available';
+          });
+        }
+        return;
+      }
+      
+      final args = route.settings.arguments;
+      
+      int? orderId;
+      
+      if (args is Map) {
+        final argsMap = args;
+        final idValue = argsMap['orderId'];
+        if (idValue is int) {
+          orderId = idValue;
+        } else if (idValue is num) {
+          orderId = idValue.toInt();
+        }
+      } else if (args is int) {
+        orderId = args;
+      } else if (args is num) {
+        orderId = args.toInt();
+      }
+      
+      if (orderId == null) {
+        if (mounted) {
+          setState(() {
+            _loading = false;
+            _order = null;
+            _errorMessage = 'No order ID provided';
+          });
+        }
+        return;
+      }
 
-    if (order != null) {
-      setState(() {
-        _order = order;
-        _loading = false;
-      });
-      _loadMessages();
-      return;
-    }
+      if (mounted) {
+        setState(() {
+          _loading = true;
+          _errorMessage = null;
+        });
+      }
 
-    if (orderId != null) {
-      setState(() {
-        _loading = true;
-      });
       try {
         final loadedOrder = await OrderService.getOrder(orderId);
-        setState(() {
-          _order = loadedOrder;
-          _loading = false;
-        });
-        _loadMessages();
-      } catch (e) {
-        setState(() {
-          _loading = false;
-        });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to load order: $e')),
-          );
+          setState(() {
+            _order = loadedOrder;
+            _loading = false;
+            _errorMessage = null;
+          });
+          _loadMessages();
+        }
+      } catch (e) {
+        if (mounted) {
+          final errorStr = e.toString();
+          final isNotFound = errorStr.contains('not found') || errorStr.contains('404');
+          final isUnauthorized = errorStr.contains('401') || errorStr.contains('Unauthorized') || errorStr.contains('authorization');
+          
+          setState(() {
+            _loading = false;
+            _order = null;
+            if (isUnauthorized) {
+              _errorMessage = 'Authentication failed. Please log in again.';
+            } else if (isNotFound) {
+              _errorMessage = 'Order not found. It may have been deleted or you may not have permission to view it.';
+            } else {
+              _errorMessage = errorStr.replaceAll('Exception: ', '');
+            }
+          });
+          
+          if (mounted) {
+            try {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to load order: ${errorStr.replaceAll('Exception: ', '')}'),
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            } catch (_) {
+            }
+          }
         }
       }
-    } else {
-      setState(() {
-        _loading = false;
-      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _order = null;
+          _errorMessage = 'Error loading order: ${e.toString()}';
+        });
+      }
     }
   }
 
-  Future<void> _loadMessages() async {
-    if (_order?.id == null) return;
 
-    setState(() {
-      _loadingMessages = true;
-    });
+  Future<void> _loadMessages() async {
+    if (_order?.id == null || !mounted) return;
+
+    if (mounted) {
+      try {
+        setState(() {
+          _loadingMessages = true;
+        });
+      } catch (e) {
+        return;
+      }
+    }
 
     try {
-      final messages = await OrderService.getMessages(_order!.id);
-      setState(() {
-        _messages = messages;
-        _loadingMessages = false;
-      });
-      _scrollToBottom();
+      final orderId = _order?.id;
+      if (orderId == null || !mounted) return;
+      
+      final messages = await OrderService.getMessages(orderId);
+      if (mounted) {
+        try {
+          setState(() {
+            _messages = messages;
+            _loadingMessages = false;
+          });
+          _scrollToBottom();
+        } catch (e) {
+        }
+      }
     } catch (e) {
-      setState(() {
-        _loadingMessages = false;
-      });
+      if (mounted) {
+        try {
+          setState(() {
+            _loadingMessages = false;
+          });
+        } catch (e) {
+        }
+      }
     }
   }
 
@@ -384,69 +475,114 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
+    return Builder(
+      builder: (context) {
+        try {
+          final authProvider = Provider.of<AuthProvider>(context);
+          final user = authProvider.user;
 
-    if (_loading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Order Details')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
+          if (_loading) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Order Details')),
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          }
 
-    if (_order == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Order Details')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('Order not found'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Go Back'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final isStore = user?.role == 'store';
-    final entity = isStore ? _order!.supplier : _order!.store;
-    final entityName = isStore ? 'Supplier' : 'Store';
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Order #${_order!.id}'),
-      ),
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_order!.store != null && _order!.supplier != null)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: OrderMap(
-                  store: _order!.store,
-                  supplier: _order!.supplier,
-                  status: _order!.status,
-                  height: 250,
+          if (_order == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Order Details')),
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Order not found',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _errorMessage!,
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back),
+                        label: const Text('Go Back'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            _buildOrderCard(entity, entityName, user),
-            _buildItemsCard(),
-            if (_order!.ratings != null && _order!.ratings!.isNotEmpty) _buildRatingsCard(),
-            if (_canRate()) _buildRateButton(entity, user),
-            if (_order!.store != null && _order!.supplier != null) _buildChatCard(user),
-            _buildActionsCard(entity, entityName, user),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
+            );
+          }
+
+          final isStore = user?.role == 'store';
+          final entity = isStore ? _order!.supplier : _order!.store;
+          final entityName = isStore ? 'Supplier' : 'Store';
+
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('Order #${_order!.id}'),
+            ),
+            body: SingleChildScrollView(
+              controller: _scrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildOrderCard(entity, entityName, user),
+                  _buildItemsCard(),
+                  if (_order!.ratings != null && _order!.ratings!.isNotEmpty) _buildRatingsCard(),
+                  if (_canRate()) _buildRateButton(entity, user),
+                  if (_order!.store != null && _order!.supplier != null) _buildChatCard(user),
+                  _buildActionsCard(entity, entityName, user),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
       bottomSheet: _showRatingDialog ? _buildRatingDialogSheet(user) : null,
+    );
+        } catch (e) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Order Details')),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'An error occurred',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      e.toString(),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text('Go Back'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+      },
     );
   }
 
@@ -586,7 +722,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ],
             ),
             const Divider(),
-            _buildDetailRow('Total Amount', '₱${_order!.totalAmount.toStringAsFixed(2)}', isBold: true, isBlue: true),
+            _buildDetailRow('Total Amount', '₱${NumberFormat('#,##0.00').format(_order!.totalAmount)}', isBold: true, isBlue: true),
             _buildDetailRow('Items', '${_order!.orderItems.length} item(s)'),
             _buildDetailRow('Date Created', _formatDateTime(_order!.createdAt)),
             if (_order!.updatedAt != _order!.createdAt)
@@ -704,7 +840,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                 style: const TextStyle(fontSize: 12, color: Colors.grey),
                               ),
                               Text(
-                                'Unit Price: ₱${item.unitPrice.toStringAsFixed(2)}',
+                                'Unit Price: ₱${NumberFormat('#,##0.00').format(item.unitPrice)}',
                                 style: const TextStyle(fontSize: 12, color: Colors.grey),
                               ),
                               const Divider(),
@@ -716,7 +852,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                                   ),
                                   Text(
-                                    '₱${item.subtotal.toStringAsFixed(2)}',
+                                    '₱${NumberFormat('#,##0.00').format(item.subtotal)}',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -1008,6 +1144,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Text('Mark Delivered'),
+              ),
+            ],
+            if (user?.role == 'supplier' && _order!.status == 'delivered') ...[
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: _updatingStatus ? null : () => _handleUpdateStatus('in_transit'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+                child: _updatingStatus
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Revert to In Transit'),
               ),
             ],
           ],

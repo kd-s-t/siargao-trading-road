@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/services/auth_service.dart';
 import 'package:siargao_trading_road/models/user.dart';
-import 'dart:io';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -16,6 +15,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _editing = false;
+  bool _editingHours = false;
   bool _loading = false;
   String? _uploading;
   final _nameController = TextEditingController();
@@ -27,10 +27,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _youtubeController = TextEditingController();
   final _tiktokController = TextEditingController();
   final _websiteController = TextEditingController();
+  final _workingDaysController = TextEditingController();
+  final _openingTimeController = TextEditingController();
+  final _closingTimeController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshUserData();
+    });
+  }
+
+  Future<void> _refreshUserData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.refreshUser();
     _loadUserData();
   }
 
@@ -47,6 +58,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _youtubeController.text = user.youtube ?? '';
       _tiktokController.text = user.tiktok ?? '';
       _websiteController.text = user.website ?? '';
+      _workingDaysController.text = user.workingDays ?? '';
+      _openingTimeController.text = user.openingTime ?? '';
+      _closingTimeController.text = user.closingTime ?? '';
     }
   }
 
@@ -61,6 +75,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _youtubeController.dispose();
     _tiktokController.dispose();
     _websiteController.dispose();
+    _workingDaysController.dispose();
+    _openingTimeController.dispose();
+    _closingTimeController.dispose();
     super.dispose();
   }
 
@@ -103,6 +120,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _loading = false;
         });
       }
+    }
+  }
+
+  Future<void> _saveHours() async {
+    setState(() {
+      _loading = true;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await AuthService.updateMe(
+        workingDays: _workingDaysController.text.trim().isEmpty ? null : _workingDaysController.text.trim(),
+        openingTime: _openingTimeController.text.trim().isEmpty ? null : _openingTimeController.text.trim(),
+        closingTime: _closingTimeController.text.trim().isEmpty ? null : _closingTimeController.text.trim(),
+      );
+      await authProvider.refreshUser();
+      _loadUserData();
+      setState(() {
+        _editingHours = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Operating hours updated successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update operating hours: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context, bool isOpening) async {
+    final now = DateTime.now();
+    final initialTime = TimeOfDay.fromDateTime(now);
+    
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+
+    if (picked != null) {
+      final formattedTime = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+      setState(() {
+        if (isOpening) {
+          _openingTimeController.text = formattedTime;
+        } else {
+          _closingTimeController.text = formattedTime;
+        }
+      });
     }
   }
 
@@ -222,7 +297,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   offset: const Offset(0, -40),
                   child: _buildProfileCard(user),
                 ),
+                if ((user.role == 'store' || user.role == 'supplier') && !_editing)
+                  _buildOpenCloseCard(user, authProvider),
                 _buildDetailsCard(user),
+                if ((user.role == 'store' || user.role == 'supplier'))
+                  _buildHoursCard(user),
                 if (!_editing) _buildLogoutButton(authProvider),
                 const SizedBox(height: 32),
               ],
@@ -389,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildSocialLinks(User user) {
     final links = <Map<String, dynamic>>[];
-    if (user.email != null) links.add({'type': 'email', 'url': 'mailto:${user.email}'});
+    links.add({'type': 'email', 'url': 'mailto:${user.email}'});
     if (user.facebook != null && user.facebook!.isNotEmpty) links.add({'type': 'facebook', 'url': user.facebook!});
     if (user.instagram != null && user.instagram!.isNotEmpty) links.add({'type': 'instagram', 'url': user.instagram!});
     if (user.twitter != null && user.twitter!.isNotEmpty) links.add({'type': 'twitter', 'url': user.twitter!});
@@ -583,6 +662,237 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildOpenCloseCard(User user, AuthProvider authProvider) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user.isOpen ? 'Currently Open' : 'Currently Closed',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  user.isOpen
+                      ? 'Your ${user.role} is open for business'
+                      : 'Your ${user.role} is closed',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            ElevatedButton(
+              onPressed: _loading
+                  ? null
+                  : () async {
+                      setState(() {
+                        _loading = true;
+                      });
+                      try {
+                        if (user.isOpen) {
+                          await AuthService.closeStore();
+                        } else {
+                          await AuthService.openStore();
+                        }
+                        await authProvider.refreshUser();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                user.isOpen
+                                    ? 'Store closed successfully'
+                                    : 'Store opened successfully',
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to update status: ${e.toString()}'),
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _loading = false;
+                          });
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: user.isOpen ? Colors.red : Colors.green,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text(
+                user.isOpen ? 'Close' : 'Open',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHoursCard(User user) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Operating Hours',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (!_editingHours)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _editingHours = true;
+                      });
+                    },
+                    child: const Text('Edit'),
+                  ),
+              ],
+            ),
+            const Divider(),
+            if (_editingHours) ...[
+              TextField(
+                controller: _workingDaysController,
+                decoration: const InputDecoration(
+                  labelText: 'Working Days',
+                  border: OutlineInputBorder(),
+                  hintText: 'e.g., Mon-Fri, Mon-Sat, All days',
+                  helperText: 'Enter your working days',
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _selectTime(context, true),
+                      child: TextField(
+                        controller: _openingTimeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Opening Time',
+                          border: OutlineInputBorder(),
+                          hintText: 'Tap to select time',
+                          helperText: 'Opening time',
+                          suffixIcon: Icon(Icons.access_time),
+                        ),
+                        enabled: false,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _selectTime(context, false),
+                      child: TextField(
+                        controller: _closingTimeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Closing Time',
+                          border: OutlineInputBorder(),
+                          hintText: 'Tap to select time',
+                          helperText: 'Closing time',
+                          suffixIcon: Icon(Icons.access_time),
+                        ),
+                        enabled: false,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _editingHours = false;
+                        _loadUserData();
+                      });
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _loading ? null : _saveHours,
+                    child: _loading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Save'),
+                  ),
+                ],
+              ),
+            ] else ...[
+              Builder(
+                builder: (context) {
+                  final hasWorkingDays = user.workingDays != null && user.workingDays!.trim().isNotEmpty;
+                  final hasOpeningTime = user.openingTime != null && user.openingTime!.trim().isNotEmpty;
+                  final hasClosingTime = user.closingTime != null && user.closingTime!.trim().isNotEmpty;
+                  
+                  if (hasWorkingDays || hasOpeningTime || hasClosingTime) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (hasWorkingDays)
+                          _buildDetailRow('Working Days', user.workingDays!),
+                        if (hasOpeningTime)
+                          _buildDetailRow('Opening Time', user.openingTime!),
+                        if (hasClosingTime)
+                          _buildDetailRow('Closing Time', user.closingTime!),
+                      ],
+                    );
+                  } else {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'No operating hours set',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

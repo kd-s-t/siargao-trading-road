@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/services/product_service.dart';
 import 'package:siargao_trading_road/models/product.dart';
 
@@ -13,29 +14,43 @@ class _ProductsScreenState extends State<ProductsScreen> {
   List<Product> _products = [];
   bool _loading = true;
   bool _showDeleted = false;
+  bool _isLoading = false;
+  bool _hasLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_hasLoaded) {
+        _loadProducts();
+      }
+    });
   }
 
-  Future<void> _loadProducts() async {
+  Future<void> _loadProducts({bool force = false}) async {
+    if (_isLoading && !force) return;
+    
     setState(() {
       _loading = true;
+      _isLoading = true;
     });
 
     try {
       final products = await ProductService.getProducts(includeDeleted: _showDeleted);
-      setState(() {
-        _products = products;
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _loading = false;
-      });
       if (mounted) {
+        setState(() {
+          _products = products;
+          _loading = false;
+          _isLoading = false;
+          _hasLoaded = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load products: $e')),
         );
@@ -55,7 +70,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               setState(() {
                 _showDeleted = value;
               });
-              _loadProducts();
+              _loadProducts(force: true);
             },
           ),
           const Padding(
@@ -67,7 +82,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadProducts,
+              onRefresh: () => _loadProducts(force: true),
               child: _products.isEmpty
                   ? Center(
                       child: Column(
@@ -110,7 +125,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     child: const Icon(Icons.image),
                                   ),
                             title: Text(product.name),
-                            subtitle: Text('₱${product.price.toStringAsFixed(2)}'),
+                            subtitle: Text('₱${NumberFormat('#,##0.00').format(product.price)}'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -120,7 +135,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     onPressed: () async {
                                       try {
                                         await ProductService.restoreProduct(product.id);
-                                        _loadProducts();
+                                        _loadProducts(force: true);
                                       } catch (e) {
                                         if (mounted) {
                                           ScaffoldMessenger.of(context).showSnackBar(
@@ -133,12 +148,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 else
                                   IconButton(
                                     icon: const Icon(Icons.edit),
-                                    onPressed: () {
-                                      Navigator.pushNamed(
+                                    onPressed: () async {
+                                      final result = await Navigator.pushNamed(
                                         context,
                                         '/edit-product',
                                         arguments: {'product': product},
                                       );
+                                      if (result == true) {
+                                        _loadProducts(force: true);
+                                      }
                                     },
                                   ),
                                 if (!isDeleted)
@@ -165,7 +183,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                       if (confirmed == true) {
                                         try {
                                           await ProductService.deleteProduct(product.id);
-                                          _loadProducts();
+                                          _loadProducts(force: true);
                                         } catch (e) {
                                           if (mounted) {
                                             ScaffoldMessenger.of(context).showSnackBar(

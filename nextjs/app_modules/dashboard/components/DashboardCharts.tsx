@@ -35,13 +35,14 @@ interface DashboardChartsProps {
 }
 
 export function DashboardCharts({ analytics }: DashboardChartsProps) {
-  const statusCounts = analytics.recent_orders.reduce((acc, order) => {
+  const statusCounts = (analytics.recent_orders || []).reduce((acc, order) => {
     acc[order.status] = (acc[order.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const statusLabels = Object.keys(statusCounts);
   const statusData = Object.values(statusCounts);
+  const dailyStats = analytics.daily_stats || [];
 
   return (
     <>
@@ -59,11 +60,11 @@ export function DashboardCharts({ analytics }: DashboardChartsProps) {
               <Box sx={{ height: 300 }}>
                 <Bar
                   data={{
-                    labels: analytics.daily_stats.map((stat) => formatDate(stat.date)),
+                    labels: dailyStats.map((stat) => formatDate(stat.date)),
                     datasets: [
                       {
                         label: 'Orders',
-                        data: analytics.daily_stats.map((stat) => stat.orders),
+                        data: dailyStats.map((stat) => stat.orders),
                         backgroundColor: '#38b2ac',
                       },
                     ],
@@ -109,11 +110,11 @@ export function DashboardCharts({ analytics }: DashboardChartsProps) {
               <Box sx={{ height: 300 }}>
                 <Line
                   data={{
-                    labels: analytics.daily_stats.map((stat) => formatDate(stat.date)),
+                    labels: dailyStats.map((stat) => formatDate(stat.date)),
                     datasets: [
                       {
                         label: 'Transaction Volume',
-                        data: analytics.daily_stats.map((stat) => stat.earnings),
+                        data: dailyStats.map((stat) => stat.earnings),
                         borderColor: '#38b2ac',
                         backgroundColor: 'rgba(56, 178, 172, 0.1)',
                         fill: true,

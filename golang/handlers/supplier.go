@@ -35,6 +35,10 @@ func GetSuppliers(c *gin.Context) {
 		BannerURL     *string  `json:"banner_url"`
 		AverageRating *float64 `json:"average_rating,omitempty"`
 		RatingCount   int      `json:"rating_count"`
+		WorkingDays   string   `json:"working_days"`
+		OpeningTime   string   `json:"opening_time"`
+		ClosingTime   string   `json:"closing_time"`
+		IsOpen        bool     `json:"is_open"`
 	}
 
 	var supplierInfos []SupplierInfo
@@ -72,6 +76,10 @@ func GetSuppliers(c *gin.Context) {
 			BannerURL:     &bannerURL,
 			AverageRating: avgRating,
 			RatingCount:   int(ratingStats.RatingCount),
+			WorkingDays:   supplier.WorkingDays,
+			OpeningTime:   supplier.OpeningTime,
+			ClosingTime:   supplier.ClosingTime,
+			IsOpen:        supplier.IsOpen,
 		})
 	}
 
@@ -112,6 +120,7 @@ func GetStores(c *gin.Context) {
 
 	var stores []models.User
 	if err := database.DB.Where("role = ?", "store").Find(&stores).Error; err != nil {
+		log.Printf("Error fetching stores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch stores"})
 		return
 	}
@@ -126,6 +135,10 @@ func GetStores(c *gin.Context) {
 		BannerURL     *string  `json:"banner_url"`
 		AverageRating *float64 `json:"average_rating,omitempty"`
 		RatingCount   int      `json:"rating_count"`
+		WorkingDays   string   `json:"working_days"`
+		OpeningTime   string   `json:"opening_time"`
+		ClosingTime   string   `json:"closing_time"`
+		IsOpen        bool     `json:"is_open"`
 	}
 
 	var storeInfos []StoreInfo
@@ -134,15 +147,29 @@ func GetStores(c *gin.Context) {
 			AverageRating float64
 			RatingCount   int64
 		}
-		database.DB.Model(&models.Rating{}).
+		if err := database.DB.Model(&models.Rating{}).
 			Where("rated_id = ?", store.ID).
 			Select("COALESCE(AVG(rating), 0) as average_rating, COUNT(*) as rating_count").
-			Scan(&ratingStats)
+			Scan(&ratingStats).Error; err != nil {
+			log.Printf("Error fetching rating stats for store %d: %v", store.ID, err)
+			ratingStats.AverageRating = 0
+			ratingStats.RatingCount = 0
+		}
 
 		log.Printf("Store %s (ID: %d) - LogoURL: '%s', BannerURL: '%s'", store.Name, store.ID, store.LogoURL, store.BannerURL)
 
 		logoURL := store.LogoURL
 		bannerURL := store.BannerURL
+
+		var logoURLPtr *string
+		if logoURL != "" {
+			logoURLPtr = &logoURL
+		}
+
+		var bannerURLPtr *string
+		if bannerURL != "" {
+			bannerURLPtr = &bannerURL
+		}
 
 		var avgRating *float64
 		if ratingStats.RatingCount > 0 {
@@ -155,10 +182,14 @@ func GetStores(c *gin.Context) {
 			Email:         store.Email,
 			Phone:         store.Phone,
 			Description:   "Siargao Trading Road store",
-			LogoURL:       &logoURL,
-			BannerURL:     &bannerURL,
+			LogoURL:       logoURLPtr,
+			BannerURL:     bannerURLPtr,
 			AverageRating: avgRating,
 			RatingCount:   int(ratingStats.RatingCount),
+			WorkingDays:   store.WorkingDays,
+			OpeningTime:   store.OpeningTime,
+			ClosingTime:   store.ClosingTime,
+			IsOpen:        store.IsOpen,
 		})
 	}
 

@@ -112,9 +112,19 @@ export const orderService = {
     await api.delete(`/orders/items/${itemId}`);
   },
 
-  submitOrder: async (orderId: number): Promise<Order> => {
-    const { data } = await api.post<Order>(`/orders/${orderId}/submit`);
-    return data;
+  submitOrder: async (
+    orderId: number,
+    data: {
+      payment_method: string;
+      delivery_option: string;
+      delivery_fee?: number;
+      distance?: number;
+      shipping_address?: string;
+      notes?: string;
+    }
+  ): Promise<Order> => {
+    const { data: response } = await api.post<Order>(`/orders/${orderId}/submit`, data);
+    return response;
   },
 
   getMessages: async (orderId: number): Promise<Message[]> => {

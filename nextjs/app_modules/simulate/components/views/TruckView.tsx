@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Box,
   Card,
@@ -10,6 +11,13 @@ import {
   IconButton,
   Divider,
   CircularProgress,
+  Alert,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  TextField,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -39,6 +47,11 @@ export function TruckView({
   onSubmitOrder,
   onError,
 }: TruckViewProps) {
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash_on_delivery');
+  const [deliveryOption, setDeliveryOption] = useState<string>('pickup');
+  const [shippingAddress, setShippingAddress] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
+
   const handleRemoveItem = async (itemId: number) => {
     try {
       await mobileOrderService.removeOrderItem(itemId);
@@ -163,10 +176,73 @@ export function TruckView({
               ₱{draftOrder.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Typography>
           </Box>
+          {draftOrder.total_amount < 5000 && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              Minimum order amount is ₱5,000.00. Add ₱{(5000 - draftOrder.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more to submit.
+            </Alert>
+          )}
+          <Divider sx={{ my: 2 }} />
+          <FormControl component="fieldset" sx={{ mb: 2 }}>
+            <FormLabel component="legend">Payment Method</FormLabel>
+            <RadioGroup
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <FormControlLabel value="cash_on_delivery" control={<Radio />} label="Cash on Delivery" />
+              <FormControlLabel value="gcash" control={<Radio />} label="GCash" />
+            </RadioGroup>
+          </FormControl>
+          <FormControl component="fieldset" sx={{ mb: 2 }}>
+            <FormLabel component="legend">Delivery Method</FormLabel>
+            <RadioGroup
+              value={deliveryOption}
+              onChange={(e) => setDeliveryOption(e.target.value)}
+            >
+              <FormControlLabel value="pickup" control={<Radio />} label="Pickup" />
+              <FormControlLabel value="deliver" control={<Radio />} label="Deliver" />
+            </RadioGroup>
+          </FormControl>
+          {deliveryOption === 'deliver' && (
+            <TextField
+              fullWidth
+              label="Shipping Address"
+              value={shippingAddress}
+              onChange={(e) => setShippingAddress(e.target.value)}
+              multiline
+              rows={2}
+              sx={{ mb: 2 }}
+            />
+          )}
+          <TextField
+            fullWidth
+            label="Notes (Optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            multiline
+            rows={2}
+            sx={{ mb: 2 }}
+          />
           <Button
             fullWidth
             variant="contained"
-            onClick={onSubmitOrder}
+            onClick={async () => {
+              if (draftOrder) {
+                try {
+                  await mobileOrderService.submitOrder(draftOrder.id, {
+                    payment_method: paymentMethod,
+                    delivery_option: deliveryOption,
+                    shipping_address: shippingAddress,
+                    notes: notes,
+                    delivery_fee: 0,
+                    distance: 0,
+                  });
+                  await onSubmitOrder();
+                } catch (err: unknown) {
+                  onError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to submit order');
+                }
+              }
+            }}
+            disabled={draftOrder.total_amount < 5000 || (deliveryOption === 'deliver' && !shippingAddress.trim())}
             sx={{ mt: 2 }}
           >
             Submit Order

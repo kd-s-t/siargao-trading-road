@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Order } from '@/lib/users';
 import { mobileOrderService } from '../services/mobileApi';
 
@@ -6,21 +6,25 @@ export function useMobileOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
+  const hasLoadedRef = useRef(false);
 
-  const loadOrders = async () => {
-    if (loadingRef.current) return;
+  const loadOrders = useCallback(async (force = false) => {
+    if (loadingRef.current && !force) return;
+    if (hasLoadedRef.current && !force) return;
+    
     loadingRef.current = true;
     try {
       setLoading(true);
       const data = await mobileOrderService.getOrders();
       setOrders(data);
+      hasLoadedRef.current = true;
     } catch (error) {
       console.error('Failed to load orders:', error);
     } finally {
       setLoading(false);
       loadingRef.current = false;
     }
-  };
+  }, []);
 
   return { orders, loading, loadOrders };
 }

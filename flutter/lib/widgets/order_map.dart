@@ -37,51 +37,58 @@ class _OrderMapState extends State<OrderMap> {
   @override
   void initState() {
     super.initState();
-    _setupMap();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _setupMap();
+      }
+    });
   }
 
   void _setupMap() {
-    final storeLocation = widget.store?.latitude != null && widget.store?.longitude != null
-        ? LatLng(widget.store!.latitude!, widget.store!.longitude!)
-        : null;
-    final supplierLocation = widget.supplier?.latitude != null && widget.supplier?.longitude != null
-        ? LatLng(widget.supplier!.latitude!, widget.supplier!.longitude!)
-        : null;
+    try {
+      final storeLocation = widget.store?.latitude != null && widget.store?.longitude != null
+          ? LatLng(widget.store!.latitude!, widget.store!.longitude!)
+          : null;
+      final supplierLocation = widget.supplier?.latitude != null && widget.supplier?.longitude != null
+          ? LatLng(widget.supplier!.latitude!, widget.supplier!.longitude!)
+          : null;
 
-    if (storeLocation != null) {
-      _markers.add(
-        Marker(
-          markerId: const MarkerId('store'),
-          position: storeLocation,
-          infoWindow: InfoWindow(
-            title: 'Store Location',
-            snippet: widget.store?.name ?? 'Store',
+      if (storeLocation != null) {
+        _markers.add(
+          Marker(
+            markerId: const MarkerId('store'),
+            position: storeLocation,
+            infoWindow: InfoWindow(
+              title: 'Store Location',
+              snippet: widget.store?.name ?? 'Store',
+            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
           ),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        ),
-      );
-    }
+        );
+      }
 
-    if (supplierLocation != null) {
-      _markers.add(
-        Marker(
-          markerId: const MarkerId('supplier'),
-          position: supplierLocation,
-          infoWindow: InfoWindow(
-            title: 'Supplier Location',
-            snippet: widget.supplier?.name ?? 'Supplier',
+      if (supplierLocation != null) {
+        _markers.add(
+          Marker(
+            markerId: const MarkerId('supplier'),
+            position: supplierLocation,
+            infoWindow: InfoWindow(
+              title: 'Supplier Location',
+              snippet: widget.supplier?.name ?? 'Supplier',
+            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           ),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        ),
-      );
-    }
+        );
+      }
 
-    if (storeLocation != null && supplierLocation != null) {
-      _fetchRoute(storeLocation, supplierLocation);
-    }
+      if (storeLocation != null && supplierLocation != null) {
+        _fetchRoute(storeLocation, supplierLocation);
+      }
 
-    if (widget.status == 'in_transit' && storeLocation != null && supplierLocation != null) {
-      _animateTruck(storeLocation, supplierLocation);
+      if (widget.status == 'in_transit' && storeLocation != null && supplierLocation != null) {
+        _animateTruck(storeLocation, supplierLocation);
+      }
+    } catch (e) {
     }
   }
 
@@ -215,14 +222,65 @@ class _OrderMapState extends State<OrderMap> {
 
   @override
   Widget build(BuildContext context) {
-    final storeLocation = widget.store?.latitude != null && widget.store?.longitude != null
-        ? LatLng(widget.store!.latitude!, widget.store!.longitude!)
-        : null;
-    final supplierLocation = widget.supplier?.latitude != null && widget.supplier?.longitude != null
-        ? LatLng(widget.supplier!.latitude!, widget.supplier!.longitude!)
-        : null;
+    try {
+      final storeLocation = widget.store?.latitude != null && widget.store?.longitude != null
+          ? LatLng(widget.store!.latitude!, widget.store!.longitude!)
+          : null;
+      final supplierLocation = widget.supplier?.latitude != null && widget.supplier?.longitude != null
+          ? LatLng(widget.supplier!.latitude!, widget.supplier!.longitude!)
+          : null;
 
-    if (storeLocation == null && supplierLocation == null) {
+      if (storeLocation == null && supplierLocation == null) {
+        return Container(
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: Text('Map unavailable'),
+          ),
+        );
+      }
+
+      final center = storeLocation ?? supplierLocation ?? _siargaoCenter;
+
+      return Container(
+        height: widget.height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: center,
+              zoom: 12,
+            ),
+            markers: _markers,
+            polylines: _polylines,
+            onMapCreated: (controller) {
+              try {
+                _mapController = controller;
+                if (storeLocation != null && supplierLocation != null) {
+                  Timer(const Duration(milliseconds: 500), () {
+                    if (mounted && _mapController != null) {
+                      try {
+                        controller.animateCamera(
+                          CameraUpdate.newLatLngBounds(_getBounds(), 50),
+                        );
+                      } catch (e) {
+                      }
+                    }
+                  });
+                }
+              } catch (e) {
+              }
+            },
+          ),
+        ),
+      );
+    } catch (e) {
       return Container(
         height: widget.height,
         decoration: BoxDecoration(
@@ -234,35 +292,5 @@ class _OrderMapState extends State<OrderMap> {
         ),
       );
     }
-
-    final center = storeLocation ?? supplierLocation ?? _siargaoCenter;
-
-    return Container(
-      height: widget.height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: GoogleMap(
-          initialCameraPosition: CameraPosition(
-            target: center,
-            zoom: 12,
-          ),
-          markers: _markers,
-          polylines: _polylines,
-          onMapCreated: (controller) {
-            _mapController = controller;
-            if (storeLocation != null && supplierLocation != null) {
-              Timer(const Duration(milliseconds: 500), () {
-                controller.animateCamera(
-                  CameraUpdate.newLatLngBounds(_getBounds(), 50),
-                );
-              });
-            }
-          },
-        ),
-      ),
-    );
   }
 }

@@ -88,6 +88,10 @@ class AuthService {
     String? youtube,
     String? tiktok,
     String? website,
+    String? workingDays,
+    String? openingTime,
+    String? closingTime,
+    bool? isOpen,
   }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
@@ -101,6 +105,10 @@ class AuthService {
     if (youtube != null) body['youtube'] = youtube;
     if (tiktok != null) body['tiktok'] = tiktok;
     if (website != null) body['website'] = website;
+    if (workingDays != null) body['working_days'] = workingDays;
+    if (openingTime != null) body['opening_time'] = openingTime;
+    if (closingTime != null) body['closing_time'] = closingTime;
+    if (isOpen != null) body['is_open'] = isOpen;
 
     final response = await ApiService.put('/me', body: body);
 
@@ -125,6 +133,30 @@ class AuthService {
     } else {
       final error = jsonDecode(response.body) as Map<String, dynamic>;
       throw Exception(error['error'] ?? 'Failed to upload image');
+    }
+  }
+
+  static Future<User> openStore() async {
+    final response = await ApiService.post('/me/open', body: {});
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return User.fromJson(data);
+    } else {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Failed to open store');
+    }
+  }
+
+  static Future<User> closeStore() async {
+    final response = await ApiService.post('/me/close', body: {});
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return User.fromJson(data);
+    } else {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Failed to close store');
     }
   }
 

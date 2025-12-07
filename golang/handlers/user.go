@@ -71,6 +71,10 @@ func GetMe(c *gin.Context) {
 			"website":        user.Website,
 			"role":           user.Role,
 			"admin_level":    user.AdminLevel,
+			"working_days":   user.WorkingDays,
+			"opening_time":   user.OpeningTime,
+			"closing_time":   user.ClosingTime,
+			"is_open":        user.IsOpen,
 			"created_at":     user.CreatedAt,
 			"updated_at":     user.UpdatedAt,
 			"last_login":     user.LastLogin,
@@ -99,20 +103,24 @@ func UpdateMe(c *gin.Context) {
 	}
 
 	var req struct {
-		Name      string   `json:"name"`
-		Phone     string   `json:"phone"`
-		Address   string   `json:"address"`
-		Latitude  *float64 `json:"latitude"`
-		Longitude *float64 `json:"longitude"`
-		LogoURL   string   `json:"logo_url"`
-		BannerURL string   `json:"banner_url"`
-		Facebook  string   `json:"facebook"`
-		Instagram string   `json:"instagram"`
-		Twitter   string   `json:"twitter"`
-		LinkedIn  string   `json:"linkedin"`
-		YouTube   string   `json:"youtube"`
-		TikTok    string   `json:"tiktok"`
-		Website   string   `json:"website"`
+		Name        string   `json:"name"`
+		Phone       string   `json:"phone"`
+		Address     string   `json:"address"`
+		Latitude    *float64 `json:"latitude"`
+		Longitude   *float64 `json:"longitude"`
+		LogoURL     string   `json:"logo_url"`
+		BannerURL   string   `json:"banner_url"`
+		Facebook    string   `json:"facebook"`
+		Instagram   string   `json:"instagram"`
+		Twitter     string   `json:"twitter"`
+		LinkedIn    string   `json:"linkedin"`
+		YouTube     string   `json:"youtube"`
+		TikTok      string   `json:"tiktok"`
+		Website     string   `json:"website"`
+		WorkingDays string   `json:"working_days"`
+		OpeningTime string   `json:"opening_time"`
+		ClosingTime string   `json:"closing_time"`
+		IsOpen      *bool    `json:"is_open"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -161,6 +169,18 @@ func UpdateMe(c *gin.Context) {
 	}
 	if req.Website != "" {
 		user.Website = req.Website
+	}
+	if req.WorkingDays != "" {
+		user.WorkingDays = req.WorkingDays
+	}
+	if req.OpeningTime != "" {
+		user.OpeningTime = req.OpeningTime
+	}
+	if req.ClosingTime != "" {
+		user.ClosingTime = req.ClosingTime
+	}
+	if req.IsOpen != nil {
+		user.IsOpen = *req.IsOpen
 	}
 
 	if err := database.DB.Save(&user).Error; err != nil {
@@ -574,4 +594,62 @@ func GetDashboardAnalytics(c *gin.Context) {
 		"recent_orders":                 orders,
 		"daily_stats":                   dailyStats,
 	})
+}
+
+func OpenStore(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	role, _ := c.Get("role")
+	if role != "store" && role != "supplier" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only stores and suppliers can open/close"})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	user.IsOpen = true
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to open store"})
+		return
+	}
+
+	user.Password = ""
+	c.JSON(http.StatusOK, user)
+}
+
+func CloseStore(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	role, _ := c.Get("role")
+	if role != "store" && role != "supplier" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only stores and suppliers can open/close"})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	user.IsOpen = false
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to close store"})
+		return
+	}
+
+	user.Password = ""
+	c.JSON(http.StatusOK, user)
 }

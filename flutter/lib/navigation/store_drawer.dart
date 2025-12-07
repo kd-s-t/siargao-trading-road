@@ -28,15 +28,23 @@ class StoreDrawer extends StatelessWidget {
                 screen = const SuppliersScreen();
                 break;
               case '/supplier-products':
-                screen = SupplierProductsScreen(
-                  supplierId: (settings.arguments as Map?)?['supplierId'] as int? ?? 0,
-                );
+                final args = settings.arguments as Map<String, dynamic>?;
+                final supplierId = args?['supplierId'] as int?;
+                if (supplierId == null || supplierId <= 0) {
+                  screen = const Scaffold(
+                    body: Center(
+                      child: Text('Invalid supplier ID'),
+                    ),
+                  );
+                } else {
+                  screen = SupplierProductsScreen(supplierId: supplierId);
+                }
                 break;
               case '/orders':
                 screen = const OrdersScreen();
                 break;
               case '/truck':
-                screen = const TruckScreen();
+                screen = TruckScreen();
                 break;
               case '/profile':
                 screen = const ProfileScreen();
@@ -47,7 +55,10 @@ class StoreDrawer extends StatelessWidget {
               default:
                 screen = const SuppliersScreen();
             }
-            return MaterialPageRoute(builder: (_) => screen);
+            return MaterialPageRoute(
+              builder: (_) => screen,
+              settings: settings,
+            );
           },
           initialRoute: '/suppliers',
         ),

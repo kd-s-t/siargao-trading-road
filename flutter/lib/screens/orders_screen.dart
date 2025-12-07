@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/services/order_service.dart';
 import 'package:siargao_trading_road/models/order.dart';
@@ -24,32 +25,50 @@ class _OrdersScreenState extends State<OrdersScreen> {
   String? _statusFilter;
   String? _error;
   int? _updatingStatus;
+  bool _isLoading = false;
+  bool _hasLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadOrders();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_hasLoaded) {
+        _loadOrders();
+      }
+    });
   }
 
-  Future<void> _loadOrders() async {
+  Future<void> _loadOrders({bool force = false}) async {
+    if (_isLoading && !force) return;
+    
     setState(() {
-      _loading = true;
+      _isLoading = true;
+      if (!_refreshing) {
+        _loading = true;
+      }
       _error = null;
     });
 
     try {
       final orders = await OrderService.getOrders();
-      setState(() {
-        _orders = orders;
-        _loading = false;
-        _refreshing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _orders = orders;
+          _loading = false;
+          _refreshing = false;
+          _isLoading = false;
+          _hasLoaded = true;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-        _refreshing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+          _refreshing = false;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -57,7 +76,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     setState(() {
       _refreshing = true;
     });
-    await _loadOrders();
+    await _loadOrders(force: true);
   }
 
   Color _getStatusColor(String status) {
@@ -97,7 +116,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     try {
       await OrderService.updateOrderStatus(orderId, status);
-      await _loadOrders();
+      await _loadOrders(force: true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Order status updated to ${_getStatusLabel(status)}')),
@@ -191,7 +210,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
 
     final filteredOrders = _statusFilter != null
@@ -280,7 +299,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                         Navigator.pushNamed(
                                           context,
                                           '/order-detail',
-                                          arguments: {'order': order},
+                                          arguments: {
+                                            'orderId': order.id,
+                                          },
                                         );
                                       },
                                       child: Column(
@@ -371,7 +392,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                                                     ),
                                                     Text(
-                                                      '₱${order.totalAmount.toStringAsFixed(2)}',
+                                                      '₱${NumberFormat('#,##0.00').format(order.totalAmount)}',
                                                       style: const TextStyle(
                                                         fontSize: 16,
                                                         fontWeight: FontWeight.bold,
@@ -491,7 +512,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                                     style: const TextStyle(fontWeight: FontWeight.w600),
                                                                   ),
                                                                   Text(
-                                                                    '${item.quantity} x ₱${item.unitPrice.toStringAsFixed(2)} = ₱${item.subtotal.toStringAsFixed(2)}',
+                                                                    '${item.quantity} x ₱${NumberFormat('#,##0.00').format(item.unitPrice)} = ₱${NumberFormat('#,##0.00').format(item.subtotal)}',
                                                                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                                                                   ),
                                                                 ],
@@ -543,6 +564,19 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                                 child: CircularProgressIndicator(strokeWidth: 2),
                                                               )
                                                             : const Text('Mark Delivered'),
+                                                      ),
+                                                    if (user?.role == 'supplier' && order.status == 'delivered')
+                                                      OutlinedButton(
+                                                        onPressed: _updatingStatus == order.id
+                                                            ? null
+                                                            : () => _handleUpdateStatus(order.id, 'in_transit'),
+                                                        child: _updatingStatus == order.id
+                                                            ? const SizedBox(
+                                                                width: 16,
+                                                                height: 16,
+                                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                                              )
+                                                            : const Text('Revert to In Transit'),
                                                       ),
                                                   ],
                                                 ),

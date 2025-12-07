@@ -10,6 +10,7 @@ import {
   IconButton,
   TextInput,
   Avatar,
+  RadioButton,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { orderService, Order } from '../lib/orders';
@@ -26,6 +27,10 @@ export default function TruckScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [updating, setUpdating] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash_on_delivery');
+  const [deliveryOption, setDeliveryOption] = useState<string>('pickup');
+  const [shippingAddress, setShippingAddress] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
 
   const loadDraftOrder = async () => {
     try {
@@ -100,7 +105,14 @@ export default function TruckScreen() {
           onPress: async () => {
             setSubmitting(true);
             try {
-              await orderService.submitOrder(draftOrder.id);
+              await orderService.submitOrder(draftOrder.id, {
+                payment_method: paymentMethod,
+                delivery_option: deliveryOption,
+                shipping_address: deliveryOption === 'deliver' ? shippingAddress : undefined,
+                notes: notes.trim() || undefined,
+                delivery_fee: 0,
+                distance: 0,
+              });
               Alert.alert(
                 'Success',
                 'Order submitted successfully!',
@@ -174,7 +186,7 @@ export default function TruckScreen() {
             onPress={() => navigation.goBack()}
           />
           <Text variant="headlineSmall" style={styles.headerTitle}>
-            Cart
+            Truck
           </Text>
           <View style={{ width: 48 }} />
         </View>
@@ -268,6 +280,63 @@ export default function TruckScreen() {
                 ₱{draftOrder.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
             </View>
+            {draftOrder.total_amount < 5000 && (
+              <Surface style={{ marginTop: 12, padding: 12, backgroundColor: '#fff3cd', borderRadius: 8, borderWidth: 1, borderColor: '#ffc107' }}>
+                <Text style={{ color: '#856404', fontSize: 14 }}>
+                  Minimum order amount is ₱5,000.00. Add ₱{(5000 - draftOrder.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more to submit.
+                </Text>
+              </Surface>
+            )}
+          </Card.Content>
+        </Card>
+
+        <Card style={styles.optionsCard}>
+          <Card.Content>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Payment Method
+            </Text>
+            <RadioButton.Group
+              onValueChange={setPaymentMethod}
+              value={paymentMethod}
+            >
+              <RadioButton.Item label="Cash on Delivery" value="cash_on_delivery" />
+              <RadioButton.Item label="GCash" value="gcash" />
+            </RadioButton.Group>
+            <Divider style={styles.divider} />
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Delivery Method
+            </Text>
+            <RadioButton.Group
+              onValueChange={setDeliveryOption}
+              value={deliveryOption}
+            >
+              <RadioButton.Item label="Pickup" value="pickup" />
+              <RadioButton.Item label="Deliver" value="deliver" />
+            </RadioButton.Group>
+            {deliveryOption === 'deliver' && (
+              <>
+                <Divider style={styles.divider} />
+                <TextInput
+                  label="Shipping Address"
+                  value={shippingAddress}
+                  onChangeText={setShippingAddress}
+                  multiline
+                  numberOfLines={2}
+                  mode="outlined"
+                  style={styles.textInput}
+                />
+              </>
+            )}
+            <Divider style={styles.divider} />
+            <TextInput
+              label="Notes (Optional)"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={2}
+              mode="outlined"
+              style={styles.textInput}
+            />
           </Card.Content>
         </Card>
 
@@ -275,7 +344,9 @@ export default function TruckScreen() {
           mode="contained"
           onPress={handleSubmitOrder}
           loading={submitting}
-          disabled={submitting}
+          disabled={submitting || 
+                   draftOrder.total_amount < 5000 || 
+                   (deliveryOption === 'deliver' && !shippingAddress.trim())}
           style={styles.submitButton}
           contentStyle={styles.submitButtonContent}
         >
@@ -408,6 +479,17 @@ const styles = StyleSheet.create({
   },
   submitButtonContent: {
     paddingVertical: 8,
+  },
+  optionsCard: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  textInput: {
+    marginTop: 8,
   },
 });
 

@@ -97,19 +97,13 @@ export function SimulateContent() {
     } else if (mobileUser && activeView === 'my-products' && mobileUser.role === 'supplier') {
       loadMyProducts();
     }
-  }, [mobileUser, activeView, loadSuppliers, loadStores, loadMyProducts]);
+  }, [mobileUser?.id, mobileUser?.role, activeView, loadSuppliers, loadStores, loadMyProducts]);
 
   useEffect(() => {
-    if (mobileUser && (mobileUser.role === 'supplier' || mobileUser.role === 'store') && activeView !== 'profile' && activeView !== 'ratings-list') {
+    if (mobileUser && (mobileUser.role === 'supplier' || mobileUser.role === 'store') && activeView === 'orders') {
       loadOrders();
     }
-  }, [mobileUser, activeView, loadOrders]);
-
-  useEffect(() => {
-    if (activeView === 'orders' && mobileUser && (mobileUser.role === 'supplier' || mobileUser.role === 'store')) {
-      loadOrders();
-    }
-  }, [activeView, mobileUser, loadOrders]);
+  }, [mobileUser?.id, mobileUser?.role, activeView, loadOrders]);
 
 
   const handleSupplierClick = async (supplier: Supplier) => {
@@ -128,7 +122,7 @@ export function SimulateContent() {
       await mobileOrderService.submitOrder(draftOrder.id);
       await loadDraftOrder();
       setActiveView('orders');
-      await loadOrders();
+      await loadOrders(true);
     } catch (err: unknown) {
       setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to submit order');
       setTimeout(() => setError(''), 5000);
@@ -145,7 +139,7 @@ export function SimulateContent() {
     try {
       setError('');
       const updatedOrder = await mobileOrderService.updateOrderStatus(orderId, status);
-      await loadOrders();
+      await loadOrders(true);
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder(updatedOrder);
       }

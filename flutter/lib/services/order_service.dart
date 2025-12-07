@@ -20,8 +20,17 @@ class OrderService {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return Order.fromJson(data);
+    } else if (response.statusCode == 404) {
+      final errorBody = jsonDecode(response.body) as Map<String, dynamic>?;
+      final errorMsg = errorBody?['error'] as String?;
+      throw Exception(errorMsg ?? 'Order not found');
     } else {
-      throw Exception('Failed to load order');
+      try {
+        final error = jsonDecode(response.body) as Map<String, dynamic>?;
+        throw Exception(error?['error'] ?? 'Failed to load order');
+      } catch (e) {
+        throw Exception('Failed to load order: ${response.statusCode}');
+      }
     }
   }
 
@@ -120,8 +129,29 @@ class OrderService {
     }
   }
 
-  static Future<Order> submitOrder(int orderId) async {
-    final response = await ApiService.post('/orders/$orderId/submit', body: {});
+  static Future<Order> submitOrder(
+    int orderId, {
+    required String paymentMethod,
+    required String deliveryOption,
+    double deliveryFee = 0.0,
+    double distance = 0.0,
+    String? shippingAddress,
+    String? notes,
+  }) async {
+    final body = <String, dynamic>{
+      'payment_method': paymentMethod,
+      'delivery_option': deliveryOption,
+      'delivery_fee': deliveryFee,
+      'distance': distance,
+    };
+    if (shippingAddress != null && shippingAddress.isNotEmpty) {
+      body['shipping_address'] = shippingAddress;
+    }
+    if (notes != null && notes.isNotEmpty) {
+      body['notes'] = notes;
+    }
+
+    final response = await ApiService.post('/orders/$orderId/submit', body: body);
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;

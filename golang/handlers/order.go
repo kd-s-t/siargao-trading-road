@@ -305,7 +305,11 @@ func AddOrderItem(c *gin.Context) {
 
 func UpdateOrderItem(c *gin.Context) {
 	itemID := c.Param("item_id")
-	userID, _ := c.Get("user_id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
 	role, _ := c.Get("role")
 
 	if role != "store" {
@@ -319,7 +323,7 @@ func UpdateOrderItem(c *gin.Context) {
 		return
 	}
 
-	if orderItem.Order.StoreID != userID.(uint) || orderItem.Order.Status != "draft" {
+	if orderItem.Order.StoreID != userID || orderItem.Order.Status != "draft" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "cannot update this order item"})
 		return
 	}
@@ -481,6 +485,14 @@ func SubmitOrder(c *gin.Context) {
 	var subtotal float64
 	for _, item := range order.OrderItems {
 		subtotal += item.Subtotal
+	}
+
+	const minimumOrderAmount = 5000.0
+	if subtotal < minimumOrderAmount {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("minimum order amount is ₱%.2f. Current total: ₱%.2f", minimumOrderAmount, subtotal),
+		})
+		return
 	}
 
 	order.Status = models.OrderStatusPreparing

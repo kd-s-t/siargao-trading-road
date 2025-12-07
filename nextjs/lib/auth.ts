@@ -16,6 +16,10 @@ export interface User {
   youtube?: string;
   tiktok?: string;
   website?: string;
+  working_days?: string;
+  opening_time?: string;
+  closing_time?: string;
+  is_open?: boolean;
   created_at: string;
   updated_at: string;
   average_rating?: number;
