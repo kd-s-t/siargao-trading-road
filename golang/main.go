@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
@@ -15,6 +16,19 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal("Failed to load config:", err)
+	}
+
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		err = database.Connect(cfg)
+		if err != nil {
+			log.Fatal("Failed to connect to database:", err)
+		}
+		err = database.Migrate()
+		if err != nil {
+			log.Fatal("Failed to migrate:", err)
+		}
+		log.Println("Database migrations completed successfully")
+		return
 	}
 
 	err = database.Connect(cfg)

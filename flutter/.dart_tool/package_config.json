@@ -182,6 +182,12 @@
       "languageVersion": "3.1"
     },
     {
+      "name": "flutter_localizations",
+      "rootUri": "file:///Users/sharkysharksharks/flutter/packages/flutter_localizations",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
       "name": "flutter_map",
       "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/flutter_map-7.0.2",
       "packageUri": "lib/",
@@ -363,9 +369,9 @@
     },
     {
       "name": "intl",
-      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/intl-0.19.0",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/intl-0.20.2",
       "packageUri": "lib/",
-      "languageVersion": "3.0"
+      "languageVersion": "3.3"
     },
     {
       "name": "json_annotation",
@@ -602,6 +608,18 @@
       "languageVersion": "2.12"
     },
     {
+      "name": "scrollable_clean_calendar",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/scrollable_clean_calendar-1.5.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.18"
+    },
+    {
+      "name": "scrollable_positioned_list",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/scrollable_positioned_list-0.3.8",
+      "packageUri": "lib/",
+      "languageVersion": "2.15"
+    },
+    {
       "name": "share_plus",
       "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/share_plus-7.2.2",
       "packageUri": "lib/",
@@ -699,7 +717,7 @@
     },
     {
       "name": "table_calendar",
-      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/table_calendar-3.1.3",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/table_calendar-3.2.0",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
