@@ -26,13 +26,18 @@ func TestFullBusinessFlow(t *testing.T) {
 			client := NewTestClient(t, cfg)
 			response := client.Register(supplier.email, "password123", supplier.name, "supplier")
 
-			if token, ok := response["token"].(string); ok {
+			if token, ok := response["token"].(string); ok && token != "" {
 				supplierTokens[i] = token
 				if user, ok := response["user"].(map[string]interface{}); ok {
 					supplierIDs[i] = Uint(user["id"])
+					if supplierIDs[i] == 0 {
+						t.Fatalf("Failed to extract supplier ID for %s, got 0", supplier.name)
+					}
+				} else {
+					t.Fatalf("Failed to extract user from response for %s", supplier.name)
 				}
 			} else {
-				t.Fatalf("Failed to register supplier %s", supplier.name)
+				t.Fatalf("Failed to register supplier %s: %v", supplier.name, response)
 			}
 		})
 	}
