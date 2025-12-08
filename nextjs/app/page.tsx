@@ -41,8 +41,6 @@ const getDownloadUrls = () => {
   const bucketName = `siargaotradingroad-mobile-builds-${environment}`;
   const s3BaseUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com`;
   
-  const androidFileName = process.env.NEXT_PUBLIC_ANDROID_FILE_NAME || 
-    'application-adb7007e-2591-4778-a14c-71b7244ab8a9.apk';
   const iosFileName = process.env.NEXT_PUBLIC_IOS_FILE_NAME || 
     'application-0ba3caf8-40a9-4291-a0e9-407285f3c9f6.tar.gz';
   

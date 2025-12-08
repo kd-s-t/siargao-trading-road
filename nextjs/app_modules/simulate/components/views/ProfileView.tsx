@@ -33,7 +33,7 @@ import {
 } from '@mui/icons-material';
 import { Button, Rating, Chip } from '@mui/material';
 import { User } from '@/lib/auth';
-import { mobileAuthService, mobileOrderService } from '../../services/mobileApi';
+import { mobileAuthService } from '../../services/mobileApi';
 
 interface ProfileViewProps {
   mobileUser: User;

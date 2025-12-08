@@ -9,7 +9,6 @@ import {
   TextField,
   Button,
   Box,
-  Typography,
   CircularProgress,
 } from '@mui/material';
 import { Product } from '@/lib/users';

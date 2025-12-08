@@ -17,14 +17,12 @@ import {
 } from '@mui/icons-material';
 import { User } from '@/lib/auth';
 import { OrderRating } from '@/lib/users';
-import { mobileOrderService } from '../../services/mobileApi';
 
 interface RatingsListViewProps {
-  mobileUser: User | null;
   onBack: () => void;
 }
 
-export function RatingsListView({ mobileUser, onBack }: RatingsListViewProps) {
+export function RatingsListView({ onBack }: RatingsListViewProps) {
   const [ratings, setRatings] = useState<OrderRating[]>([]);
   const [loading, setLoading] = useState(true);
   const loadingRef = useRef(false);
