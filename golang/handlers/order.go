@@ -521,12 +521,10 @@ func SubmitOrder(c *gin.Context) {
 	}
 
 	if req.PaymentMethod == "gcash" {
-		if req.PaymentProofURL == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "payment proof is required for GCash payment"})
-			return
-		}
 		order.PaymentStatus = models.PaymentStatusPending
-		order.PaymentProofURL = req.PaymentProofURL
+		if req.PaymentProofURL != "" {
+			order.PaymentProofURL = req.PaymentProofURL
+		}
 	} else {
 		order.PaymentStatus = models.PaymentStatusPaid
 	}
