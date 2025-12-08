@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:siargao_trading_road/screens/dashboard_screen.dart';
 import 'package:siargao_trading_road/screens/order_detail_screen.dart';
-import 'package:siargao_trading_road/screens/profile_screen.dart';
+import 'package:siargao_trading_road/screens/profile_screen.dart' show ProfileScreen, ProfileScreenState;
 import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/schedule_editor_screen.dart';
-
+import 'package:siargao_trading_road/navigation/smooth_page_route.dart';
 class AdminDrawer extends StatefulWidget {
   const AdminDrawer({super.key});
 
@@ -17,13 +17,27 @@ class AdminDrawer extends StatefulWidget {
 
 class _AdminDrawerState extends State<AdminDrawer> {
   int _currentIndex = 0;
+  late final PageController _pageController = PageController(initialPage: _currentIndex);
+  final _profileEditKey = GlobalKey<ProfileScreenState>();
 
-  final List<Widget> _screens = [
+  late final List<Widget> _screens = [
     const DashboardScreen(useScaffold: false),
-    const ProfileScreen(useScaffold: false),
+    ProfileScreen(
+      key: _profileEditKey,
+      useScaffold: false,
+      editKey: _profileEditKey,
+      onEditStateChanged: () => setState(() {}),
+    ),
   ];
 
-  AppBar? _buildAppBar() {
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  AppBar? _buildAppBar(BuildContext context) {
+    final isEditing = _profileEditKey.currentState?.isEditing ?? false;
     switch (_currentIndex) {
       case 0:
         return AppBar(
@@ -32,9 +46,43 @@ class _AdminDrawerState extends State<AdminDrawer> {
       case 1:
         return AppBar(
           title: const Text('Profile'),
+          actions: [
+            if (isEditing)
+              TextButton(
+                onPressed: () {
+                  final state = _profileEditKey.currentState;
+                  if (state != null) {
+                    state.toggleEdit();
+                  }
+                },
+                child: const Text('Cancel'),
+              ),
+            if (!isEditing)
+              TextButton(
+                onPressed: () {
+                  final state = _profileEditKey.currentState;
+                  if (state != null) {
+                    state.toggleEdit();
+                  }
+                },
+                child: const Text('Edit'),
+              ),
+            if (isEditing)
+              TextButton(
+                onPressed: () {
+                  final state = _profileEditKey.currentState;
+                  if (state != null) {
+                    state.handleSave();
+                  }
+                },
+                child: const Text('Save'),
+              ),
+          ],
         );
       default:
-        return AppBar(title: const Text('Siargao Trading Road'));
+        return AppBar(
+          title: const Text('Siargao Trading Road'),
+        );
     }
   }
 
@@ -44,9 +92,14 @@ class _AdminDrawerState extends State<AdminDrawer> {
       debugShowCheckedModeBanner: false,
       navigatorKey: AdminDrawer.navigatorKey,
       home: Scaffold(
-        appBar: _buildAppBar(),
-        body: IndexedStack(
-          index: _currentIndex,
+        appBar: _buildAppBar(context),
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
           children: _screens,
         ),
         bottomNavigationBar: CurvedNavigationBar(
@@ -55,6 +108,11 @@ class _AdminDrawerState extends State<AdminDrawer> {
             setState(() {
               _currentIndex = index;
             });
+            _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
           },
           backgroundColor: Colors.transparent,
           color: Theme.of(context).colorScheme.primary,
@@ -82,9 +140,8 @@ class _AdminDrawerState extends State<AdminDrawer> {
           default:
             return null;
         }
-        return MaterialPageRoute(
-          builder: (_) => screen,
-          settings: settings,
+        return SmoothPageRoute(
+          child: screen,
         );
       },
     );

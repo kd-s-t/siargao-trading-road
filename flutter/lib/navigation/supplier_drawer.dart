@@ -5,10 +5,10 @@ import 'package:siargao_trading_road/screens/add_product_screen.dart';
 import 'package:siargao_trading_road/screens/edit_product_screen.dart';
 import 'package:siargao_trading_road/screens/orders_screen.dart';
 import 'package:siargao_trading_road/screens/order_detail_screen.dart';
-import 'package:siargao_trading_road/screens/profile_screen.dart';
+import 'package:siargao_trading_road/screens/profile_screen.dart' show ProfileScreen, ProfileScreenState;
 import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/schedule_editor_screen.dart';
-
+import 'package:siargao_trading_road/navigation/smooth_page_route.dart';
 class SupplierDrawer extends StatefulWidget {
   const SupplierDrawer({super.key});
 
@@ -20,14 +20,28 @@ class SupplierDrawer extends StatefulWidget {
 
 class _SupplierDrawerState extends State<SupplierDrawer> {
   int _currentIndex = 0;
+  late final PageController _pageController = PageController(initialPage: _currentIndex);
+  final _profileEditKey = GlobalKey<ProfileScreenState>();
 
-  final List<Widget> _screens = const [
-    ProductsScreen(useScaffold: false),
-    OrdersScreen(useScaffold: false),
-    ProfileScreen(useScaffold: false),
+  late final List<Widget> _screens = [
+    const ProductsScreen(useScaffold: false),
+    const OrdersScreen(useScaffold: false),
+    ProfileScreen(
+      key: _profileEditKey,
+      useScaffold: false,
+      editKey: _profileEditKey,
+      onEditStateChanged: () => setState(() {}),
+    ),
   ];
 
-  AppBar? _buildAppBar() {
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  AppBar? _buildAppBar(BuildContext context) {
+    final isEditing = _profileEditKey.currentState?.isEditing ?? false;
     switch (_currentIndex) {
       case 0:
         return AppBar(
@@ -40,9 +54,43 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
       case 2:
         return AppBar(
           title: const Text('Profile'),
+          actions: [
+            if (isEditing)
+              TextButton(
+                onPressed: () {
+                  final state = _profileEditKey.currentState;
+                  if (state != null) {
+                    state.toggleEdit();
+                  }
+                },
+                child: const Text('Cancel'),
+              ),
+            if (!isEditing)
+              TextButton(
+                onPressed: () {
+                  final state = _profileEditKey.currentState;
+                  if (state != null) {
+                    state.toggleEdit();
+                  }
+                },
+                child: const Text('Edit'),
+              ),
+            if (isEditing)
+              TextButton(
+                onPressed: () {
+                  final state = _profileEditKey.currentState;
+                  if (state != null) {
+                    state.handleSave();
+                  }
+                },
+                child: const Text('Save'),
+              ),
+          ],
         );
       default:
-        return AppBar(title: const Text('Siargao Trading Road'));
+        return AppBar(
+          title: const Text('Siargao Trading Road'),
+        );
     }
   }
 
@@ -64,9 +112,14 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
       debugShowCheckedModeBanner: false,
       navigatorKey: SupplierDrawer.navigatorKey,
       home: Scaffold(
-        appBar: _buildAppBar(),
-        body: IndexedStack(
-          index: _currentIndex,
+        appBar: _buildAppBar(context),
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
           children: _screens,
         ),
         floatingActionButton: _buildFloatingActionButton(),
@@ -76,6 +129,11 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
             setState(() {
               _currentIndex = index;
             });
+            _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
           },
           backgroundColor: Colors.transparent,
           color: Theme.of(context).colorScheme.primary,
@@ -112,9 +170,8 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
           default:
             return null;
         }
-        return MaterialPageRoute(
-          builder: (_) => screen,
-          settings: settings,
+        return SmoothPageRoute(
+          child: screen,
         );
       },
     );

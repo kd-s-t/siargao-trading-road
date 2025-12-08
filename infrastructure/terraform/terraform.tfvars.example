@@ -22,3 +22,7 @@ rds_skip_final_snapshot = false
 
 mobile_build_retention_days = 90
 
+# AWS Credentials for S3 Access (optional - can be set manually in SSM)
+# aws_access_key_id     = "YOUR_ACCESS_KEY_ID"
+# aws_secret_access_key = "YOUR_SECRET_ACCESS_KEY"
+

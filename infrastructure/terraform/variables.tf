@@ -101,3 +101,24 @@ variable "mobile_build_retention_days" {
   default     = 90
 }
 
+variable "aws_access_key_id" {
+  description = "AWS Access Key ID for S3 access (optional, can be set via SSM manually)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "aws_secret_access_key" {
+  description = "AWS Secret Access Key for S3 access (optional, can be set via SSM manually)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "jwt_secret" {
+  description = "JWT secret key (optional, will be auto-generated if not provided)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Production Database Migration Script Example
+# Copy this file to migrate_production.sh and it will automatically
+# load credentials from SSM Parameter Store or environment variables
+
+# The script will:
+# 1. Try to load from SSM Parameter Store at /siargaotradingroad/{ENVIRONMENT}
+# 2. Fall back to environment variables if SSM is not available
+# 3. Verify all required variables are set before running migrations
+
+# Usage:
+#   ENVIRONMENT=development ./migrate_production.sh
+#   # or with environment variables:
+#   DB_HOST=... DB_USER=... DB_PASSWORD=... DB_NAME=... ./migrate_production.sh

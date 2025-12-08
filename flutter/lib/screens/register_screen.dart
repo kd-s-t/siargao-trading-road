@@ -89,13 +89,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 5),
                     Image.asset(
                       'assets/str.png',
                       width: 320,
                       height: 128,
                     ),
-                    const SizedBox(height: 17),
+                    const SizedBox(height: 5),
                     Card(
                       elevation: 3,
                       child: Padding(
@@ -153,7 +153,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email';
                                 }
-                                if (!value.contains('@')) {
+                                final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                                if (!emailRegex.hasMatch(value.trim())) {
                                   return 'Please enter a valid email';
                                 }
                                 return null;

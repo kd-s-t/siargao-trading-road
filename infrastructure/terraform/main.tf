@@ -68,6 +68,17 @@ module "ssm" {
   source = "./modules/ssm"
   
   environment = var.environment
+  
+  s3_bucket_name        = module.s3_uploads.bucket_name
+  aws_access_key_id     = var.aws_access_key_id
+  aws_secret_access_key = var.aws_secret_access_key
+  jwt_secret            = var.jwt_secret != "" ? var.jwt_secret : random_password.house_key.result
+  
+  db_host     = module.rds.db_instance_address
+  db_port     = module.rds.db_instance_port
+  db_user     = var.db_username
+  db_password = var.db_password != "" ? var.db_password : random_password.db_password.result
+  db_name     = var.db_name
 }
 
 module "ec2" {

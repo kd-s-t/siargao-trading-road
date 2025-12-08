@@ -25,8 +25,16 @@ func UploadImage(c *gin.Context) {
 	cfg, _ := c.Get("config")
 	config := cfg.(*config.Config)
 
-	if config.S3Bucket == "" || config.AWSAccessKey == "" {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "S3 not configured"})
+	if config.S3Bucket == "" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "S3_BUCKET environment variable is not set"})
+		return
+	}
+	if config.AWSAccessKey == "" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AWS_ACCESS_KEY_ID environment variable is not set"})
+		return
+	}
+	if config.AWSSecretKey == "" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AWS_SECRET_ACCESS_KEY environment variable is not set"})
 		return
 	}
 
