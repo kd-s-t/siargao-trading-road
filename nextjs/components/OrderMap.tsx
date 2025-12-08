@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Box, Typography } from '@mui/material';
 import { User } from '@/lib/users';
@@ -164,13 +164,17 @@ export function OrderMap({ store, supplier, status, height = 250 }: OrderMapProp
     }
   }, []);
 
-  const storeLocation: [number, number] | null = store?.latitude && store?.longitude
-    ? [store.latitude, store.longitude]
-    : null;
+  const storeLocation: [number, number] | null = useMemo(() => {
+    return store?.latitude && store?.longitude
+      ? [store.latitude, store.longitude]
+      : null;
+  }, [store?.latitude, store?.longitude]);
 
-  const supplierLocation: [number, number] | null = supplier?.latitude && supplier?.longitude
-    ? [supplier.latitude, supplier.longitude]
-    : null;
+  const supplierLocation: [number, number] | null = useMemo(() => {
+    return supplier?.latitude && supplier?.longitude
+      ? [supplier.latitude, supplier.longitude]
+      : null;
+  }, [supplier?.latitude, supplier?.longitude]);
 
   const isInTransit = status === 'in_transit';
 

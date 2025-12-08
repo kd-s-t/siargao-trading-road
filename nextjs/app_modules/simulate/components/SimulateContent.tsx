@@ -98,13 +98,13 @@ export function SimulateContent() {
     } else if (mobileUser && activeView === 'my-products' && mobileUser.role === 'supplier') {
       loadMyProducts();
     }
-  }, [mobileUser?.id, mobileUser?.role, activeView, loadSuppliers, loadStores, loadMyProducts]);
+  }, [mobileUser, activeView, loadSuppliers, loadStores, loadMyProducts]);
 
   useEffect(() => {
     if (mobileUser && (mobileUser.role === 'supplier' || mobileUser.role === 'store') && activeView === 'orders') {
       loadOrders(true, orderStatusFilter);
     }
-  }, [mobileUser?.id, mobileUser?.role, activeView, orderStatusFilter, loadOrders]);
+  }, [mobileUser, activeView, orderStatusFilter, loadOrders]);
 
 
   const handleSupplierClick = async (supplier: Supplier) => {
