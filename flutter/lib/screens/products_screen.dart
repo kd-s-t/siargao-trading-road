@@ -87,9 +87,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           _loading = false;
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load products: $e')),
-        );
+        SnackbarHelper.showError(context, 'Failed to load products: ${e.toString()}');
       }
     }
   }
@@ -165,9 +163,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                           } catch (e) {
                                             if (!mounted) return;
                                             if (context.mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text('Failed to restore: $e')),
-                                              );
+                                              SnackbarHelper.showError(context, 'Failed to restore: ${e.toString()}');
                                             }
                                           }
                                         },
@@ -215,9 +211,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                             } catch (e) {
                                               if (!mounted) return;
                                               if (context.mounted) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(content: Text('Failed to delete: $e')),
-                                                );
+                                                SnackbarHelper.showError(context, 'Failed to delete: ${e.toString()}');
                                               }
                                             }
                                           }

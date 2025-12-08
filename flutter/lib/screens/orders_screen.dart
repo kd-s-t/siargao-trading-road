@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
+import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 import 'dart:io';
 
 class OrdersScreen extends StatefulWidget {
@@ -121,15 +122,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
       await OrderService.updateOrderStatus(orderId, status);
       await _loadOrders(force: true);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Order status updated to ${_getStatusLabel(status)}')),
-        );
+        SnackbarHelper.showSuccess(context, 'Order status updated to ${_getStatusLabel(status)}');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update status: $e')),
-        );
+        SnackbarHelper.showError(context, 'Failed to update status: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -142,9 +139,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   Future<void> _handleDownloadInvoice(Order order) async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Downloading invoice...')),
-      );
+      SnackbarHelper.showInfo(context, 'Downloading invoice...');
 
       final invoiceUrl = '${ApiService.baseUrl}/orders/${order.id}/invoice';
       
@@ -172,18 +167,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
         await Share.shareXFiles([xFile]);
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invoice downloaded successfully')),
-          );
+          SnackbarHelper.showSuccess(context, 'Invoice downloaded successfully');
         }
       } else {
         throw Exception('Failed to download invoice');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to download invoice: $e')),
-        );
+        SnackbarHelper.showError(context, 'Failed to download invoice: ${e.toString()}');
       }
     }
   }

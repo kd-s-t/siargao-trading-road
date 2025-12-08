@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:siargao_trading_road/models/schedule_exception.dart';
 import 'package:siargao_trading_road/services/schedule_service.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
+import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 import 'package:intl/intl.dart';
 
 class ScheduleEditorScreen extends StatefulWidget {
@@ -41,9 +42,7 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load schedule: ${e.toString()}')),
-        );
+        SnackbarHelper.showError(context, 'Failed to load schedule: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -104,17 +103,11 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
       }
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isCurrentlyClosed ? 'Date opened' : 'Date closed'),
-          ),
-        );
+        SnackbarHelper.showSuccess(context, isCurrentlyClosed ? 'Date opened' : 'Date closed');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update date: ${e.toString()}')),
-        );
+        SnackbarHelper.showError(context, 'Failed to update date: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -366,15 +359,11 @@ class _DateDetailsSheetState extends State<_DateDetailsSheet> {
       if (mounted) {
         Navigator.pop(context);
         widget.onUpdate();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Schedule updated')),
-        );
+        SnackbarHelper.showSuccess(context, 'Schedule updated');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update: ${e.toString()}')),
-        );
+        SnackbarHelper.showError(context, 'Failed to update: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -401,15 +390,11 @@ class _DateDetailsSheetState extends State<_DateDetailsSheet> {
       if (mounted) {
         Navigator.pop(context);
         widget.onUpdate();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Schedule updated')),
-        );
+        SnackbarHelper.showSuccess(context, 'Schedule updated');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update: ${e.toString()}')),
-        );
+        SnackbarHelper.showError(context, 'Failed to update: ${e.toString()}');
       }
     } finally {
       if (mounted) {

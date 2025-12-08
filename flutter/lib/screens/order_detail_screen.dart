@@ -513,9 +513,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       await _loadMessages();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send message: $e')),
-        );
+        SnackbarHelper.showError(context, 'Failed to send message: ${e.toString()}');
       }
     }
   }

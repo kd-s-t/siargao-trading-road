@@ -6,6 +6,7 @@ import 'package:siargao_trading_road/models/product.dart';
 import 'package:siargao_trading_road/models/order.dart';
 import 'package:siargao_trading_road/models/supplier.dart';
 import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
+import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 
 class SupplierProductsScreen extends StatefulWidget {
   final int supplierId;
@@ -163,22 +164,14 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
 
     if (quantity <= 0) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Quantity must be greater than 0')),
-        );
+        SnackbarHelper.showError(context, 'Quantity must be greater than 0');
       }
       return;
     }
 
     if (quantity > product.stockQuantity) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Only ${product.stockQuantity} ${product.unit ?? 'units'} available in stock',
-            ),
-          ),
-        );
+        SnackbarHelper.showError(context, 'Only ${product.stockQuantity} ${product.unit ?? 'units'} available in stock');
       }
       return;
     }
@@ -202,13 +195,7 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
         if (totalQuantity > product.stockQuantity) {
           final available = product.stockQuantity - existingItem.quantity;
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'You already have ${existingItem.quantity} ${product.unit ?? 'units'} in truck. Only $available ${product.unit ?? 'units'} more available.',
-                ),
-              ),
-            );
+            SnackbarHelper.showError(context, 'You already have ${existingItem.quantity} ${product.unit ?? 'units'} in truck. Only $available ${product.unit ?? 'units'} more available.');
           }
           setState(() {
             _addingToTruck = null;
@@ -227,9 +214,7 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
         });
         await _loadProducts();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Item added to truck')),
-          );
+          SnackbarHelper.showSuccess(context, 'Item added to truck');
         }
       }
     } catch (e) {
@@ -237,9 +222,7 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
         setState(() {
           _addingToTruck = null;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add item to truck: $e')),
-        );
+        SnackbarHelper.showError(context, 'Failed to add item to truck: ${e.toString()}');
       }
     }
   }
