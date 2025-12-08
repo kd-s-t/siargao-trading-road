@@ -28,6 +28,7 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 			protected.PUT("/me", handlers.UpdateMe)
 			protected.POST("/me/open", handlers.OpenStore)
 			protected.POST("/me/close", handlers.CloseStore)
+			protected.POST("/users/fcm-token", handlers.UpdateFCMToken)
 			protected.POST("/upload", handlers.UploadImage)
 			protected.GET("/me/analytics", handlers.GetMyAnalytics)
 			protected.GET("/me/ratings", handlers.GetMyRatings)

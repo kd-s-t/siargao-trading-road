@@ -23,7 +23,7 @@ class OrderService {
     }
   }
 
-  static Future<Order> getOrder(int id, {bool checkLocalFirst = false, bool fallbackToLocal = true, bool forceRefresh = false}) async {
+  static Future<Order> getOrder(int id, {bool checkLocalFirst = false, bool fallbackToLocal = true, bool forceRefresh = false, void Function(int, String)? onResponse}) async {
     if (forceRefresh) {
       checkLocalFirst = false;
       fallbackToLocal = false;

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/navigation/app_navigator.dart';
 import 'package:siargao_trading_road/utils/error_handler.dart';
+import 'package:siargao_trading_road/services/fcm_service.dart';
+import 'package:siargao_trading_road/services/notification_handler.dart';
 import 'package:siargao_trading_road/screens/add_product_screen.dart';
 import 'package:siargao_trading_road/screens/edit_product_screen.dart';
 import 'package:siargao_trading_road/screens/order_detail_screen.dart';
@@ -10,8 +14,14 @@ import 'package:siargao_trading_road/screens/supplier_products_screen.dart';
 import 'package:siargao_trading_road/screens/truck_screen.dart';
 import 'package:siargao_trading_road/screens/analytics_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   ErrorHandler.setupErrorHandling();
+  
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  await FCMService().initialize();
+  
   runApp(const MyApp());
 }
 
@@ -27,6 +37,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Siargao Trading Road',
         debugShowCheckedModeBanner: false,
+        navigatorKey: NotificationHandler.navigatorKey,
         theme: ThemeData(
           primarySwatch: Colors.blue,
           primaryColor: const Color(0xFF1976D2),
@@ -49,7 +60,14 @@ class MyApp extends StatelessWidget {
                 builder: (_) => EditProductScreen(product: args?['product']),
               );
             case '/order-detail':
-              return MaterialPageRoute(builder: (_) => const OrderDetailScreen());
+              final args = settings.arguments as Map<String, dynamic>?;
+              return MaterialPageRoute(
+                builder: (_) => const OrderDetailScreen(),
+                settings: RouteSettings(
+                  name: settings.name,
+                  arguments: args,
+                ),
+              );
             case '/supplier-products':
               final args = settings.arguments as Map<String, dynamic>?;
               final supplierId = args?['supplierId'] as int?;

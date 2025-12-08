@@ -1,11 +1,21 @@
-iOS/Android: flutter devices
+# iOS/Android: flutter devices  
 
-Android: emulator -list-avds
-Android: emulator -avd <avd_name>
+# Android
+```bash
+emulator -list-avds
+emulator -avd Medium_Phone_API_35
+flutter run -d "emulator-5554"
+flutter run -d "emulator-5554" --dart-define=API_URL=http://10.0.2.2:3020/api
+```
 
-iOS: xcrun simctl list devices
-iOS: open -a Simulator
+## iOS
+```bash
+xcrun simctl list devices
+open -a Simulator
+flutter run "51048D9B-F1F7-4519-9AD3-E07EC84A4739"
+```
 
-
-Any: flutter run -d <device_id>
-Any: flutter run -d <device_id> --dart-define=BASE_URL=http://localhost:<port>
+```bash
+flutter run -d <device_id>
+flutter run -d <device_id> --dart-define=API_URL=http://10.0.2.2:3020/api
+```

@@ -16,8 +16,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:siargao_trading_road/services/auth_service.dart';
+import 'package:siargao_trading_road/services/fcm_service.dart';
 import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
+import 'package:siargao_trading_road/utils/snackbar_helper.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io';
+import 'dart:async';
 
 class OrderDetailScreen extends StatefulWidget {
   const OrderDetailScreen({super.key});
@@ -42,6 +46,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String? _errorMessage;
   String? _apiResponse;
   int? _apiStatusCode;
+  static const bool _showApiResponse = false;
+  StreamSubscription<RemoteMessage>? _fcmSubscription;
+  Timer? _messagePollTimer;
 
   @override
   void initState() {
@@ -64,6 +71,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   @override
   void dispose() {
+    _fcmSubscription?.cancel();
+    _messagePollTimer?.cancel();
     _messageController.dispose();
     _ratingCommentController.dispose();
     _scrollController.dispose();
@@ -111,6 +120,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             _loading = false;
             _order = null;
             _errorMessage = 'No order ID provided';
+            _apiResponse = 'API was not called because no order ID was provided.\n\nRoute arguments: ${args?.toString() ?? "null"}';
+            _apiStatusCode = null;
           });
         }
         return;
@@ -148,6 +159,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             _errorMessage = null;
           });
           _loadMessages();
+          _setupFCMListener();
+          _startMessagePolling();
         }
       } catch (e) {
         if (kDebugMode) {
@@ -172,12 +185,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           
           if (mounted) {
             try {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Failed to load order: ${errorStr.replaceAll('Exception: ', '')}'),
-                  duration: const Duration(seconds: 4),
-                ),
-              );
+              SnackbarHelper.showError(context, 'Failed to load order: ${errorStr.replaceAll('Exception: ', '')}');
             } catch (_) {
             }
           }
@@ -235,6 +243,40 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  void _setupFCMListener() {
+    if (_order?.id == null) return;
+    
+    _fcmSubscription?.cancel();
+    _fcmSubscription = FCMService().messageStream?.listen((RemoteMessage message) {
+      if (!mounted) return;
+      
+      final data = message.data;
+      final type = data['type'] as String?;
+      final orderIdStr = data['order_id'] as String?;
+      
+      if (type == 'new_message' && orderIdStr != null) {
+        final orderId = int.tryParse(orderIdStr);
+        if (orderId == _order?.id) {
+          if (kDebugMode) {
+            print('New message notification received for order $orderId, refreshing messages...');
+          }
+          _loadMessages();
+        }
+      }
+    });
+  }
+
+  void _startMessagePolling() {
+    _messagePollTimer?.cancel();
+    _messagePollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted || _order?.id == null) {
+        timer.cancel();
+        return;
+      }
+      _loadMessages();
+    });
+  }
+
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_messagesScrollController.hasClients) {
@@ -260,15 +302,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       await OrderService.updateOrderStatus(_order!.id, status);
       await _loadOrder();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order status updated')),
-        );
+        SnackbarHelper.showSuccess(context, 'Order status updated');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update status: $e')),
-        );
+        SnackbarHelper.showError(context, 'Failed to update status: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -305,9 +343,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Future<void> _handleCall(User? entity) async {
     if (entity?.phone == null || entity!.phone!.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Phone number not available')),
-        );
+        SnackbarHelper.showError(context, 'Phone number not available');
       }
       return;
     }
@@ -324,9 +360,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       await launchUrl(telUrl);
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Phone dialer not available')),
-        );
+        SnackbarHelper.showError(context, 'Phone dialer not available');
       }
     }
   }
@@ -336,9 +370,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     try {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Downloading invoice...')),
-        );
+        SnackbarHelper.showInfo(context, 'Downloading invoice...');
       }
 
       final invoiceUrl = '${ApiService.baseUrl}/orders/${_order!.id}/invoice';
@@ -365,18 +397,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         await Share.shareXFiles([xFile]);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invoice downloaded successfully')),
-          );
+          SnackbarHelper.showSuccess(context, 'Invoice downloaded successfully');
         }
       } else {
         throw Exception('Failed to download invoice');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to download invoice: $e')),
-        );
+        SnackbarHelper.showError(context, 'Failed to download invoice: ${e.toString()}');
       }
     }
   }
@@ -421,15 +449,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       });
       await _loadOrder();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rating submitted successfully')),
-        );
+        SnackbarHelper.showSuccess(context, 'Rating submitted successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit rating: $e')),
-        );
+        SnackbarHelper.showError(context, 'Failed to submit rating: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -558,7 +582,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       const Icon(Icons.error_outline, size: 64, color: Colors.red),
                       const SizedBox(height: 16),
                       const Text(
-                        'Order not found',
+                        'Order not found v2',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       if (_errorMessage != null) ...[
@@ -569,7 +593,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           textAlign: TextAlign.center,
                         ),
                       ],
-                      if (kDebugMode && _apiResponse != null) ...[
+                      if (kDebugMode && _showApiResponse) ...[
                         const SizedBox(height: 24),
                         Container(
                           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -593,10 +617,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                   ),
                                   const Spacer(),
                                   Text(
-                                    'Status: ${_apiStatusCode ?? "N/A"}',
+                                    'Status: ${_apiStatusCode ?? "NOT CALLED"}',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: _apiStatusCode == 200 ? Colors.green : Colors.red,
+                                      color: _apiStatusCode == 200 ? Colors.green : (_apiStatusCode == null ? Colors.orange : Colors.red),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -607,7 +631,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                 constraints: const BoxConstraints(maxHeight: 200),
                                 child: SingleChildScrollView(
                                   child: SelectableText(
-                                    _apiResponse!,
+                                    _apiResponse ?? 'API was not called. No order ID provided.',
                                     style: const TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'monospace',
@@ -640,11 +664,60 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             appBar: AppBar(
               title: Text('Order #${_order!.id}'),
             ),
-            body: SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
+            body: SafeArea(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (kDebugMode && _showApiResponse && _apiResponse != null)
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue[300]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                'API Response',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                'Status: ${_apiStatusCode ?? "N/A"}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _apiStatusCode == 200 ? Colors.green : Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 300),
+                            child: SingleChildScrollView(
+                              child: SelectableText(
+                                _apiResponse!,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   if (_order!.store != null && _order!.supplier != null)
                     _buildMapCard(),
                   _buildOrderCard(entity, entityName, user),
@@ -658,6 +731,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   const SizedBox(height: 32),
                 ],
               ),
+            ),
             ),
       bottomSheet: _showRatingDialog ? _buildRatingDialogSheet(user) : null,
     );
@@ -864,6 +938,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             _buildDetailRow('Date Created', _formatDateTime(_order!.createdAt)),
             if (_order!.updatedAt != _order!.createdAt)
               _buildDetailRow('Last Updated', _formatDateTime(_order!.updatedAt)),
+            if (_order!.paymentMethod != null) ...[
+              _buildDetailRow('Payment Method', _formatPaymentMethod(_order!.paymentMethod!)),
+            ],
+            if (_order!.deliveryOption != null) ...[
+              _buildDetailRow('Delivery Option', _formatDeliveryOption(_order!.deliveryOption!)),
+            ],
             if (_order!.shippingAddress != null && _order!.shippingAddress!.isNotEmpty) ...[
               const Divider(),
               const Text(
@@ -1396,5 +1476,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _formatPaymentMethod(String paymentMethod) {
+    switch (paymentMethod) {
+      case 'cash_on_delivery':
+        return 'Cash on Delivery';
+      case 'gcash':
+        return 'GCash';
+      default:
+        return paymentMethod;
+    }
+  }
+
+  String _formatDeliveryOption(String deliveryOption) {
+    switch (deliveryOption) {
+      case 'pickup':
+        return 'Pickup';
+      case 'deliver':
+        return 'Deliver';
+      default:
+        return deliveryOption;
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:siargao_trading_road/screens/suppliers_screen.dart';
 import 'package:siargao_trading_road/screens/supplier_products_screen.dart';
@@ -30,7 +31,7 @@ class _StoreDrawerState extends State<StoreDrawer> {
       key: _profileEditKey,
       useScaffold: false,
       editKey: _profileEditKey,
-      onEditStateChanged: () => setState(() {}),
+      onEditStateChanged: () => _safeSetState(() {}),
     ),
   ];
 
@@ -38,6 +39,12 @@ class _StoreDrawerState extends State<StoreDrawer> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _safeSetState(VoidCallback fn) {
+    if (mounted) {
+      setState(fn);
+    }
   }
 
   AppBar? _buildAppBar(BuildContext context) {
@@ -104,34 +111,40 @@ class _StoreDrawerState extends State<StoreDrawer> {
         body: PageView(
           controller: _pageController,
           onPageChanged: (index) {
-            setState(() {
+            _safeSetState(() {
               _currentIndex = index;
             });
           },
           children: _screens,
         ),
-        bottomNavigationBar: CurvedNavigationBar(
-          index: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-            _pageController.animateToPage(
-              index,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          },
-          backgroundColor: Colors.transparent,
-          color: Theme.of(context).colorScheme.primary,
-          buttonBackgroundColor: Theme.of(context).colorScheme.secondary,
-          animationCurve: Curves.easeInOut,
-          animationDuration: const Duration(milliseconds: 300),
-          items: const [
-            Icon(Icons.store, size: 30, color: Colors.white),
-            Icon(Icons.list_alt, size: 30, color: Colors.white),
-            Icon(Icons.account_circle, size: 30, color: Colors.white),
-          ],
+        bottomNavigationBar: SafeArea(
+          bottom: !Platform.isIOS,
+          child: CurvedNavigationBar(
+            index: _currentIndex,
+            onTap: (index) {
+              if (!mounted || !_pageController.hasClients) return;
+              _safeSetState(() {
+                _currentIndex = index;
+              });
+              if (mounted && _pageController.hasClients) {
+                _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                ).catchError((_) {});
+              }
+            },
+            backgroundColor: Colors.transparent,
+            color: Theme.of(context).colorScheme.primary,
+            buttonBackgroundColor: Theme.of(context).colorScheme.secondary,
+            animationCurve: Curves.easeInOut,
+            animationDuration: const Duration(milliseconds: 300),
+            items: const [
+              Icon(Icons.store, size: 30, color: Colors.white),
+              Icon(Icons.list_alt, size: 30, color: Colors.white),
+              Icon(Icons.account_circle, size: 30, color: Colors.white),
+            ],
+          ),
         ),
       ),
       onGenerateRoute: (settings) {
@@ -167,6 +180,7 @@ class _StoreDrawerState extends State<StoreDrawer> {
         }
         return SmoothPageRoute(
           child: screen,
+          settings: settings,
         );
       },
     );

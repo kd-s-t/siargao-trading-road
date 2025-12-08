@@ -651,3 +651,34 @@ func CloseStore(c *gin.Context) {
 	user.Password = ""
 	c.JSON(http.StatusOK, user)
 }
+
+func UpdateFCMToken(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	var req struct {
+		FCMToken string `json:"fcm_token"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	user.FCMToken = req.FCMToken
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update FCM token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "FCM token updated successfully"})
+}

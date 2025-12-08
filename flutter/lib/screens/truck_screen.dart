@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:siargao_trading_road/services/order_service.dart';
 import 'package:siargao_trading_road/models/order.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
+import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 
 class TruckScreen extends StatefulWidget {
   const TruckScreen({super.key});
@@ -80,9 +81,7 @@ class _TruckScreenState extends State<TruckScreen> {
   Future<void> _handleUpdateQuantity(int itemId, int quantity) async {
     if (quantity < 1) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Quantity must be at least 1')),
-        );
+        SnackbarHelper.showError(context, 'Quantity must be at least 1');
       }
       return;
     }
@@ -104,9 +103,7 @@ class _TruckScreenState extends State<TruckScreen> {
         setState(() {
           _updatingItemId = null;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update quantity: $e')),
-        );
+        SnackbarHelper.showError(context, 'Failed to update quantity: ${e.toString()}');
       }
     }
   }
@@ -137,9 +134,7 @@ class _TruckScreenState extends State<TruckScreen> {
         await _loadDraftOrder();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to remove item: $e')),
-          );
+          SnackbarHelper.showError(context, 'Failed to remove item: ${e.toString()}');
         }
       }
     }
@@ -195,9 +190,7 @@ class _TruckScreenState extends State<TruckScreen> {
           notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Order submitted successfully!')),
-          );
+          SnackbarHelper.showSuccess(context, 'Order submitted successfully!');
           Navigator.pop(context);
         }
       } catch (e) {
@@ -205,9 +198,7 @@ class _TruckScreenState extends State<TruckScreen> {
           setState(() {
             _submitting = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to submit order: $e')),
-          );
+          SnackbarHelper.showError(context, 'Failed to submit order: ${e.toString()}');
         }
       }
     }

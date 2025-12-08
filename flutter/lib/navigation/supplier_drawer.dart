@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:siargao_trading_road/screens/products_screen.dart';
 import 'package:siargao_trading_road/screens/add_product_screen.dart';
@@ -116,35 +117,42 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
         body: PageView(
           controller: _pageController,
           onPageChanged: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
+            if (mounted) {
+              setState(() {
+                _currentIndex = index;
+              });
+            }
           },
           children: _screens,
         ),
         floatingActionButton: _buildFloatingActionButton(),
-        bottomNavigationBar: CurvedNavigationBar(
-          index: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-            _pageController.animateToPage(
-              index,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          },
-          backgroundColor: Colors.transparent,
-          color: Theme.of(context).colorScheme.primary,
-          buttonBackgroundColor: Theme.of(context).colorScheme.secondary,
-          animationCurve: Curves.easeInOut,
-          animationDuration: const Duration(milliseconds: 300),
-          items: const [
-            Icon(Icons.inventory_2, size: 30, color: Colors.white),
-            Icon(Icons.list_alt, size: 30, color: Colors.white),
-            Icon(Icons.account_circle, size: 30, color: Colors.white),
-          ],
+        bottomNavigationBar: SafeArea(
+          bottom: !Platform.isIOS,
+          child: CurvedNavigationBar(
+            index: _currentIndex,
+            onTap: (index) {
+              if (mounted) {
+                setState(() {
+                  _currentIndex = index;
+                });
+                _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              }
+            },
+            backgroundColor: Colors.transparent,
+            color: Theme.of(context).colorScheme.primary,
+            buttonBackgroundColor: Theme.of(context).colorScheme.secondary,
+            animationCurve: Curves.easeInOut,
+            animationDuration: const Duration(milliseconds: 300),
+            items: const [
+              Icon(Icons.inventory_2, size: 30, color: Colors.white),
+              Icon(Icons.list_alt, size: 30, color: Colors.white),
+              Icon(Icons.account_circle, size: 30, color: Colors.white),
+            ],
+          ),
         ),
       ),
       onGenerateRoute: (settings) {
@@ -172,6 +180,7 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
         }
         return SmoothPageRoute(
           child: screen,
+          settings: settings,
         );
       },
     );

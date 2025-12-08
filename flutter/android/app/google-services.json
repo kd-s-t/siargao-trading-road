@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "457744599766",
+    "project_id": "siargao-trading-road",
+    "storage_bucket": "siargao-trading-road.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:457744599766:android:7260160c95d5c9fae0d777",
+        "android_client_info": {
+          "package_name": "com.example.siargao_trading_road"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1Z60hDs2P4-z9NyqJ5AZTAoTFrg1SGJA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

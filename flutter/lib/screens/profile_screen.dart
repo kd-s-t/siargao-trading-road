@@ -270,7 +270,8 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   }
 
   Widget _buildBody(AuthProvider authProvider, User user) {
-    return SingleChildScrollView(
+    return SafeArea(
+      child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -289,7 +290,8 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                 const SizedBox(height: 32),
               ],
             ),
-          );
+          ),
+      );
   }
 
   @override

@@ -135,9 +135,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -264,6 +265,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 32),
             ],
           ),
+        ),
         ),
       ),
     );

@@ -38,6 +38,7 @@ type User struct {
 	ClosingTime      string         `json:"closing_time"`
 	ClosedDaysOfWeek string         `json:"closed_days_of_week"` // Comma-separated: 0=Sunday, 1=Monday, etc.
 	IsOpen           bool           `gorm:"default:true" json:"is_open"`
+	FCMToken         string         `json:"fcm_token,omitempty"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 	LastLogin        *time.Time     `json:"last_login,omitempty"`

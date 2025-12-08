@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 class SmoothPageRoute<T> extends PageRouteBuilder<T> {
   final Widget child;
+  final RouteSettings settings;
 
-  SmoothPageRoute({required this.child})
+  SmoothPageRoute({required this.child, required this.settings})
       : super(
+          settings: settings,
           pageBuilder: (context, animation, secondaryAnimation) => child,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             const begin = Offset(1.0, 0.0);
