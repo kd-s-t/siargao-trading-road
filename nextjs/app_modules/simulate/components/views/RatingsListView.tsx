@@ -16,6 +16,7 @@ import {
   Star as StarIcon,
 } from '@mui/icons-material';
 import { OrderRating } from '@/lib/users';
+import { mobileOrderService } from '../../services/mobileApi';
 
 interface RatingsListViewProps {
   onBack: () => void;
