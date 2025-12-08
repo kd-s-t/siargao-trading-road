@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/services/order_service.dart';
+import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
 import 'package:intl/intl.dart';
 
 class AnalyticsScreen extends StatefulWidget {
@@ -120,7 +121,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         title: const Text('Analytics'),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ShimmerAnalytics()
           : RefreshIndicator(
               onRefresh: _loadAnalytics,
               child: SingleChildScrollView(

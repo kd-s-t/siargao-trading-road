@@ -6,17 +6,26 @@ import 'package:motion/motion.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/services/auth_service.dart';
 import 'package:siargao_trading_road/models/user.dart';
+import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool? useScaffold;
+  final GlobalKey<ProfileScreenState>? editKey;
+  final VoidCallback? onEditStateChanged;
   
-  const ProfileScreen({super.key, this.useScaffold});
+  const ProfileScreen({super.key, this.useScaffold, this.editKey, this.onEditStateChanged});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+abstract class ProfileScreenState extends State<ProfileScreen> {
+  void toggleEdit();
+  void handleSave();
+  bool get isEditing;
+}
+
+class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderStateMixin {
   bool _editing = false;
   bool _editingHours = false;
   bool _loading = false;
@@ -40,6 +49,26 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       _refreshUserData();
     });
   }
+
+  @override
+  void toggleEdit() {
+    setState(() {
+      _editing = !_editing;
+      if (!_editing) {
+        _loadUserData();
+      }
+    });
+    widget.onEditStateChanged?.call();
+  }
+
+  @override
+  void handleSave() async {
+    await _handleSave();
+    widget.onEditStateChanged?.call();
+  }
+
+  @override
+  bool get isEditing => _editing;
 
   Future<void> _refreshUserData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -111,15 +140,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         _editing = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
-        );
+        SnackbarHelper.showSuccess(context, 'Profile updated successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update profile: ${e.toString()}')),
-        );
+        SnackbarHelper.showError(context, 'Failed to update profile: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -150,15 +175,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         _editingHours = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Operating hours updated successfully')),
-        );
+        SnackbarHelper.showSuccess(context, 'Operating hours updated successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update operating hours: ${e.toString()}')),
-        );
+        SnackbarHelper.showError(context, 'Failed to update operating hours: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -221,15 +242,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       await authProvider.refreshUser();
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image uploaded successfully')),
-        );
+        SnackbarHelper.showSuccess(context, 'Image uploaded successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload image: ${e.toString()}')),
-        );
+        SnackbarHelper.showError(context, 'Failed to upload image: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -353,8 +370,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 width: double.infinity,
                 height: 200,
                 fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: Colors.grey[300],
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    ),
+                  );
+                },
                 errorBuilder: (context, error, stackTrace) {
-                  return Container(color: Colors.grey[300]);
+                  return Container(
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image, size: 48, color: Colors.grey),
+                  );
                 },
               ),
             if (_editing)
@@ -387,9 +421,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Widget _buildProfileCard(User user) {
     return Card(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 0),
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           children: [
             GestureDetector(
@@ -401,6 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         ? CircleAvatar(
                             radius: 40,
                             backgroundImage: NetworkImage(user.logoUrl!),
+                            onBackgroundImageError: (exception, stackTrace) {},
                           )
                         : CircleAvatar(
                             radius: 40,
@@ -440,7 +475,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             if (_editing)
               TextField(
                 controller: _nameController,
@@ -457,7 +492,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               user.role.toUpperCase(),
               style: TextStyle(
@@ -507,13 +542,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     if (links.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.only(top: 20, bottom: 8),
       child: Wrap(
-        spacing: 8,
+        spacing: 12,
+        runSpacing: 12,
         alignment: WrapAlignment.center,
         children: links.map((link) {
           return IconButton(
             icon: _getSocialIcon(link['type'] as String),
+            iconSize: 28,
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(),
             onPressed: () async {
               final url = Uri.parse(link['url'] as String);
               if (await canLaunchUrl(url)) {
@@ -553,7 +592,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -669,19 +708,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+          Flexible(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
             ),
           ),
+          const SizedBox(width: 16),
           Flexible(
+            flex: 3,
             child: Text(
               value,
               style: const TextStyle(fontSize: 14),
@@ -705,23 +750,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       }
       await authProvider.refreshUser();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              user.isOpen
-                  ? 'Store closed successfully'
-                  : 'Store opened successfully',
-            ),
-          ),
+        SnackbarHelper.showSuccess(
+          context,
+          user.isOpen
+              ? 'Store closed successfully'
+              : 'Store opened successfully',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update status: ${e.toString()}'),
-          ),
-        );
+        SnackbarHelper.showError(context, 'Failed to update status: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -736,14 +774,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     final isOpen = user.isOpen;
     
     return Card(
-      margin: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           color: isOpen ? Colors.green.shade50 : Colors.red.shade50,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -792,7 +830,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -982,7 +1020,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Widget _buildAnalyticsButton() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: ElevatedButton.icon(
         onPressed: () {
           Navigator.pushNamed(context, '/analytics');
@@ -992,7 +1030,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
     );
@@ -1000,14 +1041,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Widget _buildLogoutButton(AuthProvider authProvider) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ElevatedButton(
         onPressed: () async {
           await authProvider.logout();
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         child: const Text('Logout', style: TextStyle(color: Colors.white)),
       ),

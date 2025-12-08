@@ -38,6 +38,25 @@ class OrderItem {
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'order_id': orderId,
+      'product_id': productId,
+      'product': {
+        'id': product.id,
+        'name': product.name,
+        'price': product.price,
+        'image_url': product.imageUrl,
+      },
+      'quantity': quantity,
+      'unit_price': unitPrice,
+      'subtotal': subtotal,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
 }
 
 class Order {
@@ -111,6 +130,47 @@ class Order {
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'store_id': storeId,
+      'store': store != null ? {
+        'id': store!.id,
+        'name': store!.name,
+        'email': store!.email,
+        'role': store!.role,
+      } : null,
+      'supplier_id': supplierId,
+      'supplier': supplier != null ? {
+        'id': supplier!.id,
+        'name': supplier!.name,
+        'email': supplier!.email,
+        'role': supplier!.role,
+      } : null,
+      'status': status,
+      'total_amount': totalAmount,
+      'payment_method': paymentMethod,
+      'payment_status': paymentStatus,
+      'payment_proof_url': paymentProofUrl,
+      'delivery_option': deliveryOption,
+      'delivery_fee': deliveryFee,
+      'distance': distance,
+      'shipping_address': shippingAddress,
+      'notes': notes,
+      'order_items': orderItems.map((item) => item.toJson()).toList(),
+      'ratings': ratings?.map((rating) => {
+        'id': rating.id,
+        'order_id': rating.orderId,
+        'rater_id': rating.raterId,
+        'rating': rating.rating,
+        'comment': rating.comment,
+        'created_at': rating.createdAt.toIso8601String(),
+      }).toList(),
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
   }
 }
 

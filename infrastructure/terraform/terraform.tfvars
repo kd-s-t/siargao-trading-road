@@ -25,3 +25,7 @@ rds_allowed_cidr_blocks = ["49.148.247.52/32"]
 
 mobile_build_retention_days = 90
 
+# AWS Credentials for S3 Access
+# aws_access_key_id     = ""
+# aws_secret_access_key = ""
+

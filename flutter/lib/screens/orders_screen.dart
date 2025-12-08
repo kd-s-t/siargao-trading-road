@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
 import 'dart:io';
 
 class OrdersScreen extends StatefulWidget {
@@ -214,8 +215,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
 
-    return _loading
-          ? const Center(child: CircularProgressIndicator())
+    return _loading && _orders.isEmpty
+          ? const ShimmerOrderList()
           : _error != null
               ? Center(
                   child: Column(

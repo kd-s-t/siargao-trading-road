@@ -674,6 +674,12 @@
       "languageVersion": "3.3"
     },
     {
+      "name": "shimmer",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/shimmer-3.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
       "name": "simple_gesture_detector",
       "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/simple_gesture_detector-0.2.1",
       "packageUri": "lib/",
@@ -732,6 +738,12 @@
       "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/test_api-0.7.7",
       "packageUri": "lib/",
       "languageVersion": "3.5"
+    },
+    {
+      "name": "top_snackbar_flutter",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/top_snackbar_flutter-3.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.15"
     },
     {
       "name": "typed_data",

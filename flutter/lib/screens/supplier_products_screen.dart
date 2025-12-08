@@ -5,6 +5,7 @@ import 'package:siargao_trading_road/services/order_service.dart';
 import 'package:siargao_trading_road/models/product.dart';
 import 'package:siargao_trading_road/models/order.dart';
 import 'package:siargao_trading_road/models/supplier.dart';
+import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
 
 class SupplierProductsScreen extends StatefulWidget {
   final int supplierId;
@@ -324,7 +325,7 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
         ],
       ),
       body: _loading && _products.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? const ShimmerProductList()
           : RefreshIndicator(
               onRefresh: _handleRefresh,
               child: _error != null && _products.isEmpty

@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:siargao_trading_road/models/order.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
+import 'package:siargao_trading_road/services/order_storage_service.dart';
 
 class OrderService {
   static Future<List<Order>> getOrders({String? status}) async {
@@ -9,29 +11,107 @@ class OrderService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List<dynamic>;
-      return data.map((json) => Order.fromJson(json as Map<String, dynamic>)).toList();
+      final orders = data.map((json) => Order.fromJson(json as Map<String, dynamic>)).toList();
+      
+      for (final order in orders) {
+        await OrderStorageService.saveOrder(order);
+      }
+      
+      return orders;
     } else {
       throw Exception('Failed to load orders');
     }
   }
 
-  static Future<Order> getOrder(int id) async {
-    final response = await ApiService.get('/orders/$id');
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return Order.fromJson(data);
-    } else if (response.statusCode == 404) {
-      final errorBody = jsonDecode(response.body) as Map<String, dynamic>?;
-      final errorMsg = errorBody?['error'] as String?;
-      throw Exception(errorMsg ?? 'Order not found');
-    } else {
-      try {
-        final error = jsonDecode(response.body) as Map<String, dynamic>?;
-        throw Exception(error?['error'] ?? 'Failed to load order');
-      } catch (e) {
-        throw Exception('Failed to load order: ${response.statusCode}');
+  static Future<Order> getOrder(int id, {bool checkLocalFirst = false, bool fallbackToLocal = true, bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      checkLocalFirst = false;
+      fallbackToLocal = false;
+    }
+    
+    if (checkLocalFirst) {
+      final cachedOrder = await OrderStorageService.getOrder(id);
+      if (cachedOrder != null) {
+        return cachedOrder;
       }
+    }
+
+    try {
+      if (kDebugMode) {
+        print('Calling API: GET /orders/$id');
+      }
+      final response = await ApiService.get('/orders/$id');
+
+      final responseBody = response.body;
+      final statusCode = response.statusCode;
+
+      if (onResponse != null) {
+        onResponse(statusCode, responseBody);
+      }
+
+      if (kDebugMode) {
+        print('API Response Status: $statusCode');
+        print('API Response Body: $responseBody');
+      }
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(responseBody) as Map<String, dynamic>;
+        if (kDebugMode) {
+          print('API Response for order $id: ${jsonEncode(data)}');
+        }
+        final order = Order.fromJson(data);
+        
+        await OrderStorageService.saveOrder(order);
+        
+        return order;
+      } else if (response.statusCode == 404) {
+        if (kDebugMode) {
+          print('Order $id not found in API (404). Response: ${response.body}');
+        }
+        if (fallbackToLocal) {
+          final cachedOrder = await OrderStorageService.getOrder(id);
+          if (cachedOrder != null) {
+            if (kDebugMode) {
+              print('Using cached order $id from local storage');
+            }
+            return cachedOrder;
+          }
+        }
+        final errorBody = jsonDecode(response.body) as Map<String, dynamic>?;
+        final errorMsg = errorBody?['error'] as String?;
+        throw Exception(errorMsg ?? 'Order not found');
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        if (fallbackToLocal) {
+          final cachedOrder = await OrderStorageService.getOrder(id);
+          if (cachedOrder != null) {
+            return cachedOrder;
+          }
+        }
+        final errorBody = jsonDecode(response.body) as Map<String, dynamic>?;
+        final errorMsg = errorBody?['error'] as String?;
+        throw Exception(errorMsg ?? 'Unauthorized to view this order');
+      } else {
+        if (fallbackToLocal) {
+          final cachedOrder = await OrderStorageService.getOrder(id);
+          if (cachedOrder != null) {
+            return cachedOrder;
+          }
+        }
+        try {
+          final error = jsonDecode(response.body) as Map<String, dynamic>?;
+          throw Exception(error?['error'] ?? 'Failed to load order');
+        } catch (e) {
+          throw Exception('Failed to load order: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      if (fallbackToLocal) {
+        final cachedOrder = await OrderStorageService.getOrder(id);
+        if (cachedOrder != null) {
+          return cachedOrder;
+        }
+      }
+      rethrow;
     }
   }
 

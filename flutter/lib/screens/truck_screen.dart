@@ -258,7 +258,7 @@ class _TruckScreenState extends State<TruckScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             Card(
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: 8),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -396,7 +396,7 @@ class _TruckScreenState extends State<TruckScreen> {
               );
             }),
             Card(
-              margin: const EdgeInsets.only(top: 8, bottom: 16),
+              margin: const EdgeInsets.symmetric(vertical: 8),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -469,7 +469,7 @@ class _TruckScreenState extends State<TruckScreen> {
               ),
             ),
             Card(
-              margin: const EdgeInsets.only(top: 8, bottom: 16),
+              margin: const EdgeInsets.symmetric(vertical: 8),
               color: Colors.blue[50],
               child: Padding(
                 padding: const EdgeInsets.all(16),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +16,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:siargao_trading_road/services/auth_service.dart';
+import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
 import 'dart:io';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -38,6 +40,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   int _ratingValue = 5;
   final _ratingCommentController = TextEditingController();
   String? _errorMessage;
+  String? _apiResponse;
+  int? _apiStatusCode;
 
   @override
   void initState() {
@@ -120,7 +124,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       }
 
       try {
-        final loadedOrder = await OrderService.getOrder(orderId);
+        if (kDebugMode) {
+          print('Loading order $orderId from API...');
+        }
+        final loadedOrder = await OrderService.getOrder(
+          orderId,
+          checkLocalFirst: false,
+          fallbackToLocal: false,
+          forceRefresh: true,
+          onResponse: (statusCode, responseBody) {
+            if (mounted) {
+              setState(() {
+                _apiStatusCode = statusCode;
+                _apiResponse = responseBody;
+              });
+            }
+          },
+        );
         if (mounted) {
           setState(() {
             _order = loadedOrder;
@@ -130,6 +150,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           _loadMessages();
         }
       } catch (e) {
+        if (kDebugMode) {
+          print('Error loading order $orderId: $e');
+        }
         if (mounted) {
           final errorStr = e.toString();
           final isNotFound = errorStr.contains('not found') || errorStr.contains('404');
@@ -519,7 +542,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           if (_loading) {
             return Scaffold(
               appBar: AppBar(title: const Text('Order Details')),
-              body: const Center(child: CircularProgressIndicator()),
+              body: const ShimmerOrderDetail(),
             );
           }
 
@@ -544,6 +567,56 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           _errorMessage!,
                           style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                           textAlign: TextAlign.center,
+                        ),
+                      ],
+                      if (kDebugMode && _apiResponse != null) ...[
+                        const SizedBox(height: 24),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    'API Debug Info',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    'Status: ${_apiStatusCode ?? "N/A"}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: _apiStatusCode == 200 ? Colors.green : Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                constraints: const BoxConstraints(maxHeight: 200),
+                                child: SingleChildScrollView(
+                                  child: SelectableText(
+                                    _apiResponse!,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                       const SizedBox(height: 24),
@@ -702,7 +775,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Widget _buildOrderCard(User? entity, String entityName, user) {
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1259,7 +1332,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Widget _buildActionsCard(User? entity, String entityName, user) {
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

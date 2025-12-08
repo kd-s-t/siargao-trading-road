@@ -30,7 +30,9 @@
         "scrollable_clean_calendar",
         "share_plus",
         "shared_preferences",
+        "shimmer",
         "table_calendar",
+        "top_snackbar_flutter",
         "url_launcher"
       ],
       "devDependencies": [
@@ -75,6 +77,20 @@
         "stream_channel",
         "test_api",
         "vector_math"
+      ]
+    },
+    {
+      "name": "top_snackbar_flutter",
+      "version": "3.3.0",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "shimmer",
+      "version": "3.0.0",
+      "dependencies": [
+        "flutter"
       ]
     },
     {

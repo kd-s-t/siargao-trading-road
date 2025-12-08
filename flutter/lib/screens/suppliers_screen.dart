@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:siargao_trading_road/services/supplier_service.dart';
 import 'package:siargao_trading_road/models/supplier.dart';
+import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
 
 class SuppliersScreen extends StatefulWidget {
   final bool? useScaffold;
@@ -80,7 +81,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   Widget _buildBody() {
     return _loading && _suppliers.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? const ShimmerSupplierList()
           : RefreshIndicator(
               onRefresh: _handleRefresh,
               child: _error != null && _suppliers.isEmpty
