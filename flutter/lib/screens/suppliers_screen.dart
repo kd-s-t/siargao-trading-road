@@ -126,7 +126,12 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                           ),
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.only(
+                            left: 16,
+                            right: 16,
+                            top: 16,
+                            bottom: 16 + MediaQuery.of(context).padding.bottom,
+                          ),
                           itemCount: _suppliers.length,
                           itemBuilder: (context, index) {
                             final supplier = _suppliers[index];
