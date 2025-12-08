@@ -15,7 +15,6 @@ import {
   ArrowBack as ArrowBackIcon,
   Star as StarIcon,
 } from '@mui/icons-material';
-import { User } from '@/lib/auth';
 import { OrderRating } from '@/lib/users';
 
 interface RatingsListViewProps {
