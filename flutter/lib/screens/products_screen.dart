@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/services/product_service.dart';
 import 'package:siargao_trading_road/models/product.dart';
 import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
+import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 
 class ProductsScreen extends StatefulWidget {
   final bool? useScaffold;

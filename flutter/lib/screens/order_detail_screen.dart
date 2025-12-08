@@ -530,9 +530,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       if (image == null) return;
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Uploading image...')),
-        );
+        SnackbarHelper.showInfo(context, 'Uploading image...');
       }
 
       final uploadResult = await AuthService.uploadImage(image.path);
@@ -542,15 +540,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       await _loadMessages();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image sent')),
-        );
+        SnackbarHelper.showSuccess(context, 'Image sent');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send image: $e')),
-        );
+        SnackbarHelper.showError(context, 'Failed to send image: ${e.toString()}');
       }
     }
   }
