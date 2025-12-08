@@ -470,7 +470,6 @@ export function SimulateContent() {
 
         {activeView === 'ratings-list' && (
           <RatingsListView
-            mobileUser={mobileUser}
             onBack={() => setActiveView('profile')}
           />
         )}
