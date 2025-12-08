@@ -162,7 +162,6 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ order, logoBase64 }) => 
               <Image
                 src={logoBase64}
                 style={styles.logo}
-                alt="Company logo"
               />
             )}
           </View>
