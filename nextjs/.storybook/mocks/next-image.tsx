@@ -1,26 +1,12 @@
 import React from 'react';
 
-interface ImageProps {
+type ImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   src: string;
   alt: string;
-  width?: number;
-  height?: number;
-  style?: React.CSSProperties;
-  [key: string]: unknown;
-}
-
-const Image = ({ src, alt, width, height, style, ...props }: ImageProps) => {
-  return (
-    <img
-      src={src}
-      alt={alt}
-      width={width}
-      height={height}
-      style={style}
-      {...props}
-    />
-  );
 };
+
+const Image = ({ src, alt, ...props }: ImageProps) =>
+  React.createElement('img', { src, alt, ...props });
 
 export default Image;
 

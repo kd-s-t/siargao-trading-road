@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useRef } from 'react';
 import {
   Box,
@@ -124,22 +125,21 @@ export function ImageUpload({
                 sx={{
                   position: 'relative',
                   width: '100%',
-                  maxHeight: 300,
+                  height: 300,
                   borderRadius: 2,
                   overflow: 'hidden',
                   border: '1px solid',
                   borderColor: 'divider',
+                  bgcolor: 'background.paper',
                 }}
               >
-                <img
+                <Image
                   src={preview}
                   alt="Preview"
-                  style={{
-                    width: '100%',
-                    height: 'auto',
-                    display: 'block',
-                    objectFit: 'contain',
-                  }}
+                  fill
+                  sizes="100vw"
+                  style={{ objectFit: 'contain' }}
+                  unoptimized
                 />
               </Box>
               <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>

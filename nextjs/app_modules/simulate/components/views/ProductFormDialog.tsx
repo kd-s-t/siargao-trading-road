@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -231,11 +232,24 @@ export function ProductFormDialog({
               </Button>
             </label>
             {formData.image_url && (
-              <Box sx={{ mt: 1 }}>
-                <img
+              <Box
+                sx={{
+                  mt: 1,
+                  position: 'relative',
+                  width: '100%',
+                  height: 200,
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                  bgcolor: 'background.paper',
+                }}
+              >
+                <Image
                   src={formData.image_url}
                   alt="Product"
-                  style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 4 }}
+                  fill
+                  sizes="100vw"
+                  style={{ objectFit: 'cover' }}
+                  unoptimized
                 />
               </Box>
             )}

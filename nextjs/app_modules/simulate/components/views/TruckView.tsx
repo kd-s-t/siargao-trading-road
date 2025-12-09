@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useRef } from 'react';
 import {
   Box,
@@ -302,17 +303,17 @@ export function TruckView({
                       overflow: 'hidden',
                       border: '1px solid #e0e0e0',
                       maxWidth: 200,
+                      height: 150,
+                      bgcolor: 'background.paper',
                     }}
                   >
-                    <img
+                    <Image
                       src={paymentProofPreview}
                       alt="Payment proof preview"
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: 150,
-                        display: 'block',
-                        objectFit: 'contain',
-                      }}
+                      fill
+                      sizes="200px"
+                      style={{ objectFit: 'contain' }}
+                      unoptimized
                     />
                     <IconButton
                       size="small"

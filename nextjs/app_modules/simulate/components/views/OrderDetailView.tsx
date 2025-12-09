@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import {
   Box,
@@ -322,20 +323,21 @@ export function OrderDetailView({
                   overflow: 'hidden',
                   border: '1px solid #e0e0e0',
                   maxWidth: 300,
+                  height: 200,
+                  position: 'relative',
+                  bgcolor: 'background.paper',
                   cursor: 'pointer',
                   '&:hover': { opacity: 0.8 },
                 }}
                 onClick={() => window.open(order.payment_proof_url, '_blank')}
               >
-                <img
+                <Image
                   src={order.payment_proof_url}
                   alt="Payment proof"
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: 200,
-                    display: 'block',
-                    objectFit: 'contain',
-                  }}
+                  fill
+                  sizes="(max-width: 600px) 100vw, 300px"
+                  style={{ objectFit: 'contain' }}
+                  unoptimized
                 />
               </Box>
             </Box>
@@ -703,33 +705,26 @@ export function OrderDetailView({
                             overflow: 'hidden',
                             bgcolor: isCurrentUser ? 'rgba(0, 0, 0, 0.15)' : 'rgba(0, 0, 0, 0.08)',
                             maxWidth: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                            minHeight: 120,
+                            maxHeight: 250,
                             position: 'relative',
                             '&:hover': {
                               opacity: 0.9,
                             },
                           }}
                         >
-                          <img
+                          <Image
                             src={message.image_url}
                             alt="Message attachment"
+                            fill
+                            sizes="(max-width: 600px) 100vw, 320px"
+                            style={{ objectFit: 'contain', cursor: 'pointer', borderRadius: 4 }}
                             onError={() => {
                               setFailedImages(prev => new Set(prev).add(message.id));
                             }}
-                            style={{
-                              maxWidth: '100%',
-                              maxHeight: 250,
-                              width: 'auto',
-                              height: 'auto',
-                              objectFit: 'contain',
-                              display: 'block',
-                              cursor: 'pointer',
-                              borderRadius: '4px',
-                            }}
                             onClick={() => window.open(message.image_url, '_blank')}
                             title="Click to view full size"
+                            unoptimized
                           />
                         </Box>
                       )}
@@ -775,17 +770,17 @@ export function OrderDetailView({
                     overflow: 'hidden',
                     border: '1px solid #e0e0e0',
                     maxWidth: 200,
+                    height: 150,
+                    bgcolor: 'background.paper',
                   }}
                 >
-                  <img
+                  <Image
                     src={imagePreview}
                     alt="Preview"
-                    style={{
-                      maxWidth: '100%',
-                      maxHeight: 150,
-                      display: 'block',
-                      objectFit: 'contain',
-                    }}
+                    fill
+                    sizes="200px"
+                    style={{ objectFit: 'contain' }}
+                    unoptimized
                   />
                   <IconButton
                     size="small"
