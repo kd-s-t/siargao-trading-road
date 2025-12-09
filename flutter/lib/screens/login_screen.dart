@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:animate_gradient/animate_gradient.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
+import 'package:siargao_trading_road/navigation/app_navigator.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -201,11 +202,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         _emailController.text.trim(),
         _passwordController.text,
       );
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AppNavigator()),
+        (route) => false,
+      );
     } catch (e) {
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
-        _loading = false;
       });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
 

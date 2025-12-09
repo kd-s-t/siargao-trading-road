@@ -17,12 +17,25 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   List<Product> _products = [];
+  List<Product> _filteredProducts = [];
   bool _loading = true;
   bool _showDeleted = false;
   bool _isLoading = false;
   bool _hasLoaded = false;
   final List<bool> _itemVisible = [];
   final List<Timer> _animationTimers = [];
+  String _searchQuery = '';
+  bool _updatingStock = false;
+  Timer? _searchDebounce;
+
+  void addProduct(Product product) {
+    if (mounted) {
+      setState(() {
+        _products.insert(0, product);
+      });
+      _startItemAnimations();
+    }
+  }
 
   @override
   void initState() {
@@ -39,6 +52,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     for (final timer in _animationTimers) {
       timer.cancel();
     }
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -48,9 +62,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
     _animationTimers.clear();
     _itemVisible.clear();
-    _itemVisible.addAll(List<bool>.filled(_products.length, false));
+    _itemVisible.addAll(List<bool>.filled(_filteredProducts.length, false));
     
-    for (var i = 0; i < _products.length; i++) {
+    for (var i = 0; i < _filteredProducts.length; i++) {
       final timer = Timer(Duration(milliseconds: 100 + i * 90), () {
         if (mounted && i < _itemVisible.length) {
           setState(() {
@@ -71,10 +85,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
     });
 
     try {
-      final products = await ProductService.getProducts(includeDeleted: _showDeleted);
+      final products = await ProductService.getProducts(
+        includeDeleted: _showDeleted,
+        search: _searchQuery.trim().isEmpty ? null : _searchQuery,
+      );
       if (mounted) {
         setState(() {
           _products = products;
+          _filteredProducts = products;
           _loading = false;
           _isLoading = false;
           _hasLoaded = true;
@@ -90,6 +108,98 @@ class _ProductsScreenState extends State<ProductsScreen> {
         SnackbarHelper.showError(context, 'Failed to load products: ${e.toString()}');
       }
     }
+  }
+
+  Future<void> _handleUpdateStock(Product product) async {
+    if (_updatingStock) return;
+    final controller = TextEditingController(text: product.stockQuantity.toString());
+    final newQuantity = await showDialog<int>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Update stock'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Stock quantity',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                final parsed = int.tryParse(controller.text.trim());
+                if (parsed == null || parsed < 0) {
+                  Navigator.pop(context);
+                  SnackbarHelper.showError(context, 'Enter a valid quantity');
+                  return;
+                }
+                Navigator.pop(context, parsed);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newQuantity == null || newQuantity == product.stockQuantity) return;
+
+    setState(() {
+      _updatingStock = true;
+    });
+
+    try {
+      final updated = await ProductService.updateProduct(
+        product.id,
+        stockQuantity: newQuantity,
+      );
+      if (!mounted) return;
+      setState(() {
+        _products = _products.map((p) => p.id == product.id ? updated : p).toList();
+        _filteredProducts = _filteredProducts.map((p) => p.id == product.id ? updated : p).toList();
+        _updatingStock = false;
+      });
+      _startItemAnimations();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _updatingStock = false;
+      });
+      SnackbarHelper.showError(context, 'Failed to update stock: ${e.toString()}');
+    }
+  }
+
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: TextField(
+        decoration: const InputDecoration(
+          hintText: 'Search products',
+          prefixIcon: Icon(Icons.search),
+          border: OutlineInputBorder(),
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        ),
+        onChanged: (value) {
+          _searchDebounce?.cancel();
+          setState(() {
+            _searchQuery = value;
+          });
+          _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+            if (mounted) {
+              _loadProducts(force: true);
+            }
+          });
+        },
+      ),
+    );
   }
 
   Widget _buildBody() {
@@ -117,12 +227,27 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _products.length,
+                      padding: const EdgeInsets.only(bottom: 16),
+                      itemCount: (_filteredProducts.isEmpty ? 2 : _filteredProducts.length + 1),
                       itemBuilder: (context, index) {
-                        final product = _products[index];
+                        if (index == 0) {
+                          return _buildSearchField();
+                        }
+                        if (_filteredProducts.isEmpty && index == 1) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Center(
+                              child: Text(
+                                'No products match your search',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          );
+                        }
+                        final productIndex = index - 1;
+                        final product = _filteredProducts[productIndex];
                         final isDeleted = product.deletedAt != null;
-                        final visible = index < _itemVisible.length ? _itemVisible[index] : true;
+                        final visible = productIndex < _itemVisible.length ? _itemVisible[productIndex] : true;
                         return AnimatedOpacity(
                           duration: const Duration(milliseconds: 360),
                           curve: Curves.easeOut,
@@ -148,7 +273,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                         child: const Icon(Icons.image),
                                       ),
                                 title: Text(product.name),
-                                subtitle: Text('₱${NumberFormat('#,##0.00').format(product.price)}'),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('₱${NumberFormat('#,##0.00').format(product.price)}'),
+                                    Text(
+                                      'Stock: ${product.stockQuantity}',
+                                      style: const TextStyle(color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -168,7 +302,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                           }
                                         },
                                       )
-                                    else
+                                    else ...[
+                                      IconButton(
+                                        icon: const Icon(Icons.inventory_2),
+                                        onPressed: _updatingStock ? null : () => _handleUpdateStock(product),
+                                      ),
                                       IconButton(
                                         icon: const Icon(Icons.edit),
                                         onPressed: () async {
@@ -182,6 +320,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                           }
                                         },
                                       ),
+                                    ],
                                     if (!isDeleted)
                                       IconButton(
                                         icon: const Icon(Icons.delete, color: Colors.red),
@@ -260,8 +399,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
         child: body,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/add-product');
+        onPressed: () async {
+          final result = await Navigator.pushNamed(context, '/add-product');
+          if (result is Product && mounted) {
+            setState(() {
+              _products.insert(0, result);
+            });
+            _startItemAnimations();
+          }
         },
         child: const Icon(Icons.add),
       ),

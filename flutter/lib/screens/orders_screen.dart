@@ -202,6 +202,30 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
+  Future<void> _handleMarkPaymentAsPaid(int orderId) async {
+    setState(() {
+      _updatingStatus = orderId;
+    });
+
+    try {
+      await OrderService.markPaymentAsPaid(orderId);
+      await _loadOrders(force: true);
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Payment marked as paid');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Failed to mark as paid: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _updatingStatus = null;
+        });
+      }
+    }
+  }
+
   Widget _buildBody() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
@@ -292,19 +316,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          if (entity?.bannerUrl != null && entity!.bannerUrl!.isNotEmpty)
-                                            Image.network(
-                                              entity.bannerUrl!,
-                                              width: double.infinity,
-                                              height: 120,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) {
-                                                return Container(
-                                                  height: 120,
-                                                  color: Colors.grey[300],
-                                                );
-                                              },
-                                            ),
                                           Padding(
                                             padding: const EdgeInsets.all(16),
                                             child: Column(
@@ -593,18 +604,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                               )
                                                             : const Text('Mark Delivered'),
                                                       ),
-                                                    if (user?.role == 'supplier' && order.status == 'delivered' && order.paymentStatus != 'paid')
+                                                    if (user?.role == 'supplier' &&
+                                                        (order.status == 'in_transit' || order.status == 'delivered') &&
+                                                        order.paymentStatus != 'paid')
                                                       OutlinedButton(
                                                         onPressed: _updatingStatus == order.id
                                                             ? null
-                                                            : () => _handleUpdateStatus(order.id, 'in_transit'),
+                                                            : () => _handleMarkPaymentAsPaid(order.id),
                                                         child: _updatingStatus == order.id
                                                             ? const SizedBox(
                                                                 width: 16,
                                                                 height: 16,
                                                                 child: CircularProgressIndicator(strokeWidth: 2),
                                                               )
-                                                            : const Text('Revert to In Transit'),
+                                                            : const Text('Mark as Paid'),
                                                       ),
                                                   ],
                                                 ),

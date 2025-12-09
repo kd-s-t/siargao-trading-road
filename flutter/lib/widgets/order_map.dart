@@ -36,6 +36,12 @@ class _OrderMapState extends State<OrderMap> with TickerProviderStateMixin {
 
   static const LatLng _siargaoCenter = LatLng(9.8563, 126.0483);
 
+  LatLng? _safeLocation(double? latitude, double? longitude) {
+    if (latitude == null || longitude == null) return null;
+    if (!latitude.isFinite || !longitude.isFinite) return null;
+    return LatLng(latitude, longitude);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -59,12 +65,8 @@ class _OrderMapState extends State<OrderMap> with TickerProviderStateMixin {
 
   void _setupMap() {
     try {
-      final storeLocation = widget.store?.latitude != null && widget.store?.longitude != null
-          ? LatLng(widget.store!.latitude!, widget.store!.longitude!)
-          : null;
-      final supplierLocation = widget.supplier?.latitude != null && widget.supplier?.longitude != null
-          ? LatLng(widget.supplier!.latitude!, widget.supplier!.longitude!)
-          : null;
+      final storeLocation = _safeLocation(widget.store?.latitude, widget.store?.longitude);
+      final supplierLocation = _safeLocation(widget.supplier?.latitude, widget.supplier?.longitude);
 
       if (storeLocation != null) {
         _markers.add(
@@ -155,11 +157,14 @@ class _OrderMapState extends State<OrderMap> with TickerProviderStateMixin {
           final geometry = route['geometry'];
           if (geometry != null && geometry['coordinates'] != null) {
             final coordinates = geometry['coordinates'] as List;
-            _routePoints = coordinates
-                .map((coord) => LatLng(coord[1] as double, coord[0] as double))
-                .toList();
+            _routePoints = coordinates.map((coord) {
+              if (coord is! List || coord.length < 2) return null;
+              final lng = (coord[0] as num?)?.toDouble();
+              final lat = (coord[1] as num?)?.toDouble();
+              return _safeLocation(lat, lng);
+            }).whereType<LatLng>().toList();
 
-            if (mounted) {
+            if (mounted && _routePoints.length >= 2) {
               setState(() {
                 _polylines.clear();
                 _polylines.add(
@@ -185,20 +190,24 @@ class _OrderMapState extends State<OrderMap> with TickerProviderStateMixin {
         if (mounted) {
           setState(() {
             _routePoints = [
-              LatLng(widget.supplier!.latitude!, widget.supplier!.longitude!),
-              LatLng(widget.store!.latitude!, widget.store!.longitude!),
+              if (_safeLocation(widget.supplier?.latitude, widget.supplier?.longitude) != null)
+                _safeLocation(widget.supplier?.latitude, widget.supplier?.longitude)!,
+              if (_safeLocation(widget.store?.latitude, widget.store?.longitude) != null)
+                _safeLocation(widget.store?.latitude, widget.store?.longitude)!,
             ];
             _polylines.clear();
-            _polylines.add(
-              Polyline(
-                points: _routePoints,
-                strokeWidth: 5,
-                color: widget.status == 'in_transit' ? Colors.orange : Colors.blue,
-                borderStrokeWidth: 0,
-              ),
-            );
+            if (_routePoints.length >= 2) {
+              _polylines.add(
+                Polyline(
+                  points: _routePoints,
+                  strokeWidth: 5,
+                  color: widget.status == 'in_transit' ? Colors.orange : Colors.blue,
+                  borderStrokeWidth: 0,
+                ),
+              );
+            }
           });
-          if (widget.status == 'in_transit') {
+          if (widget.status == 'in_transit' && _routePoints.length >= 2) {
             _startTruckAnimation();
           }
         }
@@ -270,12 +279,8 @@ class _OrderMapState extends State<OrderMap> with TickerProviderStateMixin {
   }
 
   LatLng _getCenter() {
-    final storeLocation = widget.store?.latitude != null && widget.store?.longitude != null
-        ? LatLng(widget.store!.latitude!, widget.store!.longitude!)
-        : null;
-    final supplierLocation = widget.supplier?.latitude != null && widget.supplier?.longitude != null
-        ? LatLng(widget.supplier!.latitude!, widget.supplier!.longitude!)
-        : null;
+    final storeLocation = _safeLocation(widget.store?.latitude, widget.store?.longitude);
+    final supplierLocation = _safeLocation(widget.supplier?.latitude, widget.supplier?.longitude);
 
     if (storeLocation != null && supplierLocation != null) {
       return LatLng(
@@ -288,23 +293,36 @@ class _OrderMapState extends State<OrderMap> with TickerProviderStateMixin {
   }
 
   void _fitBounds() {
-    final storeLocation = widget.store?.latitude != null && widget.store?.longitude != null
-        ? LatLng(widget.store!.latitude!, widget.store!.longitude!)
-        : null;
-    final supplierLocation = widget.supplier?.latitude != null && widget.supplier?.longitude != null
-        ? LatLng(widget.supplier!.latitude!, widget.supplier!.longitude!)
-        : null;
+    final storeLocation = _safeLocation(widget.store?.latitude, widget.store?.longitude);
+    final supplierLocation = _safeLocation(widget.supplier?.latitude, widget.supplier?.longitude);
 
     if (storeLocation != null && supplierLocation != null) {
+      final distance = const Distance().distance(storeLocation, supplierLocation);
+
+      // If points are essentially the same, avoid bounds-fit (can yield NaN zoom).
+      if (distance < 1) {
+        Timer(const Duration(milliseconds: 200), () {
+          if (mounted) {
+            try {
+              _mapController.move(storeLocation, 15);
+            } catch (_) {}
+          }
+        });
+        return;
+      }
+
+      final minLat = math.min(storeLocation.latitude, supplierLocation.latitude);
+      final minLng = math.min(storeLocation.longitude, supplierLocation.longitude);
+      final maxLat = math.max(storeLocation.latitude, supplierLocation.latitude);
+      final maxLng = math.max(storeLocation.longitude, supplierLocation.longitude);
+
+      if (![minLat, minLng, maxLat, maxLng].every((v) => v.isFinite)) {
+        return;
+      }
+
       final bounds = LatLngBounds(
-        LatLng(
-          math.min(storeLocation.latitude, supplierLocation.latitude),
-          math.min(storeLocation.longitude, supplierLocation.longitude),
-        ),
-        LatLng(
-          math.max(storeLocation.latitude, supplierLocation.latitude),
-          math.max(storeLocation.longitude, supplierLocation.longitude),
-        ),
+        LatLng(minLat, minLng),
+        LatLng(maxLat, maxLng),
       );
 
       Timer(const Duration(milliseconds: 800), () {
@@ -316,21 +334,15 @@ class _OrderMapState extends State<OrderMap> with TickerProviderStateMixin {
                 padding: const EdgeInsets.all(50),
               ),
             );
-          } catch (e) {
-            // Silently fail - camera fit errors should not crash the app
-          }
+          } catch (_) {}
         }
       });
     }
   }
 
   double _getZoom() {
-    final storeLocation = widget.store?.latitude != null && widget.store?.longitude != null
-        ? LatLng(widget.store!.latitude!, widget.store!.longitude!)
-        : null;
-    final supplierLocation = widget.supplier?.latitude != null && widget.supplier?.longitude != null
-        ? LatLng(widget.supplier!.latitude!, widget.supplier!.longitude!)
-        : null;
+    final storeLocation = _safeLocation(widget.store?.latitude, widget.store?.longitude);
+    final supplierLocation = _safeLocation(widget.supplier?.latitude, widget.supplier?.longitude);
 
     if (storeLocation != null && supplierLocation != null) {
       final distance = const Distance().distance(storeLocation, supplierLocation);
@@ -346,12 +358,8 @@ class _OrderMapState extends State<OrderMap> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     try {
-      final storeLocation = widget.store?.latitude != null && widget.store?.longitude != null
-          ? LatLng(widget.store!.latitude!, widget.store!.longitude!)
-          : null;
-      final supplierLocation = widget.supplier?.latitude != null && widget.supplier?.longitude != null
-          ? LatLng(widget.supplier!.latitude!, widget.supplier!.longitude!)
-          : null;
+      final storeLocation = _safeLocation(widget.store?.latitude, widget.store?.longitude);
+      final supplierLocation = _safeLocation(widget.supplier?.latitude, widget.supplier?.longitude);
 
       if (storeLocation == null && supplierLocation == null) {
         return SizedBox(
@@ -366,7 +374,7 @@ class _OrderMapState extends State<OrderMap> with TickerProviderStateMixin {
       }
 
       final center = _getCenter();
-      final zoom = _getZoom();
+      final zoom = _getZoom().isFinite ? _getZoom() : 12.0;
 
       return SizedBox(
         height: widget.height,

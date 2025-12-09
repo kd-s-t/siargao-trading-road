@@ -24,6 +24,7 @@ class User {
   final DateTime updatedAt;
   final double? averageRating;
   final int? ratingCount;
+  final List<String> featureFlags;
 
   User({
     required this.id,
@@ -51,9 +52,19 @@ class User {
     required this.updatedAt,
     this.averageRating,
     this.ratingCount,
+    this.featureFlags = const [],
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    DateTime _parseDate(String key) {
+      final value = json[key];
+      if (value is String) {
+        final parsed = DateTime.tryParse(value);
+        if (parsed != null) return parsed;
+      }
+      return DateTime.now();
+    }
+
     return User(
       id: json['id'] as int,
       email: json['email'] as String,
@@ -76,10 +87,11 @@ class User {
       closingTime: json['closing_time'] as String?,
       closedDaysOfWeek: json['closed_days_of_week'] as String?,
       isOpen: json['is_open'] as bool? ?? true,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: _parseDate('created_at'),
+      updatedAt: _parseDate('updated_at'),
       averageRating: json['average_rating'] != null ? (json['average_rating'] as num).toDouble() : null,
       ratingCount: json['rating_count'] as int?,
+      featureFlags: (json['feature_flags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
     );
   }
 
@@ -110,6 +122,7 @@ class User {
       'updated_at': updatedAt.toIso8601String(),
       'average_rating': averageRating,
       'rating_count': ratingCount,
+      'feature_flags': featureFlags,
     };
   }
 }

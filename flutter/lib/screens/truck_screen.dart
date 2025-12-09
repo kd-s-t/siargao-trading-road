@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +14,7 @@ class TruckScreen extends StatefulWidget {
   State<TruckScreen> createState() => _TruckScreenState();
 }
 
-class _TruckScreenState extends State<TruckScreen> {
+class _TruckScreenState extends State<TruckScreen> with TickerProviderStateMixin {
   Order? _draftOrder;
   bool _loading = true;
   bool _refreshing = false;
@@ -23,6 +24,10 @@ class _TruckScreenState extends State<TruckScreen> {
   String _paymentMethod = 'cash_on_delivery';
   String _deliveryOption = 'pickup';
   final TextEditingController _notesController = TextEditingController();
+  Timer? _debounceTimer;
+  final Map<int, AnimationController> _fadeControllers = {};
+  final Set<int> _pendingRemovals = {};
+  final Map<int, int> _pendingQuantityUpdates = {};
 
   @override
   void initState() {
@@ -39,6 +44,11 @@ class _TruckScreenState extends State<TruckScreen> {
   @override
   void dispose() {
     _notesController.dispose();
+    _debounceTimer?.cancel();
+    for (final controller in _fadeControllers.values) {
+      controller.dispose();
+    }
+    _fadeControllers.clear();
     super.dispose();
   }
 
@@ -86,25 +96,96 @@ class _TruckScreenState extends State<TruckScreen> {
       return;
     }
 
+    if (_draftOrder == null) return;
+
     setState(() {
-      _updatingItemId = itemId;
+      final updatedItems = _draftOrder!.orderItems.map((item) {
+        if (item.id == itemId) {
+          return OrderItem(
+            id: item.id,
+            orderId: item.orderId,
+            productId: item.productId,
+            product: item.product,
+            quantity: quantity,
+            unitPrice: item.unitPrice,
+            subtotal: item.unitPrice * quantity,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+          );
+        }
+        return item;
+      }).toList();
+
+      final newTotalAmount = updatedItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+
+      _draftOrder = Order(
+        id: _draftOrder!.id,
+        storeId: _draftOrder!.storeId,
+        store: _draftOrder!.store,
+        supplierId: _draftOrder!.supplierId,
+        supplier: _draftOrder!.supplier,
+        status: _draftOrder!.status,
+        totalAmount: newTotalAmount,
+        paymentMethod: _draftOrder!.paymentMethod,
+        paymentStatus: _draftOrder!.paymentStatus,
+        paymentProofUrl: _draftOrder!.paymentProofUrl,
+        deliveryOption: _draftOrder!.deliveryOption,
+        deliveryFee: _draftOrder!.deliveryFee,
+        distance: _draftOrder!.distance,
+        shippingAddress: _draftOrder!.shippingAddress,
+        notes: _draftOrder!.notes,
+        orderItems: updatedItems,
+        ratings: _draftOrder!.ratings,
+        createdAt: _draftOrder!.createdAt,
+        updatedAt: _draftOrder!.updatedAt,
+      );
     });
 
-    try {
-      final updatedOrder = await OrderService.updateOrderItem(itemId, quantity);
-      if (mounted) {
-        setState(() {
-          _draftOrder = updatedOrder;
-          _updatingItemId = null;
-        });
+    _pendingQuantityUpdates[itemId] = quantity;
+    _debounceSave();
+  }
+
+  void _debounceSave() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(seconds: 3), () {
+      _savePendingChanges();
+    });
+  }
+
+  Future<void> _savePendingChanges() async {
+    if (_pendingRemovals.isEmpty && _pendingQuantityUpdates.isEmpty) return;
+
+    final removalsToProcess = Set<int>.from(_pendingRemovals);
+    final quantityUpdatesToProcess = Map<int, int>.from(_pendingQuantityUpdates);
+    _pendingRemovals.clear();
+    _pendingQuantityUpdates.clear();
+
+    for (final itemId in removalsToProcess) {
+      try {
+        await OrderService.removeOrderItem(itemId);
+      } catch (e) {
+        if (mounted) {
+          SnackbarHelper.showError(context, 'Failed to remove item: ${e.toString()}');
+        }
+        await _loadDraftOrder();
+        return;
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _updatingItemId = null;
-        });
-        SnackbarHelper.showError(context, 'Failed to update quantity: ${e.toString()}');
+    }
+
+    for (final entry in quantityUpdatesToProcess.entries) {
+      try {
+        await OrderService.updateOrderItem(entry.key, entry.value);
+      } catch (e) {
+        if (mounted) {
+          SnackbarHelper.showError(context, 'Failed to update quantity: ${e.toString()}');
+        }
+        await _loadDraftOrder();
+        return;
       }
+    }
+
+    if (mounted) {
+      await _loadDraftOrder();
     }
   }
 
@@ -128,16 +209,53 @@ class _TruckScreenState extends State<TruckScreen> {
       ),
     );
 
-    if (confirmed == true) {
-      try {
-        await OrderService.removeOrderItem(itemId);
-        await _loadDraftOrder();
-      } catch (e) {
-        if (mounted) {
-          SnackbarHelper.showError(context, 'Failed to remove item: ${e.toString()}');
-        }
+    if (confirmed != true || _draftOrder == null) return;
+
+    final controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeControllers[itemId] = controller;
+
+    controller.forward();
+
+    controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        setState(() {
+          final updatedItems = _draftOrder!.orderItems.where((item) => item.id != itemId).toList();
+          final newTotalAmount = updatedItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+
+          _draftOrder = Order(
+            id: _draftOrder!.id,
+            storeId: _draftOrder!.storeId,
+            store: _draftOrder!.store,
+            supplierId: _draftOrder!.supplierId,
+            supplier: _draftOrder!.supplier,
+            status: _draftOrder!.status,
+            totalAmount: newTotalAmount,
+            paymentMethod: _draftOrder!.paymentMethod,
+            paymentStatus: _draftOrder!.paymentStatus,
+            paymentProofUrl: _draftOrder!.paymentProofUrl,
+            deliveryOption: _draftOrder!.deliveryOption,
+            deliveryFee: _draftOrder!.deliveryFee,
+            distance: _draftOrder!.distance,
+            shippingAddress: _draftOrder!.shippingAddress,
+            notes: _draftOrder!.notes,
+            orderItems: updatedItems,
+            ratings: _draftOrder!.ratings,
+            createdAt: _draftOrder!.createdAt,
+            updatedAt: _draftOrder!.updatedAt,
+          );
+
+          _pendingRemovals.add(itemId);
+        });
+
+        controller.dispose();
+        _fadeControllers.remove(itemId);
+
+        _debounceSave();
       }
-    }
+    });
   }
 
   Future<void> _handleSubmitOrder() async {
@@ -297,7 +415,9 @@ class _TruckScreenState extends State<TruckScreen> {
             ),
             ..._draftOrder!.orderItems.map((item) {
               final isUpdating = _updatingItemId == item.id;
-              return Card(
+              final controller = _fadeControllers[item.id];
+              
+              final card = Card(
                 margin: const EdgeInsets.only(bottom: 16),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -332,7 +452,7 @@ class _TruckScreenState extends State<TruckScreen> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: isUpdating
+                            onPressed: isUpdating || controller != null
                                 ? null
                                 : () => _handleRemoveItem(item.id),
                           ),
@@ -354,7 +474,7 @@ class _TruckScreenState extends State<TruckScreen> {
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.remove),
-                                onPressed: isUpdating || item.quantity <= 1
+                                onPressed: isUpdating || item.quantity <= 1 || controller != null
                                     ? null
                                     : () => _handleUpdateQuantity(item.id, item.quantity - 1),
                               ),
@@ -374,7 +494,7 @@ class _TruckScreenState extends State<TruckScreen> {
                                 ),
                               IconButton(
                                 icon: const Icon(Icons.add),
-                                onPressed: isUpdating
+                                onPressed: isUpdating || controller != null
                                     ? null
                                     : () => _handleUpdateQuantity(item.id, item.quantity + 1),
                               ),
@@ -394,7 +514,16 @@ class _TruckScreenState extends State<TruckScreen> {
                   ),
                 ),
               );
-            }),
+
+              if (controller != null) {
+                return FadeTransition(
+                  opacity: controller,
+                  child: card,
+                );
+              }
+              
+              return card;
+            }).toList(),
             Card(
               margin: const EdgeInsets.symmetric(vertical: 8),
               child: Padding(

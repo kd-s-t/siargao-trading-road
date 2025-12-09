@@ -172,8 +172,8 @@ export function ProfileView({
       onUserUpdate(updatedUser);
       onToast(
         updatedUser.is_open
-          ? 'Store opened successfully'
-          : 'Store closed successfully',
+          ? 'Store is open for business'
+          : 'Store is closed',
         'success'
       );
     } catch (error: unknown) {

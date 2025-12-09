@@ -3,10 +3,18 @@ import 'package:siargao_trading_road/models/product.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
 
 class ProductService {
-  static Future<List<Product>> getProducts({bool includeDeleted = false}) async {
-    final response = await ApiService.get(
-      '/products?include_deleted=$includeDeleted',
-    );
+  static Future<List<Product>> getProducts({
+    bool includeDeleted = false,
+    String? search,
+  }) async {
+    final params = {
+      'include_deleted': includeDeleted.toString(),
+    };
+    if (search != null && search.trim().isNotEmpty) {
+      params['search'] = search.trim();
+    }
+    final query = Uri(queryParameters: params).query;
+    final response = await ApiService.get('/products?$query');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List<dynamic>;

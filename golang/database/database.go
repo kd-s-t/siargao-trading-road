@@ -43,7 +43,7 @@ func Connect(cfg *config.Config) error {
 		return fmt.Errorf("failed to remove working_days column: %w", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{})
+	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{})
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func Migrate() error {
 		return fmt.Errorf("failed to remove working_days column: %w", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{})
+	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{})
 	if err != nil {
 		return err
 	}

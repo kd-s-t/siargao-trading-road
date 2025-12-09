@@ -74,6 +74,40 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void addFeatureFlag(String flag) {
+    if (_user == null) return;
+    if (_user!.featureFlags.contains(flag)) return;
+    _user = User(
+      id: _user!.id,
+      email: _user!.email,
+      name: _user!.name,
+      phone: _user!.phone,
+      address: _user!.address,
+      latitude: _user!.latitude,
+      longitude: _user!.longitude,
+      logoUrl: _user!.logoUrl,
+      bannerUrl: _user!.bannerUrl,
+      facebook: _user!.facebook,
+      instagram: _user!.instagram,
+      twitter: _user!.twitter,
+      linkedin: _user!.linkedin,
+      youtube: _user!.youtube,
+      tiktok: _user!.tiktok,
+      website: _user!.website,
+      role: _user!.role,
+      openingTime: _user!.openingTime,
+      closingTime: _user!.closingTime,
+      closedDaysOfWeek: _user!.closedDaysOfWeek,
+      isOpen: _user!.isOpen,
+      createdAt: _user!.createdAt,
+      updatedAt: _user!.updatedAt,
+      averageRating: _user!.averageRating,
+      ratingCount: _user!.ratingCount,
+      featureFlags: [..._user!.featureFlags, flag],
+    );
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     try {
       await AuthService.logout();
@@ -88,7 +122,41 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> refreshUser() async {
     try {
-      _user = await AuthService.getMe();
+      final existingFlags = _user?.featureFlags ?? const [];
+      final refreshed = await AuthService.getMe();
+      // getMe currently returns the user payload without feature flags; preserve existing flags
+      final mergedUser = (existingFlags.isNotEmpty && refreshed.featureFlags.isEmpty)
+          ? User(
+              id: refreshed.id,
+              email: refreshed.email,
+              name: refreshed.name,
+              phone: refreshed.phone,
+              address: refreshed.address,
+              latitude: refreshed.latitude,
+              longitude: refreshed.longitude,
+              logoUrl: refreshed.logoUrl,
+              bannerUrl: refreshed.bannerUrl,
+              facebook: refreshed.facebook,
+              instagram: refreshed.instagram,
+              twitter: refreshed.twitter,
+              linkedin: refreshed.linkedin,
+              youtube: refreshed.youtube,
+              tiktok: refreshed.tiktok,
+              website: refreshed.website,
+              role: refreshed.role,
+              openingTime: refreshed.openingTime,
+              closingTime: refreshed.closingTime,
+              closedDaysOfWeek: refreshed.closedDaysOfWeek,
+              isOpen: refreshed.isOpen,
+              createdAt: refreshed.createdAt,
+              updatedAt: refreshed.updatedAt,
+              averageRating: refreshed.averageRating,
+              ratingCount: refreshed.ratingCount,
+              featureFlags: existingFlags,
+            )
+          : refreshed;
+
+      _user = mergedUser;
       notifyListeners();
     } catch (e) {
       // Ignore refresh errors - keep existing user data

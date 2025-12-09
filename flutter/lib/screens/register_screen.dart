@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/screens/location_picker_screen.dart';
+import 'package:siargao_trading_road/navigation/app_navigator.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -11,6 +12,7 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  static const _versionTag = 'v7';
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -43,6 +45,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleSubmit() async {
+    setState(() {
+      _error = null;
+    });
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -63,6 +69,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         latitude: _latitude,
         longitude: _longitude,
       );
+      if (mounted) {
+        setState(() {
+          _error = null;
+          _loading = false;
+        });
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AppNavigator()),
+          (route) => false,
+        );
+      }
     } catch (e) {
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
@@ -108,10 +124,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Text(
-                              'Create a new account',
+                            Text(
+                              'Create a new account $_versionTag',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey,
                               ),
@@ -126,7 +142,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  _error!,
+                                  '$_versionTag: $_error',
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     color: Colors.red,
@@ -173,6 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 labelText: 'Mobile *',
                                 border: OutlineInputBorder(),
                                 helperText: 'Philippine mobile number (e.g., 9606075119)',
+                                helperMaxLines: 2,
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -282,7 +299,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                       ),
                                     )
-                                  : const Text('Register'),
+                                  : const Text(
+                                      'Register',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                             ),
                             const SizedBox(height: 16),
                             Row(

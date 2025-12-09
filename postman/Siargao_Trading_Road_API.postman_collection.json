@@ -2696,6 +2696,116 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "Feature Flags",
+			"item": [
+				{
+					"name": "Check Feature Flag",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/feature-flags/:flag",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"feature-flags",
+								":flag"
+							],
+							"variable": [
+								{
+									"key": "flag",
+									"value": "beta-dashboard"
+								}
+							]
+						},
+						"description": "Check if the given feature flag exists for the current user"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has exists boolean\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('exists');",
+									"    pm.expect(jsonData.exists).to.be.a('boolean');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Set Feature Flag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/feature-flags/:flag",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"feature-flags",
+								":flag"
+							],
+							"variable": [
+								{
+									"key": "flag",
+									"value": "beta-dashboard"
+								}
+							]
+						},
+						"description": "Create the feature flag for the current user if it does not exist"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 or 200\", function () {",
+									"    pm.expect([201, 200]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test(\"Response includes created flag\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('flag');",
+									"        pm.expect(jsonData.flag).to.have.property('id');",
+									"        pm.expect(jsonData.flag).to.have.property('flag');",
+									"    });",
+									"} else {",
+									"    pm.test(\"Response includes message\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('message');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
 		}
 	],
 	"variable": [

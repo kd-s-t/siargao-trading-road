@@ -340,6 +340,32 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  Future<void> _handleMarkPaymentAsPaid() async {
+    if (_order?.id == null) return;
+
+    setState(() {
+      _updatingStatus = true;
+    });
+
+    try {
+      await OrderService.markPaymentAsPaid(_order!.id);
+      await _loadOrder();
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Payment marked as paid');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Failed to mark as paid: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _updatingStatus = false;
+        });
+      }
+    }
+  }
+
   Future<void> _handleCall(User? entity) async {
     if (entity?.phone == null || entity!.phone!.isEmpty) {
       if (mounted) {
@@ -1403,10 +1429,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildActionsCard(User? entity, String entityName, user) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           children: [
             if (user?.role == 'supplier' && _order!.status == 'preparing')
@@ -1440,24 +1464,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     : const Text('Mark Delivered'),
               ),
             ],
-            if (user?.role == 'supplier' && _order!.status == 'delivered' && _order!.paymentStatus != 'paid') ...[
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: _updatingStatus ? null : () => _handleUpdateStatus('in_transit'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                child: _updatingStatus
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Revert to In Transit'),
+          if (user?.role == 'supplier' &&
+              (_order!.status == 'in_transit' || _order!.status == 'delivered') &&
+              _order!.paymentStatus != 'paid') ...[
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _updatingStatus ? null : _handleMarkPaymentAsPaid,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
               ),
-            ],
-          ],
+              child: _updatingStatus
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Mark as Paid'),
         ),
+          ],
+        ],
       ),
     );
   }

@@ -9,6 +9,7 @@ import 'package:siargao_trading_road/screens/truck_screen.dart';
 import 'package:siargao_trading_road/screens/profile_screen.dart' show ProfileScreen, ProfileScreenState;
 import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/schedule_editor_screen.dart';
+import 'package:siargao_trading_road/screens/ratings_screen.dart';
 import 'package:siargao_trading_road/navigation/smooth_page_route.dart';
 class StoreDrawer extends StatefulWidget {
   const StoreDrawer({super.key});
@@ -174,6 +175,9 @@ class _StoreDrawerState extends State<StoreDrawer> {
             break;
           case '/schedule':
             screen = const ScheduleEditorScreen();
+            break;
+          case '/ratings':
+            screen = const RatingsScreen();
             break;
           default:
             return null;

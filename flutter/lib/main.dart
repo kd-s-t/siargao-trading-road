@@ -13,6 +13,7 @@ import 'package:siargao_trading_road/screens/order_detail_screen.dart';
 import 'package:siargao_trading_road/screens/supplier_products_screen.dart';
 import 'package:siargao_trading_road/screens/truck_screen.dart';
 import 'package:siargao_trading_road/screens/analytics_screen.dart';
+import 'package:siargao_trading_road/screens/ratings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,6 +86,8 @@ class MyApp extends StatelessWidget {
               return MaterialPageRoute(builder: (_) => const TruckScreen());
             case '/analytics':
               return MaterialPageRoute(builder: (_) => const AnalyticsScreen());
+            case '/ratings':
+              return MaterialPageRoute(builder: (_) => const RatingsScreen());
             default:
               return null;
           }

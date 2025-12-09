@@ -45,8 +45,19 @@ type LoginRequest struct {
 }
 
 type AuthResponse struct {
-	Token string      `json:"token"`
-	User  models.User `json:"user"`
+	Token        string      `json:"token"`
+	User         models.User `json:"user"`
+	FeatureFlags []string    `json:"feature_flags"`
+}
+
+func getFeatureFlags(userID uint) []string {
+	flags := []string{}
+	if err := database.DB.Model(&models.FeatureFlag{}).
+		Where("user_id = ?", userID).
+		Pluck("flag", &flags).Error; err != nil {
+		return []string{}
+	}
+	return flags
 }
 
 func Register(c *gin.Context) {
@@ -113,8 +124,9 @@ func Register(c *gin.Context) {
 
 	user.Password = ""
 	c.JSON(http.StatusCreated, AuthResponse{
-		Token: token,
-		User:  user,
+		Token:        token,
+		User:         user,
+		FeatureFlags: getFeatureFlags(user.ID),
 	})
 }
 
@@ -219,7 +231,11 @@ func AdminRegisterUser(c *gin.Context) {
 	}
 
 	user.Password = ""
-	c.JSON(http.StatusCreated, user)
+	c.JSON(http.StatusCreated, AuthResponse{
+		Token:        "",
+		User:         user,
+		FeatureFlags: []string{},
+	})
 }
 
 func Login(c *gin.Context) {
@@ -255,8 +271,9 @@ func Login(c *gin.Context) {
 
 	user.Password = ""
 	c.JSON(http.StatusOK, AuthResponse{
-		Token: token,
-		User:  user,
+		Token:        token,
+		User:         user,
+		FeatureFlags: getFeatureFlags(user.ID),
 	})
 }
 

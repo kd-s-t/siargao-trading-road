@@ -26,17 +26,18 @@ class Supplier {
   });
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
-    bool parseIsOpen() {
-      if (!json.containsKey('is_open')) return true;
+    bool? parseIsOpen() {
+      if (!json.containsKey('is_open')) return null;
       final value = json['is_open'];
-      if (value == null) return true;
+      if (value == null) return null;
       if (value is bool) return value;
       if (value is int) return value != 0;
       if (value is String) {
-        final lower = value.toLowerCase();
-        return lower == 'true' || lower == '1' || lower == 'yes';
+        final lower = value.toLowerCase().trim();
+        if (lower == 'true' || lower == '1' || lower == 'yes') return true;
+        if (lower == 'false' || lower == '0' || lower == 'no') return false;
       }
-      return true;
+      return null;
     }
 
     return Supplier(

@@ -85,6 +85,9 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 			protected.POST("/schedule/exceptions/bulk", handlers.BulkCreateScheduleExceptions)
 			protected.PUT("/schedule/exceptions/:id", handlers.UpdateScheduleException)
 			protected.DELETE("/schedule/exceptions/:id", handlers.DeleteScheduleException)
+
+			protected.GET("/feature-flags/:flag", handlers.CheckFeatureFlag)
+			protected.POST("/feature-flags/:flag", handlers.SetFeatureFlag)
 		}
 	}
 }

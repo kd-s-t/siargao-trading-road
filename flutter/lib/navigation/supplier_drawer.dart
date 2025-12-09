@@ -9,7 +9,9 @@ import 'package:siargao_trading_road/screens/order_detail_screen.dart';
 import 'package:siargao_trading_road/screens/profile_screen.dart' show ProfileScreen, ProfileScreenState;
 import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/schedule_editor_screen.dart';
+import 'package:siargao_trading_road/screens/ratings_screen.dart';
 import 'package:siargao_trading_road/navigation/smooth_page_route.dart';
+import 'package:siargao_trading_road/models/product.dart';
 class SupplierDrawer extends StatefulWidget {
   const SupplierDrawer({super.key});
 
@@ -23,9 +25,10 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
   int _currentIndex = 0;
   late final PageController _pageController = PageController(initialPage: _currentIndex);
   final _profileEditKey = GlobalKey<ProfileScreenState>();
+  final _productsScreenKey = GlobalKey();
 
   late final List<Widget> _screens = [
-    const ProductsScreen(useScaffold: false),
+    ProductsScreen(key: _productsScreenKey, useScaffold: false),
     const OrdersScreen(useScaffold: false),
     ProfileScreen(
       key: _profileEditKey,
@@ -98,8 +101,14 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
   Widget? _buildFloatingActionButton() {
     if (_currentIndex == 0) {
       return FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/add-product');
+        onPressed: () async {
+          final result = await Navigator.pushNamed(context, '/add-product');
+          if (result is Product) {
+            final state = _productsScreenKey.currentState;
+            if (state != null) {
+              (state as dynamic).addProduct(result);
+            }
+          }
         },
         child: const Icon(Icons.add),
       );
@@ -174,6 +183,9 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
             break;
           case '/schedule':
             screen = const ScheduleEditorScreen();
+            break;
+          case '/ratings':
+            screen = const RatingsScreen();
             break;
           default:
             return null;

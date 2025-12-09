@@ -6,6 +6,7 @@ import 'package:siargao_trading_road/screens/order_detail_screen.dart';
 import 'package:siargao_trading_road/screens/profile_screen.dart' show ProfileScreen, ProfileScreenState;
 import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/schedule_editor_screen.dart';
+import 'package:siargao_trading_road/screens/ratings_screen.dart';
 import 'package:siargao_trading_road/navigation/smooth_page_route.dart';
 class AdminDrawer extends StatefulWidget {
   const AdminDrawer({super.key});
@@ -144,6 +145,9 @@ class _AdminDrawerState extends State<AdminDrawer> {
             break;
           case '/schedule':
             screen = const ScheduleEditorScreen();
+            break;
+          case '/ratings':
+            screen = const RatingsScreen();
             break;
           default:
             return null;

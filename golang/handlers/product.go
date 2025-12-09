@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
@@ -41,6 +42,7 @@ func GetProducts(c *gin.Context) {
 	}
 	role, _ := c.Get("role")
 	includeDeleted := c.Query("include_deleted") == "true"
+	search := strings.TrimSpace(strings.ToLower(c.Query("search")))
 
 	var products []models.Product
 	query := database.DB.Preload("Supplier")
@@ -51,6 +53,10 @@ func GetProducts(c *gin.Context) {
 
 	if includeDeleted {
 		query = query.Unscoped()
+	}
+
+	if search != "" {
+		query = query.Where("LOWER(name) LIKE ?", "%"+search+"%")
 	}
 
 	if err := query.Find(&products).Error; err != nil {

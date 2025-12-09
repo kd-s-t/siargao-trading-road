@@ -101,7 +101,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         }
       }
 
-      await ProductService.createProduct(
+      final createdProduct = await ProductService.createProduct(
         name: name,
         description: description.isEmpty ? null : description,
         sku: sku,
@@ -113,7 +113,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       );
 
       if (mounted) {
-        Navigator.pop(context, true);
+        Navigator.pop(context, createdProduct);
       }
     } catch (e) {
       setState(() {

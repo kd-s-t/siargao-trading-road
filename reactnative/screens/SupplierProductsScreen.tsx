@@ -124,7 +124,6 @@ export default function SupplierProductsScreen() {
       await loadProducts();
 
       setQuantities({ ...quantities, [product.id]: '' });
-      Alert.alert('Success', 'Item added to truck');
     } catch (error: any) {
       console.error('Add to truck error:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Failed to add item to truck';

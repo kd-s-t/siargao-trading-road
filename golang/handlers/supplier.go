@@ -3,12 +3,22 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
 
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
 
 	"github.com/gin-gonic/gin"
 )
+
+var philippineTZ = time.FixedZone("Asia/Manila", 8*60*60)
+
+func nowInPH() time.Time {
+	return time.Now().In(philippineTZ)
+}
 
 func GetSuppliers(c *gin.Context) {
 	role, _ := c.Get("role")
@@ -18,8 +28,17 @@ func GetSuppliers(c *gin.Context) {
 		return
 	}
 
-	var suppliers []models.User
-	if err := database.DB.Where("role = ?", "supplier").Find(&suppliers).Error; err != nil {
+	search := strings.TrimSpace(strings.ToLower(c.Query("search")))
+	status := strings.TrimSpace(strings.ToLower(c.Query("status")))
+	now := nowInPH()
+
+	db := database.DB.Where("role = ?", "supplier")
+	if search != "" {
+		db = db.Where("LOWER(name) LIKE ?", "%"+search+"%")
+	}
+
+	suppliers := make([]models.User, 0)
+	if err := db.Order("name ASC").Find(&suppliers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch suppliers"})
 		return
 	}
@@ -41,8 +60,16 @@ func GetSuppliers(c *gin.Context) {
 		IsOpen        bool     `json:"is_open"`
 	}
 
-	var supplierInfos []SupplierInfo
+	supplierInfos := make([]SupplierInfo, 0, len(suppliers))
 	for _, supplier := range suppliers {
+		openNow := isOpenNow(supplier, now)
+		if status == "open" && !openNow {
+			continue
+		}
+		if status == "closed" && openNow {
+			continue
+		}
+
 		var productCount int64
 		database.DB.Model(&models.Product{}).Where("supplier_id = ?", supplier.ID).Count(&productCount)
 
@@ -78,9 +105,16 @@ func GetSuppliers(c *gin.Context) {
 			RatingCount:   int(ratingStats.RatingCount),
 			OpeningTime:   supplier.OpeningTime,
 			ClosingTime:   supplier.ClosingTime,
-			IsOpen:        supplier.IsOpen,
+			IsOpen:        openNow,
 		})
 	}
+
+	sort.Slice(supplierInfos, func(i, j int) bool {
+		if supplierInfos[i].IsOpen == supplierInfos[j].IsOpen {
+			return strings.ToLower(supplierInfos[i].Name) < strings.ToLower(supplierInfos[j].Name)
+		}
+		return supplierInfos[i].IsOpen && !supplierInfos[j].IsOpen
+	})
 
 	c.JSON(http.StatusOK, supplierInfos)
 }
@@ -117,8 +151,17 @@ func GetStores(c *gin.Context) {
 		return
 	}
 
-	var stores []models.User
-	if err := database.DB.Where("role = ?", "store").Find(&stores).Error; err != nil {
+	search := strings.TrimSpace(strings.ToLower(c.Query("search")))
+	status := strings.TrimSpace(strings.ToLower(c.Query("status")))
+	now := nowInPH()
+
+	db := database.DB.Where("role = ?", "store")
+	if search != "" {
+		db = db.Where("LOWER(name) LIKE ?", "%"+search+"%")
+	}
+
+	stores := make([]models.User, 0)
+	if err := db.Order("name ASC").Find(&stores).Error; err != nil {
 		log.Printf("Error fetching stores: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch stores"})
 		return
@@ -140,8 +183,16 @@ func GetStores(c *gin.Context) {
 		IsOpen        bool     `json:"is_open"`
 	}
 
-	var storeInfos []StoreInfo
+	storeInfos := make([]StoreInfo, 0, len(stores))
 	for _, store := range stores {
+		openNow := isOpenNow(store, now)
+		if status == "open" && !openNow {
+			continue
+		}
+		if status == "closed" && openNow {
+			continue
+		}
+
 		var ratingStats struct {
 			AverageRating float64
 			RatingCount   int64
@@ -187,9 +238,77 @@ func GetStores(c *gin.Context) {
 			RatingCount:   int(ratingStats.RatingCount),
 			OpeningTime:   store.OpeningTime,
 			ClosingTime:   store.ClosingTime,
-			IsOpen:        store.IsOpen,
+			IsOpen:        openNow,
 		})
 	}
 
+	sort.Slice(storeInfos, func(i, j int) bool {
+		if storeInfos[i].IsOpen == storeInfos[j].IsOpen {
+			return strings.ToLower(storeInfos[i].Name) < strings.ToLower(storeInfos[j].Name)
+		}
+		return storeInfos[i].IsOpen && !storeInfos[j].IsOpen
+	})
+
 	c.JSON(http.StatusOK, storeInfos)
+}
+
+func isClosedToday(closedDays string, now time.Time) bool {
+	if closedDays == "" {
+		return false
+	}
+	day := int(now.Weekday())
+	for _, part := range strings.Split(closedDays, ",") {
+		p := strings.TrimSpace(part)
+		if p == "" {
+			continue
+		}
+		val, err := strconv.Atoi(p)
+		if err != nil {
+			continue
+		}
+		if val == day {
+			return true
+		}
+	}
+	return false
+}
+
+func parseTimeToday(value string, now time.Time) (time.Time, bool) {
+	val := strings.TrimSpace(value)
+	if val == "" {
+		return time.Time{}, false
+	}
+	parsed, err := time.Parse("15:04", val)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return time.Date(now.Year(), now.Month(), now.Day(), parsed.Hour(), parsed.Minute(), 0, 0, now.Location()), true
+}
+
+func isOpenNow(u models.User, now time.Time) bool {
+	if isClosedToday(u.ClosedDaysOfWeek, now) {
+		return false
+	}
+
+	opening, hasOpening := parseTimeToday(u.OpeningTime, now)
+	closing, hasClosing := parseTimeToday(u.ClosingTime, now)
+
+	if hasOpening && hasClosing {
+		openToday := opening
+		closeToday := closing
+		if !closeToday.After(openToday) {
+			closeToday = closeToday.Add(24 * time.Hour)
+		}
+		if !now.Before(openToday) && now.Before(closeToday) {
+			return true
+		}
+		openPrev := openToday.Add(-24 * time.Hour)
+		closePrev := closeToday.Add(-24 * time.Hour)
+		if !now.Before(openPrev) && now.Before(closePrev) {
+			return true
+		}
+		return false
+	}
+
+	return u.IsOpen
 }

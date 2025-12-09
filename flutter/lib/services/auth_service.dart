@@ -1,20 +1,30 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as p;
 import 'package:siargao_trading_road/models/user.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
 
 class LoginResponse {
   final String token;
   final User user;
+  final List<String> featureFlags;
 
   LoginResponse({
     required this.token,
     required this.user,
+    required this.featureFlags,
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
+    final userMap = Map<String, dynamic>.from(json['user'] as Map<String, dynamic>);
+    if (json['feature_flags'] != null) {
+      userMap['feature_flags'] = json['feature_flags'];
+    }
     return LoginResponse(
       token: json['token'] as String,
-      user: User.fromJson(json['user'] as Map<String, dynamic>),
+      user: User.fromJson(userMap),
+      featureFlags: (json['feature_flags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
     );
   }
 }
@@ -29,7 +39,7 @@ class AuthService {
       },
     );
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return LoginResponse.fromJson(data);
     } else {
@@ -63,7 +73,7 @@ class AuthService {
       body: body,
     );
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return LoginResponse.fromJson(data);
     } else {
@@ -86,8 +96,11 @@ class AuthService {
   static Future<User> updateMe({
     String? name,
     String? phone,
+    String? address,
     String? logoUrl,
     String? bannerUrl,
+    double? latitude,
+    double? longitude,
     String? facebook,
     String? instagram,
     String? twitter,
@@ -103,8 +116,11 @@ class AuthService {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
     if (phone != null) body['phone'] = phone;
+    if (address != null) body['address'] = address;
     if (logoUrl != null) body['logo_url'] = logoUrl;
     if (bannerUrl != null) body['banner_url'] = bannerUrl;
+    if (latitude != null) body['latitude'] = latitude;
+    if (longitude != null) body['longitude'] = longitude;
     if (facebook != null) body['facebook'] = facebook;
     if (instagram != null) body['instagram'] = instagram;
     if (twitter != null) body['twitter'] = twitter;
@@ -128,8 +144,78 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, String>> uploadImage(String filePath) async {
-    final response = await ApiService.postMultipart('/upload', filePath, 'file');
+  static Future<Map<String, String>> uploadImage(String filePath, {String? imageType}) async {
+    final originalFile = File(filePath);
+    final originalBytes = await originalFile.readAsBytes();
+    final decoded = img.decodeImage(originalBytes);
+    if (decoded == null) {
+      throw Exception('Failed to process image');
+    }
+
+    img.Image processed;
+    
+    if (imageType == 'banner') {
+      const targetWidth = 1200;
+      const targetHeight = 675;
+      final aspectRatio = targetWidth / targetHeight;
+      final imageAspectRatio = decoded.width / decoded.height;
+      
+      int cropWidth, cropHeight, cropX, cropY;
+      
+      if (imageAspectRatio > aspectRatio) {
+        cropHeight = decoded.height;
+        cropWidth = (decoded.height * aspectRatio).round();
+        cropX = (decoded.width - cropWidth) ~/ 2;
+        cropY = 0;
+      } else {
+        cropWidth = decoded.width;
+        cropHeight = (decoded.width / aspectRatio).round();
+        cropX = 0;
+        cropY = (decoded.height - cropHeight) ~/ 2;
+      }
+      
+      final cropped = img.copyCrop(
+        decoded,
+        x: cropX,
+        y: cropY,
+        width: cropWidth,
+        height: cropHeight,
+      );
+      
+      processed = img.copyResize(
+        cropped,
+        width: targetWidth,
+        height: targetHeight,
+      );
+    } else {
+      final squareSize = decoded.width < decoded.height ? decoded.width : decoded.height;
+      final cropped = img.copyCrop(
+        decoded,
+        x: (decoded.width - squareSize) ~/ 2,
+        y: (decoded.height - squareSize) ~/ 2,
+        width: squareSize,
+        height: squareSize,
+      );
+
+      const targetSize = 512;
+      processed = squareSize > targetSize
+        ? img.copyResize(
+              cropped,
+              width: targetSize,
+              height: targetSize,
+          )
+          : cropped;
+    }
+
+    final compressedBytes = img.encodeJpg(processed, quality: 80);
+    final tempPath = p.join(
+      Directory.systemTemp.path,
+      'str_upload_${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
+    final tempFile = File(tempPath);
+    await tempFile.writeAsBytes(compressedBytes, flush: true);
+
+    final response = await ApiService.postMultipart('/upload', tempFile.path, 'file');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;

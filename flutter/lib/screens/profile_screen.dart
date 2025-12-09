@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:motion/motion.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'dart:io';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
+import 'package:siargao_trading_road/screens/location_picker_screen.dart';
 import 'package:siargao_trading_road/services/auth_service.dart';
 import 'package:siargao_trading_road/models/user.dart';
 import 'package:siargao_trading_road/utils/snackbar_helper.dart';
@@ -32,6 +35,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   String? _uploading;
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
   final _facebookController = TextEditingController();
   final _instagramController = TextEditingController();
   final _twitterController = TextEditingController();
@@ -41,6 +45,12 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   final _websiteController = TextEditingController();
   final _openingTimeController = TextEditingController();
   final _closingTimeController = TextEditingController();
+  double? _latitude;
+  double? _longitude;
+  final MapController _detailMapController = MapController();
+  double _detailMapZoom = 16;
+  final double _detailMapMinZoom = 15;
+  final double _detailMapMaxZoom = 18;
 
   @override
   void initState() {
@@ -84,6 +94,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     if (user != null) {
       _nameController.text = user.name;
       _phoneController.text = user.phone ?? '';
+      _addressController.text = user.address ?? '';
+      _latitude = user.latitude;
+      _longitude = user.longitude;
       _facebookController.text = user.facebook ?? '';
       _instagramController.text = user.instagram ?? '';
       _twitterController.text = user.twitter ?? '';
@@ -105,6 +118,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _addressController.dispose();
     _facebookController.dispose();
     _instagramController.dispose();
     _twitterController.dispose();
@@ -127,6 +141,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
       await AuthService.updateMe(
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+        latitude: _latitude,
+        longitude: _longitude,
         facebook: _facebookController.text.trim().isEmpty ? null : _facebookController.text.trim(),
         instagram: _instagramController.text.trim().isEmpty ? null : _instagramController.text.trim(),
         twitter: _twitterController.text.trim().isEmpty ? null : _twitterController.text.trim(),
@@ -229,7 +246,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     });
 
     try {
-      final result = await AuthService.uploadImage(filePath);
+      final result = await AuthService.uploadImage(filePath, imageType: imageType);
       if (!mounted) return;
       
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -258,7 +275,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day} ${_getMonthName(date.month)} ${date.year}';
+    return '${_getMonthName(date.month)} ${date.day}, ${date.year}';
   }
 
   String _getMonthName(int month) {
@@ -270,31 +287,34 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   }
 
   Widget _buildBody(AuthProvider authProvider, User user) {
-    return SafeArea(
-      child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildBanner(user),
-                Transform.translate(
-                  offset: const Offset(0, -40),
-                  child: _buildProfileCard(user),
-                ),
-                if ((user.role == 'store' || user.role == 'supplier') && !_editing)
-                  Transform.translate(
-                    offset: const Offset(0, -12),
-                    child: _buildOpenCloseCard(user, authProvider),
-                  ),
-                _buildDetailsCard(user),
-                if ((user.role == 'store' || user.role == 'supplier'))
-                  _buildHoursCard(user),
-                if (!_editing) _buildAnalyticsButton(),
-                if (!_editing) _buildLogoutButton(authProvider),
-                const SizedBox(height: 32),
-              ],
-            ),
+    final body = SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildBanner(user),
+          Transform.translate(
+            offset: const Offset(0, -40),
+            child: _buildProfileCard(user),
           ),
-      );
+          if ((user.role == 'store' || user.role == 'supplier') && !_editing)
+            Transform.translate(
+              offset: const Offset(0, -12),
+              child: _buildOpenCloseCard(user, authProvider),
+            ),
+          _buildDetailsCard(user),
+          if ((user.role == 'store' || user.role == 'supplier'))
+            _buildHoursCard(user),
+          if (!_editing) _buildAnalyticsButton(),
+          if (!_editing) _buildLogoutButton(authProvider),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+
+    if (Platform.isAndroid) {
+      return SafeArea(child: body);
+    }
+    return body;
   }
 
   @override
@@ -354,9 +374,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                 ),
             ],
           ),
-          body: SafeArea(
-            child: body,
-          ),
+          body: body,
         );
       },
     );
@@ -437,8 +455,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
               onTap: _editing ? () => _pickImage('logo') : null,
               child: Stack(
                 children: [
-                  Motion(
-                    child: user.logoUrl != null && user.logoUrl!.isNotEmpty
+                  user.logoUrl != null && user.logoUrl!.isNotEmpty
                         ? CircleAvatar(
                             radius: 40,
                             backgroundImage: NetworkImage(user.logoUrl!),
@@ -453,7 +470,6 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                                 fontSize: 32,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                              ),
                             ),
                           ),
                   ),
@@ -494,6 +510,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
             else
               Text(
                 user.name,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -509,23 +526,33 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
             ),
             if (!_editing && (user.role == 'store' || user.role == 'supplier') && user.ratingCount != null && user.ratingCount! > 0) ...[
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ...List.generate(5, (index) {
-                    final rating = user.averageRating ?? 0;
-                    return Icon(
-                      index < rating.round() ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
-                      size: 20,
-                    );
-                  }),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${(user.averageRating ?? 0).toStringAsFixed(1)} (${user.ratingCount} ${user.ratingCount == 1 ? 'rating' : 'ratings'})',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+              InkWell(
+                onTap: () {
+                  Navigator.pushNamed(context, '/ratings');
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ...List.generate(5, (index) {
+                        final rating = user.averageRating ?? 0;
+                        return Icon(
+                          index < rating.round() ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 20,
+                        );
+                      }),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${(user.averageRating ?? 0).toStringAsFixed(1)} (${user.ratingCount} ${user.ratingCount == 1 ? 'rating' : 'ratings'})',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ],
             if (!_editing) _buildSocialLinks(user),
@@ -596,6 +623,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   }
 
   Widget _buildDetailsCard(User user) {
+    final LatLng? userLocation = user.latitude != null && user.longitude != null
+        ? LatLng(user.latitude!, user.longitude!)
+        : null;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
@@ -611,6 +641,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
               ),
             ),
             const Divider(),
+            _buildDetailRow('User ID', user.id.toString()),
             _buildDetailRow('Email', user.email),
             if (_editing)
               TextField(
@@ -623,10 +654,185 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
               )
             else if (user.phone != null && user.phone!.isNotEmpty)
               _buildDetailRow('Phone', user.phone!),
-            _buildDetailRow('User ID', user.id.toString()),
-            const Divider(),
-            _buildDetailRow('Account Created', _formatDate(user.createdAt)),
-            _buildDetailRow('Last Updated', _formatDate(user.updatedAt)),
+            if (_editing)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _addressController,
+                      decoration: const InputDecoration(
+                        labelText: 'Address',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: FractionallySizedBox(
+                        widthFactor: 0.8,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LocationPickerScreen(
+                                  initialLatitude: _latitude,
+                                  initialLongitude: _longitude,
+                                ),
+                              ),
+                            );
+                            if (result != null && mounted) {
+                              setState(() {
+                                _latitude = result['latitude'] as double;
+                                _longitude = result['longitude'] as double;
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.location_on),
+                          label: Text(_latitude != null && _longitude != null ? 'Location Selected' : 'Select Location'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_latitude != null && _longitude != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Lat: ${_latitude!.toStringAsFixed(6)}, Lng: ${_longitude!.toStringAsFixed(6)}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              )
+            else ...[
+              if (user.address != null && user.address!.isNotEmpty)
+                _buildDetailRow('Address', user.address!),
+              if (userLocation != null) ...[
+                _buildDetailRow(
+                  'Location',
+                  'Lat: ${user.latitude!.toStringAsFixed(6)}, Lng: ${user.longitude!.toStringAsFixed(6)}',
+                ),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    height: 220,
+                    width: double.infinity,
+                    child: Stack(
+                      children: [
+                        FlutterMap(
+                          mapController: _detailMapController,
+                          options: MapOptions(
+                            initialCenter: userLocation,
+                            initialZoom: _detailMapZoom,
+                            minZoom: _detailMapMinZoom,
+                            maxZoom: _detailMapMaxZoom,
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              userAgentPackageName: 'com.example.siargaoTradingRoad',
+                            ),
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: userLocation,
+                                  width: 40,
+                                  height: 40,
+                                  child: const Icon(
+                                    Icons.location_on,
+                                    color: Colors.red,
+                                    size: 40,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Positioned(
+                          right: 12,
+                          bottom: 12,
+                          child: Column(
+                            children: [
+                              Material(
+                                color: Colors.white,
+                                elevation: 2,
+                                shape: const CircleBorder(),
+                                child: IconButton(
+                                  onPressed: () {
+                                    final newZoom = (_detailMapZoom + 1).clamp(_detailMapMinZoom, _detailMapMaxZoom);
+                                    setState(() {
+                                      _detailMapZoom = newZoom;
+                                    });
+                                    _detailMapController.move(userLocation, newZoom);
+                                  },
+                                  icon: const Icon(Icons.add),
+                                  tooltip: 'Zoom in',
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Material(
+                                color: Colors.white,
+                                elevation: 2,
+                                shape: const CircleBorder(),
+                                child: IconButton(
+                                  onPressed: () {
+                                    final newZoom = (_detailMapZoom - 1).clamp(_detailMapMinZoom, _detailMapMaxZoom);
+                                    setState(() {
+                                      _detailMapZoom = newZoom;
+                                    });
+                                    _detailMapController.move(userLocation, newZoom);
+                                  },
+                                  icon: const Icon(Icons.remove),
+                                  tooltip: 'Zoom out',
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Material(
+                                color: Colors.white,
+                                elevation: 2,
+                                shape: const CircleBorder(),
+                                child: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _detailMapZoom = 16;
+                                    });
+                                    _detailMapController.move(userLocation, _detailMapZoom);
+                                  },
+                                  icon: const Icon(Icons.my_location),
+                                  tooltip: 'Recenter',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Center(
+                child: Text(
+                  'Member since ${_formatDate(user.createdAt)}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
             if (_editing) ...[
               const Divider(),
               const Text(
@@ -760,8 +966,8 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
         SnackbarHelper.showSuccess(
           context,
           user.isOpen
-              ? 'Store closed successfully'
-              : 'Store opened successfully',
+              ? 'Store is closed'
+              : 'Store is open for business',
         );
       }
     } catch (e) {

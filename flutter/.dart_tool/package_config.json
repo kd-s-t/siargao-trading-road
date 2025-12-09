@@ -8,6 +8,12 @@
       "languageVersion": "3.2"
     },
     {
+      "name": "add_to_cart_animation",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/add_to_cart_animation-2.0.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
       "name": "animate_gradient",
       "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/animate_gradient-0.0.4",
       "packageUri": "lib/",
@@ -106,6 +112,12 @@
     {
       "name": "dbus",
       "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/dbus-0.7.11",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "dots_indicator",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/dots_indicator-4.0.1",
       "packageUri": "lib/",
       "languageVersion": "2.17"
     },
@@ -216,6 +228,36 @@
       "rootUri": "file:///usr/local/share/flutter/packages/flutter",
       "packageUri": "lib/",
       "languageVersion": "3.8"
+    },
+    {
+      "name": "flutter_keyboard_visibility_linux",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/flutter_keyboard_visibility_linux-1.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_keyboard_visibility_macos",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/flutter_keyboard_visibility_macos-1.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_keyboard_visibility_platform_interface",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/flutter_keyboard_visibility_platform_interface-2.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_keyboard_visibility_temp_fork",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/flutter_keyboard_visibility_temp_fork-0.1.5",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_keyboard_visibility_windows",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/flutter_keyboard_visibility_windows-1.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
     },
     {
       "name": "flutter_launcher_icons",
@@ -438,6 +480,12 @@
       "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/intl-0.20.2",
       "packageUri": "lib/",
       "languageVersion": "3.3"
+    },
+    {
+      "name": "introduction_screen",
+      "rootUri": "file:///Users/sharkysharksharks/.pub-cache/hosted/pub.dev/introduction_screen-4.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
     },
     {
       "name": "json_annotation",
