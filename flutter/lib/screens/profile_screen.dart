@@ -281,8 +281,8 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                   child: _buildProfileCard(user),
                 ),
                 if ((user.role == 'store' || user.role == 'supplier') && !_editing)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
+                  Transform.translate(
+                    offset: const Offset(0, -12),
                     child: _buildOpenCloseCard(user, authProvider),
                   ),
                 _buildDetailsCard(user),
@@ -781,7 +781,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     final isOpen = user.isOpen;
     
     return Card(
-      margin: const EdgeInsets.only(left: 16, right: 16, top: 0, bottom: 8),
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),

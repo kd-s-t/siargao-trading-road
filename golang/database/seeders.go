@@ -5,6 +5,7 @@ import (
 	"siargao-trading-road/models"
 
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func floatPtr(f float64) *float64 {
@@ -363,11 +364,28 @@ func SeedProducts() error {
 
 		for _, template := range products {
 			var existing models.Product
-			if err := DB.Where("sku = ?", template.sku).First(&existing).Error; err == nil {
-				if template.imageURL != "" {
-					existing.ImageURL = template.imageURL
-					if err := DB.Save(&existing).Error; err != nil {
+			if err := DB.Unscoped().Where("sku = ?", template.sku).First(&existing).Error; err == nil {
+				if existing.DeletedAt.Valid {
+					existing.DeletedAt = gorm.DeletedAt{}
+					existing.SupplierID = supplier.ID
+					existing.Name = template.name
+					existing.Description = template.description
+					existing.Price = template.price
+					existing.StockQuantity = template.stock
+					existing.Unit = template.unit
+					existing.Category = template.category
+					if template.imageURL != "" {
+						existing.ImageURL = template.imageURL
+					}
+					if err := DB.Unscoped().Save(&existing).Error; err != nil {
 						return err
+					}
+				} else {
+					if template.imageURL != "" {
+						existing.ImageURL = template.imageURL
+						if err := DB.Save(&existing).Error; err != nil {
+							return err
+						}
 					}
 				}
 				continue
@@ -386,7 +404,9 @@ func SeedProducts() error {
 			}
 
 			if err := DB.Create(&product).Error; err != nil {
-				return err
+				if err.Error() != "ERROR: duplicate key value violates unique constraint \"products_sku_key\" (SQLSTATE 23505)" {
+					return err
+				}
 			}
 		}
 	}
