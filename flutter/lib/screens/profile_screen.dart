@@ -281,7 +281,10 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                   child: _buildProfileCard(user),
                 ),
                 if ((user.role == 'store' || user.role == 'supplier') && !_editing)
-                  _buildOpenCloseCard(user, authProvider),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: _buildOpenCloseCard(user, authProvider),
+                  ),
                 _buildDetailsCard(user),
                 if ((user.role == 'store' || user.role == 'supplier'))
                   _buildHoursCard(user),
@@ -351,7 +354,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                 ),
             ],
           ),
-          body: body,
+          body: SafeArea(
+            child: body,
+          ),
         );
       },
     );
@@ -423,7 +428,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
 
   Widget _buildProfileCard(User user) {
     return Card(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 0),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
@@ -776,7 +781,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     final isOpen = user.isOpen;
     
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(left: 16, right: 16, top: 0, bottom: 8),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),

@@ -7,12 +7,12 @@ if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
   echo "Error: AWS credentials must be provided via environment variables"
   echo ""
   echo "Usage:"
-  echo "  AWS_ACCESS_KEY_ID=your_key AWS_SECRET_ACCESS_KEY=your_secret ./add-aws-credentials-to-ssm.sh"
+  echo "  AWS_ACCESS_KEY_ID=your_key AWS_SECRET_ACCESS_KEY=your_secret ./scripts/add-aws-credentials-to-ssm.sh"
   echo ""
   echo "Or export them first:"
   echo "  export AWS_ACCESS_KEY_ID=your_key"
   echo "  export AWS_SECRET_ACCESS_KEY=your_secret"
-  echo "  ./add-aws-credentials-to-ssm.sh"
+  echo "  ./scripts/add-aws-credentials-to-ssm.sh"
   exit 1
 fi
 

@@ -19,7 +19,8 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         title: const Text('Map'),
       ),
-      body: FlutterMap(
+      body: SafeArea(
+        child: FlutterMap(
         mapController: _mapController,
         options: const MapOptions(
           initialCenter: _siargaoCenter,
@@ -31,6 +32,7 @@ class _MapScreenState extends State<MapScreen> {
             userAgentPackageName: 'com.example.siargaoTradingRoad',
           ),
         ],
+        ),
       ),
     );
   }

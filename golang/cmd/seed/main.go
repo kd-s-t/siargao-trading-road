@@ -48,6 +48,13 @@ func main() {
 				log.Fatal("Failed to seed orders:", err)
 			}
 			log.Println("Orders seeded successfully")
+		case "seed-products":
+			log.Println("Seeding products...")
+			err = database.SeedProducts()
+			if err != nil {
+				log.Fatal("Failed to seed products:", err)
+			}
+			log.Println("Products seeded successfully")
 		default:
 			log.Println("Seeders completed successfully")
 		}

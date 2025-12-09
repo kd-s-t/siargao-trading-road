@@ -125,7 +125,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       appBar: AppBar(
         title: const Text('Select Your Location'),
       ),
-      body: Stack(
+      body: SafeArea(
+        child: Stack(
         children: [
           FlutterMap(
             mapController: _mapController,
@@ -199,6 +200,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

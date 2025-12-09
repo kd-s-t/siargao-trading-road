@@ -256,7 +256,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         ],
       ),
-      body: body,
+      body: SafeArea(
+        child: body,
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pushNamed(context, '/add-product');

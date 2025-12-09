@@ -215,7 +215,9 @@ class _TruckScreenState extends State<TruckScreen> {
         appBar: AppBar(
           title: const Text('Truck'),
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const SafeArea(
+          child: Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 
@@ -224,7 +226,8 @@ class _TruckScreenState extends State<TruckScreen> {
         appBar: AppBar(
           title: const Text('Truck'),
         ),
-        body: Center(
+        body: SafeArea(
+          child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -240,6 +243,7 @@ class _TruckScreenState extends State<TruckScreen> {
             ],
           ),
         ),
+      ),
       );
     }
 
@@ -247,7 +251,8 @@ class _TruckScreenState extends State<TruckScreen> {
       appBar: AppBar(
         title: const Text('Truck'),
       ),
-      body: RefreshIndicator(
+      body: SafeArea(
+        child: RefreshIndicator(
         onRefresh: _handleRefresh,
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -613,6 +618,7 @@ class _TruckScreenState extends State<TruckScreen> {
           ],
         ),
       ),
+        ),
     );
   }
 }

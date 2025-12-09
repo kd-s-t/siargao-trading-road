@@ -24,7 +24,9 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Dashboard'),
       ),
-      body: body,
+      body: SafeArea(
+        child: body,
+      ),
     );
   }
 }

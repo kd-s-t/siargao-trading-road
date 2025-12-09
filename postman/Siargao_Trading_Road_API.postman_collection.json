@@ -511,6 +511,174 @@
 						},
 						"description": "Upload image file (max 5MB). Allowed types: jpg, jpeg, png, gif, webp"
 					}
+				},
+				{
+					"name": "Open Store",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/me/open",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"me",
+								"open"
+							]
+						},
+						"description": "Mark store/supplier as open. Only stores and suppliers can use this endpoint"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 403\", function () {",
+									"    pm.expect([200, 403]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has is_open = true\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('is_open');",
+									"        pm.expect(jsonData.is_open).to.eql(true);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Close Store",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/me/close",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"me",
+								"close"
+							]
+						},
+						"description": "Mark store/supplier as closed. Only stores and suppliers can use this endpoint"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 403\", function () {",
+									"    pm.expect([200, 403]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has is_open = false\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('is_open');",
+									"        pm.expect(jsonData.is_open).to.eql(false);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update FCM Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fcm_token\": \"your-fcm-token-here\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/fcm-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"fcm-token"
+							]
+						},
+						"description": "Update Firebase Cloud Messaging token for push notifications"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has success message\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('message');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get My Ratings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/me/ratings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"me",
+								"ratings"
+							]
+						},
+						"description": "Get all ratings received by the current user"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has ratings array\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('ratings');",
+									"        pm.expect(jsonData.ratings).to.be.an('array');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
 				}
 			]
 		},
@@ -1226,7 +1394,16 @@
 					"name": "Submit Order",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"payment_method\": \"gcash\",\n    \"delivery_option\": \"deliver\",\n    \"delivery_fee\": 0.0,\n    \"distance\": 0.0,\n    \"shipping_address\": \"123 Delivery Street, Siargao\",\n    \"payment_proof_url\": \"https://example.com/proof.jpg\",\n    \"notes\": \"Please deliver before 5 PM\"\n}"
+						},
 						"url": {
 							"raw": "{{base_url}}/api/orders/:id/submit",
 							"host": [
@@ -1245,7 +1422,7 @@
 								}
 							]
 						},
-						"description": "Submit a draft order. Only stores can submit orders. Changes status from draft to preparing"
+						"description": "Submit a draft order. Only stores can submit orders. Changes status from draft to preparing. Minimum order amount: ₱5,000.00. Payment methods: cash_on_delivery, gcash. Delivery options: pickup, deliver. Shipping address required when delivery_option is 'deliver'. Delivery fee automatically calculated when deliver is selected (total quantity × ₱20.00)"
 					},
 					"event": [
 						{
@@ -1404,6 +1581,114 @@
 									"if (pm.response.code === 200 || pm.response.code === 201) {",
 									"    pm.test(\"Response is JSON\", function () {",
 									"        pm.response.to.be.json;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Mark Payment as Paid",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/orders/:id/payment/paid",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"orders",
+								":id",
+								"payment",
+								"paid"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Mark GCash payment as paid. Only suppliers can mark payment as paid. Only applicable for GCash orders"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 400 or 403 or 404\", function () {",
+									"    pm.expect([200, 400, 403, 404]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has payment_status = paid\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('payment_status');",
+									"        pm.expect(jsonData.payment_status).to.eql('paid');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Rating",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rating\": 5,\n    \"comment\": \"Excellent service!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/orders/:id/rating",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"orders",
+								":id",
+								"rating"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Rate an order. Only allowed for delivered orders. Store rates supplier, supplier rates store. Rating must be 1-5. One rating per order per user"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 or 400 or 403 or 404\", function () {",
+									"    pm.expect([201, 400, 403, 404]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test(\"Response has rating data\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('rating');",
+									"        pm.expect(jsonData).to.have.property('order_id');",
 									"    });",
 									"}"
 								],
@@ -1760,6 +2045,650 @@
 									"        pm.response.to.be.json;",
 									"    });",
 									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Ratings",
+			"item": [
+				{
+					"name": "Get Ratings Summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ratings/summary",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"ratings",
+								"summary"
+							]
+						},
+						"description": "Get ratings summary statistics"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response is JSON\", function () {",
+									"        pm.response.to.be.json;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Orders with Ratings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ratings/orders",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"ratings",
+								"orders"
+							]
+						},
+						"description": "Get orders that have ratings"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response is an array\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.be.an('array');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Audit Logs (Admin Only)",
+			"item": [
+				{
+					"name": "Get Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/audit-logs?page=1&limit=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"audit-logs"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "limit",
+									"value": "50",
+									"description": "Items per page (default: 50, max: 100)"
+								},
+								{
+									"key": "role",
+									"value": "",
+									"description": "Filter by role (optional)"
+								},
+								{
+									"key": "user_id",
+									"value": "",
+									"description": "Filter by user ID (optional)"
+								},
+								{
+									"key": "endpoint",
+									"value": "",
+									"description": "Filter by endpoint (optional)"
+								}
+							]
+						},
+						"description": "Get audit logs. Requires admin level 1. Supports pagination and filtering"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 403\", function () {",
+									"    pm.expect([200, 403]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has data and pagination\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('data');",
+									"        pm.expect(jsonData).to.have.property('pagination');",
+									"        pm.expect(jsonData.data).to.be.an('array');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Bug Reports (Admin Only)",
+			"item": [
+				{
+					"name": "Create Bug Report",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Bug Title\",\n    \"description\": \"Detailed bug description\",\n    \"platform\": \"web\",\n    \"severity\": \"high\",\n    \"status\": \"open\",\n    \"reproduction_steps\": \"Step 1, Step 2, Step 3\",\n    \"expected_behavior\": \"What should happen\",\n    \"actual_behavior\": \"What actually happens\",\n    \"notes\": \"Additional notes\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bug-reports",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bug-reports"
+							]
+						},
+						"description": "Create a bug report. Anyone can create, but admin level 1 required for management"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 or 400\", function () {",
+									"    pm.expect([201, 400]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test(\"Response has bug report data\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('id');",
+									"        pm.expect(jsonData).to.have.property('title');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Bug Reports",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bug-reports?page=1&limit=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bug-reports"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "limit",
+									"value": "50",
+									"description": "Items per page (default: 50, max: 100)"
+								},
+								{
+									"key": "status",
+									"value": "",
+									"description": "Filter by status (optional)"
+								},
+								{
+									"key": "platform",
+									"value": "",
+									"description": "Filter by platform (optional)"
+								}
+							]
+						},
+						"description": "Get all bug reports. Requires admin level 1. Supports pagination and filtering"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 403\", function () {",
+									"    pm.expect([200, 403]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has data and pagination\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('data');",
+									"        pm.expect(jsonData).to.have.property('pagination');",
+									"        pm.expect(jsonData.data).to.be.an('array');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Bug Report by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bug-reports/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bug-reports",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get a specific bug report. Requires admin level 1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 403 or 404\", function () {",
+									"    pm.expect([200, 403, 404]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has bug report data\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('id');",
+									"        pm.expect(jsonData).to.have.property('title');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Bug Report",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"resolved\",\n    \"notes\": \"Fixed in version 1.2.0\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bug-reports/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bug-reports",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Update bug report status and notes. Requires admin level 1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 400 or 403 or 404\", function () {",
+									"    pm.expect([200, 400, 403, 404]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has updated bug report\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('id');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Delete Bug Report",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bug-reports/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bug-reports",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Delete a bug report. Requires admin level 1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 403 or 404\", function () {",
+									"    pm.expect([200, 403, 404]).to.include(pm.response.code);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Schedule Exceptions",
+			"item": [
+				{
+					"name": "Get Schedule Exceptions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/schedule/exceptions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"schedule",
+								"exceptions"
+							]
+						},
+						"description": "Get all schedule exceptions for the current user"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response is an array\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.be.an('array');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Schedule Exception",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"date\": \"2024-12-25\",\n    \"is_closed\": true,\n    \"opening_time\": \"09:00\",\n    \"closing_time\": \"17:00\",\n    \"notes\": \"Christmas holiday\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/schedule/exceptions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"schedule",
+								"exceptions"
+							]
+						},
+						"description": "Create a schedule exception. Date format: YYYY-MM-DD"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 or 400 or 409\", function () {",
+									"    pm.expect([201, 400, 409]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test(\"Response has exception data\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('id');",
+									"        pm.expect(jsonData).to.have.property('date');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Bulk Create Schedule Exceptions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"dates\": [\"2024-12-25\", \"2024-12-26\", \"2024-12-31\"],\n    \"is_closed\": true,\n    \"notes\": \"Holiday season\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/schedule/exceptions/bulk",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"schedule",
+								"exceptions",
+								"bulk"
+							]
+						},
+						"description": "Create multiple schedule exceptions at once. Date format: YYYY-MM-DD"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 or 400\", function () {",
+									"    pm.expect([201, 400]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test(\"Response has created count and exceptions\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('created');",
+									"        pm.expect(jsonData).to.have.property('exceptions');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Schedule Exception",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"is_closed\": false,\n    \"opening_time\": \"10:00\",\n    \"closing_time\": \"18:00\",\n    \"notes\": \"Updated hours\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/schedule/exceptions/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"schedule",
+								"exceptions",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Update a schedule exception"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 400 or 404\", function () {",
+									"    pm.expect([200, 400, 404]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has updated exception\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('id');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Delete Schedule Exception",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/schedule/exceptions/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"schedule",
+								"exceptions",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Delete a schedule exception"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 404\", function () {",
+									"    pm.expect([200, 404]).to.include(pm.response.code);",
+									"});"
 								],
 								"type": "text/javascript"
 							}

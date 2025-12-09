@@ -513,7 +513,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     child: PieChart(
                       PieChartData(
                         sectionsSpace: 2,
-                        centerSpaceRadius: 30,
+                        centerSpaceRadius: 20,
                         sections: [
                           PieChartSectionData(
                             value: delivered.toDouble(),

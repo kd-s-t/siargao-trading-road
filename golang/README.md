@@ -51,14 +51,12 @@ To reset and reseed the database, use the reseed script:
 
 **Local:**
 ```bash
-cd golang
-./reseed.sh local
+./golang/scripts/reseed.sh local
 ```
 
 **Production:**
 ```bash
-cd golang
-./reseed.sh production
+./golang/scripts/reseed.sh production
 ```
 
 The script will prompt for production database credentials (host, port, user, password, database name).

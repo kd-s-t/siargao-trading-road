@@ -400,7 +400,9 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       appBar: AppBar(
         title: const Text('Suppliers'),
       ),
-      body: body,
+      body: SafeArea(
+        child: body,
+      ),
     );
   }
 }

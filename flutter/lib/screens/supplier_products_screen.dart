@@ -307,9 +307,10 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
           ),
         ],
       ),
-      body: _loading && _products.isEmpty
-          ? const ShimmerProductList()
-          : RefreshIndicator(
+      body: SafeArea(
+        child: _loading && _products.isEmpty
+            ? const ShimmerProductList()
+            : RefreshIndicator(
               onRefresh: _handleRefresh,
               child: _error != null && _products.isEmpty
                   ? Center(
@@ -568,6 +569,7 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
                           },
                         ),
             ),
+        ),
     );
   }
 }

@@ -289,6 +289,7 @@ func SeedStores() error {
 }
 
 func SeedProducts() error {
+	const s3BaseURL = "https://siargaotradingroad-user-uploads-development.s3.us-east-1.amazonaws.com"
 	supplierProducts := map[string][]struct {
 		name        string
 		description string
@@ -331,7 +332,17 @@ func SeedProducts() error {
 			{"Onions", "Fresh white onions", "WAL-VEG-002", 60.00, 250, "kg", "Vegetables", ""},
 			{"Beef Steak", "Premium beef steak cuts", "WAL-MT-003", 450.00, 100, "kg", "Meat", ""},
 		},
-		"arons@example.com": {},
+		"arons@example.com": {
+			{"White Sugar 1kg", "White refined sugar", "ARONS-SUG-001", 65.00, 300, "kg", "Consumer Goods", fmt.Sprintf("%s/products/White sugar.png", s3BaseURL)},
+			{"Brown Sugar 1kg", "Brown sugar", "ARONS-SUG-002", 70.00, 250, "kg", "Consumer Goods", fmt.Sprintf("%s/products/Brown sugar.jpg", s3BaseURL)},
+			{"Cooking Oil 1L", "Vegetable cooking oil", "ARONS-OIL-001", 120.00, 200, "bottle", "Consumer Goods", fmt.Sprintf("%s/products/cooking oil.png", s3BaseURL)},
+			{"Red Rice Bernal 25kg", "Premium red rice", "ARONS-RIC-001", 1300.00, 150, "bag", "Consumer Goods", fmt.Sprintf("%s/products/Red rice bernal.jpg", s3BaseURL)},
+			{"Red Rice Yan Yan 25kg", "High quality red rice", "ARONS-RIC-002", 1350.00, 140, "bag", "Consumer Goods", fmt.Sprintf("%s/products/Red rice yan yan.png", s3BaseURL)},
+			{"Royal Product", "Royal brand product", "ARONS-ROY-001", 150.00, 100, "piece", "Consumer Goods", fmt.Sprintf("%s/products/royal.png", s3BaseURL)},
+			{"Ganador", "Ganador product", "ARONS-GAN-001", 180.00, 120, "piece", "Consumer Goods", fmt.Sprintf("%s/products/ganador.jpeg", s3BaseURL)},
+			{"Kohaku Yellow", "Kohaku yellow product", "ARONS-KOH-001", 200.00, 90, "piece", "Consumer Goods", fmt.Sprintf("%s/products/kohaku yellow.jpg", s3BaseURL)},
+			{"Nikel", "Nikel product", "ARONS-NIK-001", 95.00, 180, "piece", "Consumer Goods", fmt.Sprintf("%s/products/nikel.png", s3BaseURL)},
+		},
 		"arniestore@example.com": {
 			{"Premium Rice 25kg", "High quality premium rice", "ARNIE-GRN-001", 1300.00, 150, "bag", "Grains", ""},
 			{"Cooking Oil 1L", "Vegetable cooking oil", "ARNIE-CON-001", 120.00, 200, "bottle", "Condiments", ""},
