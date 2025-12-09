@@ -56,6 +56,8 @@ class AuthProvider with ChangeNotifier {
     required String name,
     required String phone,
     required String role,
+    double? latitude,
+    double? longitude,
   }) async {
     final response = await AuthService.register(
       email: email,
@@ -63,6 +65,8 @@ class AuthProvider with ChangeNotifier {
       name: name,
       phone: phone,
       role: role,
+      latitude: latitude,
+      longitude: longitude,
     );
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', response.token);

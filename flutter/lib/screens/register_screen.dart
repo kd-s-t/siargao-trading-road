@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
+import 'package:siargao_trading_road/screens/location_picker_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,6 +19,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String _role = 'supplier';
   bool _loading = false;
   String? _error;
+  double? _latitude;
+  double? _longitude;
 
   bool _validatePhilippineMobile(String mobile) {
     final cleaned = mobile.replaceAll(RegExp(r'[^0-9]'), '');
@@ -57,6 +60,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         name: _nameController.text.trim(),
         phone: _mobileController.text.trim(),
         role: _role,
+        latitude: _latitude,
+        longitude: _longitude,
       );
     } catch (e) {
       setState(() {
@@ -223,6 +228,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 }
                               },
                             ),
+                            const SizedBox(height: 16),
+                            OutlinedButton.icon(
+                              onPressed: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LocationPickerScreen(
+                                      initialLatitude: _latitude,
+                                      initialLongitude: _longitude,
+                                    ),
+                                  ),
+                                );
+                                if (result != null && mounted) {
+                                  setState(() {
+                                    _latitude = result['latitude'] as double;
+                                    _longitude = result['longitude'] as double;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.location_on),
+                              label: Text(_latitude != null && _longitude != null
+                                  ? 'Location Selected'
+                                  : 'Select Location'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                            if (_latitude != null && _longitude != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'Lat: ${_latitude!.toStringAsFixed(6)}, Lng: ${_longitude!.toStringAsFixed(6)}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
                             const SizedBox(height: 24),
                             ElevatedButton(
                               onPressed: _loading ? null : _handleSubmit,

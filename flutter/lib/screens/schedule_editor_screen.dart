@@ -153,9 +153,10 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
       appBar: AppBar(
         title: const Text('Edit Schedule'),
       ),
-      body: _loading && _exceptions.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+      body: SafeArea(
+        child: _loading && _exceptions.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
               children: [
                 Expanded(
                   child: TableCalendar(
@@ -281,6 +282,7 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
                   ),
               ],
             ),
+      ),
     );
   }
 }

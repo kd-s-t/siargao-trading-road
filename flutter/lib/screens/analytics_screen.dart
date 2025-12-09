@@ -120,26 +120,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       appBar: AppBar(
         title: const Text('Analytics'),
       ),
-      body: _loading
-          ? const ShimmerAnalytics()
-          : RefreshIndicator(
-              onRefresh: _loadAnalytics,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildRevenueCard(),
-                    const SizedBox(height: 16),
-                    _buildRevenueChart(),
-                    const SizedBox(height: 16),
-                    _buildOrdersCard(),
-                    const SizedBox(height: 16),
-                    _buildStatusPieChart(),
-                  ],
+      body: SafeArea(
+        child: _loading
+            ? const ShimmerAnalytics()
+            : RefreshIndicator(
+                onRefresh: _loadAnalytics,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildRevenueCard(),
+                      const SizedBox(height: 16),
+                      _buildRevenueChart(),
+                      const SizedBox(height: 16),
+                      _buildOrdersCard(),
+                      const SizedBox(height: 16),
+                      _buildStatusPieChart(),
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 

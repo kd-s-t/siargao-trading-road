@@ -636,7 +636,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
       appBar: AppBar(
         title: const Text('Orders'),
       ),
-      body: body,
+      body: SafeArea(
+        child: body,
+      ),
     );
   }
 

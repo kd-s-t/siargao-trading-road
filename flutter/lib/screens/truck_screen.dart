@@ -181,7 +181,7 @@ class _TruckScreenState extends State<TruckScreen> {
             ? user.address!
             : null;
 
-        await OrderService.submitOrder(
+        final submittedOrder = await OrderService.submitOrder(
           _draftOrder!.id,
           paymentMethod: _paymentMethod,
           deliveryOption: _deliveryOption,
@@ -191,7 +191,11 @@ class _TruckScreenState extends State<TruckScreen> {
         );
         if (mounted) {
           SnackbarHelper.showSuccess(context, 'Order submitted successfully!');
-          Navigator.pop(context);
+          Navigator.pushReplacementNamed(
+            context,
+            '/order-detail',
+            arguments: {'orderId': submittedOrder.id},
+          );
         }
       } catch (e) {
         if (mounted) {

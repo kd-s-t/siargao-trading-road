@@ -44,16 +44,23 @@ class AuthService {
     required String name,
     required String phone,
     required String role,
+    double? latitude,
+    double? longitude,
   }) async {
+    final body = <String, dynamic>{
+      'email': email,
+      'password': password,
+      'name': name,
+      'phone': phone,
+      'role': role,
+    };
+    if (latitude != null && longitude != null) {
+      body['latitude'] = latitude;
+      body['longitude'] = longitude;
+    }
     final response = await ApiService.post(
       '/register',
-      body: {
-        'email': email,
-        'password': password,
-        'name': name,
-        'phone': phone,
-        'role': role,
-      },
+      body: body,
     );
 
     if (response.statusCode == 200) {
