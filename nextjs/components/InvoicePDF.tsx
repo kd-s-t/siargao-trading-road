@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image as PdfImage } from '@react-pdf/renderer';
 import { Order } from '@/lib/users';
 
 const styles = StyleSheet.create({
@@ -159,9 +159,8 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ order, logoBase64 }) => 
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             {logoBase64 && (
-              <Image
+              <PdfImage
                 src={logoBase64}
-                alt="Company logo"
                 style={styles.logo}
               />
             )}
