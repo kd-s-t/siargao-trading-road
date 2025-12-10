@@ -1488,9 +1488,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   bool _hasActionButtons(user) {
     if (_canCancelOrder(user)) return true;
     if (user?.role != 'supplier') return false;
-    return _order!.status == 'preparing' ||
-        _order!.status == 'in_transit' ||
-        (_order!.status == 'delivered' && _order!.paymentStatus != 'paid');
+    final status = _order!.status;
+    final paymentStatus = _order!.paymentStatus;
+    final paymentMethod = _order!.paymentMethod;
+    final canManageCodPayment = status == 'delivered' && paymentStatus == 'paid' && paymentMethod == 'cash_on_delivery';
+    return status == 'preparing' ||
+        status == 'in_transit' ||
+        (status == 'delivered' && paymentStatus != 'paid') ||
+        canManageCodPayment;
   }
 
   Widget _buildActionsCard(User? entity, String entityName, user) {
