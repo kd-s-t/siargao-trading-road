@@ -70,14 +70,21 @@ func UploadImage(c *gin.Context) {
 	}
 	defer src.Close()
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(config.AWSRegion),
-		Credentials: credentials.NewStaticCredentials(
+	awsConfig := &aws.Config{}
+
+	if config.AWSRegion != "" {
+		awsConfig.Region = aws.String(config.AWSRegion)
+	}
+
+	if config.AWSAccessKey != "" && config.AWSSecretKey != "" {
+		awsConfig.Credentials = credentials.NewStaticCredentials(
 			config.AWSAccessKey,
 			config.AWSSecretKey,
 			"",
-		),
-	})
+		)
+	}
+
+	sess, err := session.NewSession(awsConfig)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create AWS session"})
 		return

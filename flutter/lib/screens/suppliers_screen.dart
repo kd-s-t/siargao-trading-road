@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/services/supplier_service.dart';
 import 'package:siargao_trading_road/models/supplier.dart';
 import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
@@ -113,6 +114,15 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     return DateTime(now.year, now.month, now.day, hour, minute);
   }
 
+  String _formatTime(String? value) {
+    final parsed = _parseTime(value);
+    if (parsed != null) {
+      return DateFormat('h:mm a').format(parsed);
+    }
+    final trimmed = (value ?? '').trim();
+    return trimmed.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+  }
+
   bool? _isSupplierOpenNow(Supplier supplier) {
     final opening = _parseTime(supplier.openingTime);
     final closing = _parseTime(supplier.closingTime);
@@ -190,7 +200,6 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     if (_suppliers.isEmpty) {
       return ListView(
         padding: EdgeInsets.only(
-          top: 8,
           bottom: 16 + MediaQuery.of(context).padding.bottom,
         ),
         children: const [
@@ -211,7 +220,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
-        top: 8,
+        top: 0,
         bottom: 16 + MediaQuery.of(context).padding.bottom,
       ),
       itemCount: _suppliers.length,
@@ -286,8 +295,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                         ),
                                       ),
                                       if (isOpen)
-                                        Chip(
-                                          label: const Text(
+                                        const Chip(
+                                          label: Text(
                                             'Open',
                                             style: TextStyle(
                                               fontSize: 12,
@@ -295,7 +304,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                             ),
                                           ),
                                           backgroundColor: Colors.green,
-                                          padding: const EdgeInsets.symmetric(
+                                          padding: EdgeInsets.symmetric(
                                             horizontal: 8,
                                             vertical: 4,
                                           ),
@@ -411,7 +420,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '${supplier.openingTime!} - ${supplier.closingTime!}',
+                                        '${_formatTime(supplier.openingTime)} - ${_formatTime(supplier.closingTime)}',
                                         style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
@@ -431,7 +440,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'Opens: ${supplier.openingTime!}',
+                                        'Opens: ${_formatTime(supplier.openingTime)}',
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: Colors.grey[800],
@@ -450,7 +459,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'Closes: ${supplier.closingTime!}',
+                                        'Closes: ${_formatTime(supplier.closingTime)}',
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: Colors.grey[800],
@@ -459,6 +468,22 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                     ],
                                   ),
                               ],
+                            ),
+                          ),
+                        ],
+                        if (!isOpen &&
+                            supplier.openingTime != null &&
+                            supplier.openingTime!.trim().isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Center(
+                            child: Text(
+                              'Opens tomorrow at ${_formatTime(supplier.openingTime)}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.redAccent,
+                              ),
                             ),
                           ),
                         ],
@@ -553,7 +578,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
         ),
         Expanded(
           child: RefreshIndicator(
-            edgeOffset: 60,
+            edgeOffset: 80,
             onRefresh: _handleRefresh,
             child: listChild,
           ),

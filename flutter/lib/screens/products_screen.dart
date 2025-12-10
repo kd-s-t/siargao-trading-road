@@ -176,195 +176,240 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
   }
 
-  Widget _buildSearchField() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: TextField(
-        decoration: const InputDecoration(
-          hintText: 'Search products',
-          prefixIcon: Icon(Icons.search),
-          border: OutlineInputBorder(),
-          isDense: true,
-          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        ),
-        onChanged: (value) {
-          _searchDebounce?.cancel();
-          setState(() {
-            _searchQuery = value;
-          });
-          _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-            if (mounted) {
-              _loadProducts(force: true);
-            }
-          });
-        },
-      ),
-    );
-  }
-
   Widget _buildBody() {
-    return _loading
-          ? const ShimmerProductList()
-          : RefreshIndicator(
-              onRefresh: () => _loadProducts(force: true),
-              child: _products.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _showDeleted ? 'No deleted products' : 'No products yet',
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _showDeleted
-                                ? 'Turn off the filter to see active products'
-                                : 'Tap the + button to add your first product',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
+    if (_loading && _products.isEmpty) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search products',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              onChanged: (value) {
+                _searchDebounce?.cancel();
+                setState(() {
+                  _searchQuery = value;
+                });
+                _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                  if (mounted) {
+                    _loadProducts(force: true);
+                  }
+                });
+              },
+            ),
+          ),
+          const Expanded(child: ShimmerProductList()),
+        ],
+      );
+    }
+
+    Widget listChild;
+    if (_products.isEmpty) {
+      listChild = ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _showDeleted ? 'No deleted products' : 'No products yet',
+                  style: const TextStyle(fontSize: 18),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _showDeleted
+                      ? 'Turn off the filter to see active products'
+                      : 'Tap the + button to add your first product',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else if (_filteredProducts.isEmpty) {
+      listChild = ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 16),
+        children: const [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Center(
+              child: Text(
+                'No products match your search',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      listChild = ListView.builder(
+        padding: const EdgeInsets.only(bottom: 16),
+        itemCount: _filteredProducts.length,
+        itemBuilder: (context, index) {
+          final product = _filteredProducts[index];
+          final isDeleted = product.deletedAt != null;
+          final visible = index < _itemVisible.length ? _itemVisible[index] : true;
+          return AnimatedOpacity(
+            duration: const Duration(milliseconds: 360),
+            curve: Curves.easeOut,
+            opacity: visible ? 1 : 0,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 360),
+              curve: Curves.easeOut,
+              offset: visible ? Offset.zero : const Offset(0, 0.12),
+              child: Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                child: ListTile(
+                  leading: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                      ? Image.network(
+                          product.imageUrl!,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.image),
+                        ),
+                  title: Text(product.name),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('₱${NumberFormat('#,##0.00').format(product.price)}'),
+                      Text(
+                        'Stock: ${product.stockQuantity}',
+                        style: const TextStyle(color: Colors.grey),
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      itemCount: (_filteredProducts.isEmpty ? 2 : _filteredProducts.length + 1),
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return _buildSearchField();
-                        }
-                        if (_filteredProducts.isEmpty && index == 1) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            child: Center(
-                              child: Text(
-                                'No products match your search',
-                                style: TextStyle(fontSize: 16),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isDeleted)
+                        IconButton(
+                          icon: const Icon(Icons.restore),
+                          onPressed: () async {
+                            try {
+                              await ProductService.restoreProduct(product.id);
+                              if (!mounted) return;
+                              _loadProducts(force: true);
+                            } catch (e) {
+                              if (!mounted) return;
+                              if (context.mounted) {
+                                SnackbarHelper.showError(context, 'Failed to restore: ${e.toString()}');
+                              }
+                            }
+                          },
+                        )
+                      else ...[
+                        IconButton(
+                          icon: const Icon(Icons.inventory_2),
+                          onPressed: _updatingStock ? null : () => _handleUpdateStock(product),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () async {
+                            final result = await Navigator.pushNamed(
+                              context,
+                              '/edit-product',
+                              arguments: {'product': product},
+                            );
+                            if (result == true) {
+                              _loadProducts(force: true);
+                            }
+                          },
+                        ),
+                      ],
+                      if (!isDeleted)
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Delete Product'),
+                                content: Text('Are you sure you want to delete "${product.name}"?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                  ),
+                                ],
                               ),
-                            ),
-                          );
-                        }
-                        final productIndex = index - 1;
-                        final product = _filteredProducts[productIndex];
-                        final isDeleted = product.deletedAt != null;
-                        final visible = productIndex < _itemVisible.length ? _itemVisible[productIndex] : true;
-                        return AnimatedOpacity(
-                          duration: const Duration(milliseconds: 360),
-                          curve: Curves.easeOut,
-                          opacity: visible ? 1 : 0,
-                          child: AnimatedSlide(
-                            duration: const Duration(milliseconds: 360),
-                            curve: Curves.easeOut,
-                            offset: visible ? Offset.zero : const Offset(0, 0.12),
-                            child: Card(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              child: ListTile(
-                                leading: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                                    ? Image.network(
-                                        product.imageUrl!,
-                                        width: 60,
-                                        height: 60,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Container(
-                                        width: 60,
-                                        height: 60,
-                                        color: Colors.grey.shade300,
-                                        child: const Icon(Icons.image),
-                                      ),
-                                title: Text(product.name),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('₱${NumberFormat('#,##0.00').format(product.price)}'),
-                                    Text(
-                                      'Stock: ${product.stockQuantity}',
-                                      style: const TextStyle(color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (isDeleted)
-                                      IconButton(
-                                        icon: const Icon(Icons.restore),
-                                        onPressed: () async {
-                                          try {
-                                            await ProductService.restoreProduct(product.id);
-                                            if (!mounted) return;
-                                            _loadProducts(force: true);
-                                          } catch (e) {
-                                            if (!mounted) return;
-                                            if (context.mounted) {
-                                              SnackbarHelper.showError(context, 'Failed to restore: ${e.toString()}');
-                                            }
-                                          }
-                                        },
-                                      )
-                                    else ...[
-                                      IconButton(
-                                        icon: const Icon(Icons.inventory_2),
-                                        onPressed: _updatingStock ? null : () => _handleUpdateStock(product),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.edit),
-                                        onPressed: () async {
-                                          final result = await Navigator.pushNamed(
-                                            context,
-                                            '/edit-product',
-                                            arguments: {'product': product},
-                                          );
-                                          if (result == true) {
-                                            _loadProducts(force: true);
-                                          }
-                                        },
-                                      ),
-                                    ],
-                                    if (!isDeleted)
-                                      IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red),
-                                        onPressed: () async {
-                                          final confirmed = await showDialog<bool>(
-                                            context: context,
-                                            builder: (context) => AlertDialog(
-                                              title: const Text('Delete Product'),
-                                              content: Text('Are you sure you want to delete "${product.name}"?'),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(context, false),
-                                                  child: const Text('Cancel'),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(context, true),
-                                                  child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                          if (confirmed == true) {
-                                            try {
-                                              await ProductService.deleteProduct(product.id);
-                                              if (!mounted) return;
-                                              _loadProducts(force: true);
-                                            } catch (e) {
-                                              if (!mounted) return;
-                                              if (context.mounted) {
-                                                SnackbarHelper.showError(context, 'Failed to delete: ${e.toString()}');
-                                              }
-                                            }
-                                          }
-                                        },
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            );
+                            );
+                            if (confirmed == true) {
+                              try {
+                                await ProductService.deleteProduct(product.id);
+                                if (!mounted) return;
+                                _loadProducts(force: true);
+                              } catch (e) {
+                                if (!mounted) return;
+                                if (context.mounted) {
+                                  SnackbarHelper.showError(context, 'Failed to delete: ${e.toString()}');
+                                }
+                              }
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Search products',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            onChanged: (value) {
+              _searchDebounce?.cancel();
+              setState(() {
+                _searchQuery = value;
+              });
+              _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                if (mounted) {
+                  _loadProducts(force: true);
+                }
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            edgeOffset: 60,
+            onRefresh: () => _loadProducts(force: true),
+            child: listChild,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
