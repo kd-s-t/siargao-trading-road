@@ -20,6 +20,7 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 	{
 		api.POST("/register", handlers.Register)
 		api.POST("/login", handlers.Login)
+		api.GET("/public/metrics", handlers.GetPublicMetrics)
 
 		protected := api.Group("/")
 		protected.Use(middleware.AuthMiddleware(cfg))

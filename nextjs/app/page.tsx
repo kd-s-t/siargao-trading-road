@@ -1,64 +1,108 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { motion, type Variants } from 'framer-motion';
 import {
-  Container,
-  Typography,
-  Box,
-  Card,
-  CardContent,
-  Paper,
-  AppBar,
-  Toolbar,
-} from '@mui/material';
-import {
-  Store as StoreIcon,
-  Inventory as InventoryIcon,
-  ShoppingCart as ShoppingCartIcon,
-  TrendingUp as TrendingUpIcon,
-  Security as SecurityIcon,
-  Speed as SpeedIcon,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
+  ShoppingBag,
+  TrendingUp,
+  Package,
+  ShoppingCart,
+  BarChart3,
+  Smartphone,
+  Zap,
+  Users,
+  UserPlus,
+  Search,
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import Header from '@/components/marketing/Header';
+import Footer from '@/components/marketing/Footer';
+import { getDownloadUrls } from '@/components/marketing/downloads';
+import api from '@/lib/api';
 
-declare global {
-  interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    THREE: any;
-    VANTA: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      WAVES: (options: any) => any;
-    };
-  }
-}
+const features = [
+  {
+    icon: Package,
+    title: 'Inventory Management',
+    description: 'Track your products in real-time with smart inventory controls and low-stock alerts.',
+    color: 'from-orange-400 to-orange-600',
+  },
+  {
+    icon: ShoppingCart,
+    title: 'Easy Ordering',
+    description: 'Place and manage orders with just a few taps. Streamlined checkout for faster transactions.',
+    color: 'from-green-400 to-green-600',
+  },
+  {
+    icon: BarChart3,
+    title: 'Business Analytics',
+    description: 'Gain insights with powerful analytics. Track sales, trends, and performance metrics.',
+    color: 'from-blue-400 to-blue-600',
+  },
+  {
+    icon: Users,
+    title: 'Supplier Network',
+    description: 'Connect with verified suppliers across Siargao. Build lasting business relationships.',
+    color: 'from-purple-400 to-purple-600',
+  },
+  {
+    icon: Smartphone,
+    title: 'Mobile First',
+    description: 'Manage your business on the go with our intuitive mobile app for iOS and Android.',
+    color: 'from-pink-400 to-pink-600',
+  },
+  {
+    icon: Zap,
+    title: 'Lightning Fast',
+    description: 'Optimized for speed and reliability. Experience seamless performance even offline.',
+    color: 'from-yellow-400 to-yellow-600',
+  },
+];
 
-const getDownloadUrls = () => {
-  const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || 'development';
-  const awsRegion = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
-  const bucketName = `siargaotradingroad-mobile-builds-${environment}`;
-  const s3BaseUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com`;
-  
-  const iosFileName = process.env.NEXT_PUBLIC_IOS_FILE_NAME || 
-    'application-0ba3caf8-40a9-4291-a0e9-407285f3c9f6.tar.gz';
-  
-  return {
-    android: process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL || `${s3BaseUrl}/android/latest.apk`,
-    ios: process.env.NEXT_PUBLIC_IOS_DOWNLOAD_URL || `${s3BaseUrl}/${iosFileName}`,
-  };
-};
+const steps = [
+  {
+    icon: UserPlus,
+    title: 'Sign Up',
+    description: 'Create your free account in seconds. No credit card required.',
+  },
+  {
+    icon: Search,
+    title: 'Browse Suppliers',
+    description: 'Discover local suppliers and their product catalogs.',
+  },
+  {
+    icon: ShoppingBag,
+    title: 'Place Orders',
+    description: 'Add products to cart and complete orders seamlessly.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Grow Your Business',
+    description: 'Track performance and scale with data-driven insights.',
+  },
+];
 
-const DOWNLOAD_URLS = getDownloadUrls();
+const fadeIn = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+} satisfies Variants;
+
+const stagger = {
+  hidden: { opacity: 1 },
+  show: { opacity: 1, transition: { staggerChildren: 0.12 } },
+} satisfies Variants;
 
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [showLanding, setShowLanding] = useState(false);
-  const vantaRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const vantaEffect = useRef<any>(null);
+  const [metrics, setMetrics] = useState({
+    total_users: 0,
+    total_suppliers: 0,
+    total_orders: 0,
+  });
+  const downloadUrls = getDownloadUrls();
+  const showLanding = !loading && !user;
 
   useEffect(() => {
     if (!loading) {
@@ -66,333 +110,205 @@ export default function Home() {
         router.push('/dashboard');
       } else if (user) {
         router.push('/login');
-      } else {
-        setTimeout(() => setShowLanding(true), 0);
       }
     }
   }, [user, loading, router]);
 
   useEffect(() => {
-    let mounted = true;
-    
-    if (typeof window !== 'undefined' && vantaRef.current && showLanding) {
-      const loadScript = (src: string): Promise<void> => {
-        return new Promise((resolve, reject) => {
-          if (document.querySelector(`script[src="${src}"]`)) {
-            resolve();
-            return;
-          }
-          const script = document.createElement('script');
-          script.src = src;
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-          document.head.appendChild(script);
-        });
-      };
-
-      loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js')
-        .then(() => {
-          if (!mounted) return;
-          return loadScript('https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js');
-        })
-        .then(() => {
-          if (!mounted || !vantaRef.current) return;
-          
-          if (!window.THREE) {
-            console.error('THREE.js not available on window');
-            return;
-          }
-          
-          if (vantaEffect.current) {
-            vantaEffect.current.destroy();
-          }
-          
-          if (window.VANTA && window.VANTA.WAVES) {
-            try {
-              vantaEffect.current = window.VANTA.WAVES({
-                el: vantaRef.current,
-                mouseControls: true,
-                touchControls: true,
-                gyroControls: false,
-                minHeight: 200.00,
-                minWidth: 200.00,
-                scale: 1.00,
-                scaleMobile: 1.00,
-                color: 0x1a3a5f,
-                shininess: 100.00,
-                waveHeight: 25.00,
-                waveSpeed: 1.25,
-                zoom: 0.65,
-              });
-            } catch (error) {
-              console.error('Error initializing Vanta.js:', error);
-            }
-          }
-        })
-        .catch((error) => {
-          console.error('Error loading Vanta.js scripts:', error);
-        });
-    }
-    
-    return () => {
-      mounted = false;
-      if (vantaEffect.current) {
-        vantaEffect.current.destroy();
+    if (!showLanding) return;
+    const fetchMetrics = async () => {
+      try {
+        const response = await api.get('/public/metrics');
+        setMetrics(response.data);
+      } catch {
+        return;
       }
     };
+    fetchMetrics();
   }, [showLanding]);
 
   if (loading || !showLanding) {
     return null;
   }
 
-  const features = [
-    {
-      icon: <StoreIcon sx={{ fontSize: 40 }} />,
-      title: 'Supplier Management',
-      description: 'Register and manage your products with ease. Upload via Excel, JSON, or manual entry.',
-    },
-    {
-      icon: <ShoppingCartIcon sx={{ fontSize: 40 }} />,
-      title: 'Siargao Trading Road',
-      description: 'Connect with suppliers and stores. Browse products and place orders.',
-    },
-    {
-      icon: <InventoryIcon sx={{ fontSize: 40 }} />,
-      title: 'Product Management',
-      description: 'Full CRUD operations with inventory tracking and soft delete capabilities.',
-    },
-    {
-      icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
-      title: 'Analytics Dashboard',
-      description: 'Track orders, earnings, and sales with comprehensive analytics and reports.',
-    },
-    {
-      icon: <SecurityIcon sx={{ fontSize: 40 }} />,
-      title: 'Secure Authentication',
-      description: 'JWT-based secure authentication system protecting your data and transactions.',
-    },
-    {
-      icon: <SpeedIcon sx={{ fontSize: 40 }} />,
-      title: 'Fast & Reliable',
-      description: 'Built with modern technologies for optimal performance and user experience.',
-    },
-  ];
-
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', position: 'relative' }}>
-      <Box
-        ref={vantaRef}
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '60vh',
-          zIndex: 0,
-          backgroundColor: '#1a3a5f',
-          '& canvas': {
-            display: 'block !important',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-          },
-        }}
-      />
-      
-      <AppBar position="static" elevation={0} sx={{ bgcolor: 'transparent', color: 'text.primary', position: 'relative', zIndex: 1 }}>
-        <Toolbar>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
-            <Image src="/logo.png" alt="Logo" width={350} height={96} style={{ height: 96, width: 'auto' }} />
-          </Box>
-        </Toolbar>
-      </AppBar>
+    <div className="min-h-screen bg-white text-gray-900">
+      <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-cyan-500 via-blue-600 to-blue-800 hero-animated">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6TTAgNDRjMC02LjYyNyA1LjM3My0xMiAxMi0xMnMxMiA1LjM3MyAxMiAxMi01LjM3MyAxMi0xMiAxMi0xMi01LjM3My0xMi0xMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40" />
+        <Header downloadUrls={downloadUrls} variant="hero" />
 
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-        <Box sx={{ py: 8, textAlign: 'center' }}>
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <Typography
-              variant="h5"
-              sx={{ mb: 2, maxWidth: 600, mx: 'auto', fontWeight: 500, color: 'white' }}
-            >
-              Siargao Trading Road
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ mb: 4, maxWidth: 600, mx: 'auto', fontSize: '1.1rem', color: 'white' }}
-            >
-              Connecting suppliers and stores in Siargao. Manage products, place orders, and grow your business.
-            </Typography>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-              <Box
-                component="a"
-                href={DOWNLOAD_URLS.android}
-                download
-                sx={{
-                  display: 'inline-block',
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                  },
-                }}
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-20 lg:pt-40">
+          <motion.div className="text-center space-y-8" initial="hidden" animate="show" variants={stagger}>
+            <motion.div className="inline-block animate-bounce" variants={fadeIn}>
+              <ShoppingBag className="w-16 h-16 text-white/80 mx-auto" />
+            </motion.div>
+            <motion.h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight" variants={fadeIn}>
+              Connect. Trade.<br />
+              <span className="text-cyan-200">Grow Together.</span>
+            </motion.h1>
+            <motion.p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto leading-relaxed" variants={fadeIn}>
+              The ultimate platform connecting suppliers and stores in Siargao. Manage inventory, place orders, and scale your island business effortlessly.
+            </motion.p>
+            <motion.div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8" variants={fadeIn}>
+              <a
+                href="#download"
+                className="group relative px-8 py-4 bg-white text-blue-600 rounded-full font-semibold text-lg shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 flex items-center space-x-2"
               >
-                <Image
-                  src="/googleplay.png"
-                  alt="Get it on Google Play"
-                  width={180}
-                  height={70}
-                  style={{ height: 'auto' }}
-                />
-              </Box>
-              <Box
-                sx={{
-                  display: 'inline-block',
-                  position: 'relative',
-                  opacity: 0.6,
-                  cursor: 'not-allowed',
-                }}
+                <span>Get Started Free</span>
+                <TrendingUp className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </a>
+              <a
+                href="#features"
+                className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-full font-semibold text-lg hover:bg-white hover:text-blue-600 transition-all duration-300"
               >
-                <Image
-                  src="/appstore.png"
-                  alt="Download on the App Store - Coming Soon"
-                  width={180}
-                  height={70}
-                  style={{ height: 'auto' }}
-                />
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    bgcolor: 'rgba(0, 0, 0, 0.8)',
-                    color: 'white',
-                    px: 2,
-                    py: 0.5,
-                    borderRadius: 1,
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Coming Soon
-                </Box>
-              </Box>
-            </Box>
+                Learn More
+              </a>
+            </motion.div>
+            <motion.div className="pt-12 flex flex-wrap justify-center gap-8 text-white/90" variants={stagger}>
+              <motion.div className="text-center" variants={fadeIn}>
+                <div className="text-4xl font-bold">{`${metrics.total_users}+`}</div>
+                <div className="text-sm text-blue-200">Active Users</div>
+              </motion.div>
+              <motion.div className="text-center" variants={fadeIn}>
+                <div className="text-4xl font-bold">{`${metrics.total_suppliers}+`}</div>
+                <div className="text-sm text-blue-200">Suppliers</div>
+              </motion.div>
+              <motion.div className="text-center" variants={fadeIn}>
+                <div className="text-4xl font-bold">{`${metrics.total_orders}+`}</div>
+                <div className="text-sm text-blue-200">Orders Completed</div>
+              </motion.div>
+            </motion.div>
           </motion.div>
-        </Box>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              mb: 8,
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
-              borderRadius: 3,
-            }}
-          >
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-              <Box sx={{ width: { xs: '100%', md: 'calc(66.666% - 16px)' } }}>
-                <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-                  Get Started Today
-                </Typography>
-                <Typography variant="body1" sx={{ mb: 3, opacity: 0.9 }}>
-                  Download our mobile app to start connecting with suppliers and stores.
-                  Available for Android and iOS devices.
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
-        </motion.div>
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent" />
+        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 border-2 border-white rounded-full flex items-start justify-center p-2">
+            <div className="w-1 h-3 bg-white rounded-full" />
+          </div>
+        </div>
+      </div>
 
-        <Box sx={{ py: 8 }}>
+      <div id="features" className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Everything You Need to Succeed</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">Powerful features designed specifically for Siargao&apos;s trading community</p>
+          </div>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={stagger}
           >
-            <Typography
-              variant="h3"
-              component="h2"
-              gutterBottom
-              sx={{ textAlign: 'center', mb: 6, fontWeight: 600 }}
-            >
-              Features
-            </Typography>
-          </motion.div>
-
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {features.map((feature, index) => (
-              <Box key={index} sx={{ width: { xs: '100%', sm: 'calc(50% - 16px)', md: 'calc(33.333% - 22px)' } }}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.7 + index * 0.1 }}
-                >
-                  <Card
-                    elevation={2}
-                    sx={{
-                      height: '100%',
-                      transition: 'transform 0.3s, box-shadow 0.3s',
-                      '&:hover': {
-                        transform: 'translateY(-8px)',
-                        boxShadow: 6,
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                      <Box sx={{ color: 'primary.main', mb: 2 }}>
-                        {feature.icon}
-                      </Box>
-                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                        {feature.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {feature.description}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </Box>
+            {features.map((feature) => (
+              <motion.div
+                key={feature.title}
+                className="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300"
+                variants={fadeIn}
+              >
+                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  <feature.icon className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+              </motion.div>
             ))}
-          </Box>
-        </Box>
+          </motion.div>
+        </div>
+      </div>
 
-      </Container>
+      <div className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">How It Works</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">Get started in four simple steps</p>
+          </div>
+          <motion.div
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={stagger}
+          >
+            {steps.map((step, index) => (
+              <motion.div key={step.title} className="relative" variants={fadeIn}>
+                <div className="text-center">
+                  <div className="relative inline-block">
+                    <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mb-6 shadow-xl">
+                      <step.icon className="w-10 h-10 text-white" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                      {index + 1}
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{step.title}</h3>
+                  <p className="text-gray-600">{step.description}</p>
+                </div>
+                {index < steps.length - 1 && (
+                  <div className="hidden lg:block absolute top-10 left-full w-full h-0.5 bg-gradient-to-r from-cyan-500 to-blue-600 opacity-30 -z-10" />
+                )}
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
 
-      <Box
-        component="footer"
-        sx={{
-          py: 4,
-          mt: 8,
-          borderTop: 1,
-          borderColor: 'divider',
-          textAlign: 'center',
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">
-          © {new Date().getFullYear()} Siargao Trading Road. All rights reserved.
-        </Typography>
-      </Box>
-    </Box>
+      <div id="download" className="py-24 bg-gradient-to-br from-cyan-500 via-blue-600 to-blue-800 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6TTAgNDRjMC02LjYyNyA1LjM3My0xMiAxMi0xMnMxMiA1LjM3MyAxMiAxMi01LjM3MyAxMi0xMiAxMi0xMi01LjM3My0xMi0xMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40" />
+        <motion.div
+          className="relative max-w-4xl mx-auto px-6 text-center"
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={stagger}
+        >
+          <motion.div className="inline-block mb-6" variants={fadeIn}>
+            <Smartphone className="w-16 h-16 text-white/90" />
+          </motion.div>
+          <motion.h2 className="text-4xl md:text-5xl font-bold text-white mb-6" variants={fadeIn}>Ready to Transform Your Business?</motion.h2>
+          <motion.p className="text-xl text-blue-100 mb-12 max-w-2xl mx-auto" variants={fadeIn}>
+            Join hundreds of businesses already using Siargao Trading Road. Download our app today and start growing.
+          </motion.p>
+          <motion.div className="flex flex-col sm:flex-row gap-4 justify-center items-center" variants={fadeIn}>
+            <a
+              href={downloadUrls.android}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group bg-black hover:bg-gray-900 text-white px-8 py-4 rounded-xl flex items-center space-x-3 transform hover:scale-105 transition-all duration-300 shadow-2xl"
+            >
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
+              </svg>
+              <div className="text-left">
+                <div className="text-xs text-gray-300">GET IT ON</div>
+                <div className="text-lg font-semibold">Google Play</div>
+              </div>
+            </a>
+            <a
+              href="#"
+              className="group bg-black hover:bg-gray-900 text-white px-8 py-4 rounded-xl flex items-center space-x-3 transform hover:scale-105 transition-all duration-300 shadow-2xl relative overflow-hidden"
+            >
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.71,19.5C17.88,20.74 17,21.95 15.66,21.97C14.32,22 13.89,21.18 12.37,21.18C10.84,21.18 10.37,21.95 9.1,22C7.79,22.05 6.8,20.68 5.96,19.47C4.25,17 2.94,12.45 4.7,9.39C5.57,7.87 7.13,6.91 8.82,6.88C10.1,6.86 11.32,7.75 12.11,7.75C12.89,7.75 14.37,6.68 15.92,6.84C16.57,6.87 18.39,7.1 19.56,8.82C19.47,8.88 17.39,10.1 17.41,12.63C17.44,15.65 20.06,16.66 20.09,16.67C20.06,16.74 19.67,18.11 18.71,19.5M13,3.5C13.73,2.67 14.94,2.04 15.94,2C16.07,3.17 15.6,4.35 14.9,5.19C14.21,6.04 13.07,6.7 11.95,6.61C11.8,5.46 12.36,4.26 13,3.5Z" />
+              </svg>
+              <div className="text-left">
+                <div className="text-xs text-gray-300">COMING SOON</div>
+                <div className="text-lg font-semibold">App Store</div>
+              </div>
+              <div className="absolute inset-0 bg-gray-800/50 backdrop-blur-[1px] flex items-center justify-center">
+                <span className="text-xs font-semibold text-white px-3 py-1 bg-blue-500 rounded-full">Coming Soon</span>
+              </div>
+            </a>
+          </motion.div>
+          <motion.div className="mt-12 pt-12 border-t border-white/20" variants={fadeIn}>
+            <p className="text-blue-100 text-sm">Available for Android now. iOS version launching soon.</p>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      <Footer />
+    </div>
   );
 }

@@ -10,9 +10,11 @@ export const metadata: Metadata = {
   title: "Siargao Trading Road",
   description: "Siargao Trading Road",
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
+    icon: [
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/favicon-192.png',
   },
 };
 

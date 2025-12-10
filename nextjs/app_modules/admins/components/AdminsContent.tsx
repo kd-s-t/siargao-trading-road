@@ -40,6 +40,16 @@ export function AdminsContent() {
     }
   }, [user, authLoading, router]);
 
+  const redirecting = authLoading || (!user || user.role !== 'admin' || (user.admin_level ?? 1) !== 1);
+
+  if (redirecting) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   const filteredAdmins = admins.filter(
     (a) =>
       a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
