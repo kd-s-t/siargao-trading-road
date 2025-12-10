@@ -24,16 +24,71 @@ func GetMe(c *gin.Context) {
 	}
 
 	user.Password = ""
+	flags := getFeatureFlags(user.ID)
 
 	role, exists := c.Get("role")
 	if !exists {
-		c.JSON(http.StatusOK, user)
+		c.JSON(http.StatusOK, gin.H{
+			"id":                  user.ID,
+			"email":               user.Email,
+			"name":                user.Name,
+			"phone":               user.Phone,
+			"address":             user.Address,
+			"latitude":            user.Latitude,
+			"longitude":           user.Longitude,
+			"logo_url":            user.LogoURL,
+			"banner_url":          user.BannerURL,
+			"facebook":            user.Facebook,
+			"instagram":           user.Instagram,
+			"twitter":             user.Twitter,
+			"linkedin":            user.LinkedIn,
+			"youtube":             user.YouTube,
+			"tiktok":              user.TikTok,
+			"website":             user.Website,
+			"role":                user.Role,
+			"admin_level":         user.AdminLevel,
+			"opening_time":        user.OpeningTime,
+			"closed_days_of_week": user.ClosedDaysOfWeek,
+			"closing_time":        user.ClosingTime,
+			"is_open":             user.IsOpen,
+			"created_at":          user.CreatedAt,
+			"updated_at":          user.UpdatedAt,
+			"last_login":          user.LastLogin,
+			"feature_flags":       flags,
+		})
 		return
 	}
 
 	roleStr, ok := role.(string)
 	if !ok {
-		c.JSON(http.StatusOK, user)
+		c.JSON(http.StatusOK, gin.H{
+			"id":                  user.ID,
+			"email":               user.Email,
+			"name":                user.Name,
+			"phone":               user.Phone,
+			"address":             user.Address,
+			"latitude":            user.Latitude,
+			"longitude":           user.Longitude,
+			"logo_url":            user.LogoURL,
+			"banner_url":          user.BannerURL,
+			"facebook":            user.Facebook,
+			"instagram":           user.Instagram,
+			"twitter":             user.Twitter,
+			"linkedin":            user.LinkedIn,
+			"youtube":             user.YouTube,
+			"tiktok":              user.TikTok,
+			"website":             user.Website,
+			"role":                user.Role,
+			"admin_level":         user.AdminLevel,
+			"opening_time":        user.OpeningTime,
+			"closed_days_of_week": user.ClosedDaysOfWeek,
+			"closing_time":        user.ClosingTime,
+			"is_open":             user.IsOpen,
+			"created_at":          user.CreatedAt,
+			"updated_at":          user.UpdatedAt,
+			"last_login":          user.LastLogin,
+			"feature_flags":       flags,
+		})
 		return
 	}
 
@@ -80,13 +135,41 @@ func GetMe(c *gin.Context) {
 			"last_login":          user.LastLogin,
 			"average_rating":      averageRating,
 			"rating_count":        ratingStats.RatingCount,
+			"feature_flags":       flags,
 		}
 
 		c.JSON(http.StatusOK, response)
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, gin.H{
+		"id":                  user.ID,
+		"email":               user.Email,
+		"name":                user.Name,
+		"phone":               user.Phone,
+		"address":             user.Address,
+		"latitude":            user.Latitude,
+		"longitude":           user.Longitude,
+		"logo_url":            user.LogoURL,
+		"banner_url":          user.BannerURL,
+		"facebook":            user.Facebook,
+		"instagram":           user.Instagram,
+		"twitter":             user.Twitter,
+		"linkedin":            user.LinkedIn,
+		"youtube":             user.YouTube,
+		"tiktok":              user.TikTok,
+		"website":             user.Website,
+		"role":                user.Role,
+		"admin_level":         user.AdminLevel,
+		"opening_time":        user.OpeningTime,
+		"closed_days_of_week": user.ClosedDaysOfWeek,
+		"closing_time":        user.ClosingTime,
+		"is_open":             user.IsOpen,
+		"created_at":          user.CreatedAt,
+		"updated_at":          user.UpdatedAt,
+		"last_login":          user.LastLogin,
+		"feature_flags":       flags,
+	})
 }
 
 func UpdateMe(c *gin.Context) {

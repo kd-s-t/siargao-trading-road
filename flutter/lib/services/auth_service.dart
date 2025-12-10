@@ -8,23 +8,16 @@ import 'package:siargao_trading_road/services/api_service.dart';
 class LoginResponse {
   final String token;
   final User user;
-  final List<String> featureFlags;
 
   LoginResponse({
     required this.token,
     required this.user,
-    required this.featureFlags,
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
-    final userMap = Map<String, dynamic>.from(json['user'] as Map<String, dynamic>);
-    if (json['feature_flags'] != null) {
-      userMap['feature_flags'] = json['feature_flags'];
-    }
     return LoginResponse(
       token: json['token'] as String,
-      user: User.fromJson(userMap),
-      featureFlags: (json['feature_flags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      user: User.fromJson(json['user'] as Map<String, dynamic>),
     );
   }
 }

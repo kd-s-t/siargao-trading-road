@@ -43,6 +43,11 @@ func Connect(cfg *config.Config) error {
 		return fmt.Errorf("failed to remove working_days column: %w", err)
 	}
 
+	err = migrateFeatureFlagsIndex()
+	if err != nil {
+		return fmt.Errorf("failed to migrate feature_flags index: %w", err)
+	}
+
 	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{})
 	if err != nil {
 		return err
@@ -71,6 +76,11 @@ func Migrate() error {
 	err = migrateRemoveWorkingDaysColumn()
 	if err != nil {
 		return fmt.Errorf("failed to remove working_days column: %w", err)
+	}
+
+	err = migrateFeatureFlagsIndex()
+	if err != nil {
+		return fmt.Errorf("failed to migrate feature_flags index: %w", err)
 	}
 
 	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{})
@@ -138,6 +148,18 @@ func migrateRemoveWorkingDaysColumn() error {
 	err = DB.Exec("ALTER TABLE users DROP COLUMN IF EXISTS working_days").Error
 	if err != nil {
 		return fmt.Errorf("failed to drop working_days column: %w", err)
+	}
+
+	return nil
+}
+
+func migrateFeatureFlagsIndex() error {
+	if DB == nil {
+		return fmt.Errorf("database connection not initialized")
+	}
+
+	if err := DB.Exec("DROP INDEX IF EXISTS idx_feature_flags_flag").Error; err != nil {
+		return fmt.Errorf("failed to drop legacy feature_flags index: %w", err)
 	}
 
 	return nil

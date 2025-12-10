@@ -46,7 +46,7 @@ class AuthProvider with ChangeNotifier {
     final response = await AuthService.login(email, password);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', response.token);
-    _user = response.user;
+    _user = await AuthService.getMe();
     notifyListeners();
   }
 
@@ -70,7 +70,7 @@ class AuthProvider with ChangeNotifier {
     );
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', response.token);
-    _user = response.user;
+    _user = await AuthService.getMe();
     notifyListeners();
   }
 
