@@ -37,7 +37,7 @@ export function StoreDashboardStats({ analytics }: StoreDashboardStatsProps) {
           <Card>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>
-                Total Spent
+                Total Spend
               </Typography>
               <Typography variant="h3" color="primary">
                 ₱{analytics.total_earnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

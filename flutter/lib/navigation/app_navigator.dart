@@ -4,6 +4,7 @@ import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/screens/login_screen.dart';
 import 'package:siargao_trading_road/screens/register_screen.dart';
 import 'package:siargao_trading_road/screens/onboarding_screen.dart';
+import 'package:siargao_trading_road/screens/profile_screen.dart';
 import 'package:siargao_trading_road/navigation/store_drawer.dart';
 import 'package:siargao_trading_road/navigation/supplier_drawer.dart';
 import 'package:siargao_trading_road/navigation/admin_drawer.dart';
@@ -55,6 +56,8 @@ class _MainAppState extends State<_MainApp> {
 
         final user = authProvider.user!;
         final hasOnboardingFlag = user.featureFlags.contains('onboarding_completed');
+        final needsAddress = (user.role == 'supplier' || user.role == 'store') &&
+            (user.address == null || user.address!.isEmpty);
 
         if (!hasOnboardingFlag) {
           return MaterialApp(
@@ -71,6 +74,17 @@ class _MainAppState extends State<_MainApp> {
                 setState(() {});
               },
             ),
+          );
+        }
+        
+        if (needsAddress) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              primaryColor: const Color(0xFF1976D2),
+            ),
+            home: const ProfileScreen(),
           );
         }
         

@@ -31,7 +31,7 @@ export function UserAnalyticsCharts({ user, analytics }: UserAnalyticsChartsProp
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
         <Box sx={{ width: { xs: '100%', md: 'calc(50% - 12px)' } }}>
           <Typography variant="h6" gutterBottom>
-            Earnings Over Time
+            {user.role === 'supplier' ? 'Earnings Over Time' : 'Spend Over Time'}
           </Typography>
           <Box sx={{ height: 300 }}>
             <Line
@@ -39,7 +39,7 @@ export function UserAnalyticsCharts({ user, analytics }: UserAnalyticsChartsProp
                 labels: chartData.map((d) => d.date),
                 datasets: [
                   {
-                    label: 'Amount',
+                    label: user.role === 'supplier' ? 'Earnings' : 'Spend',
                     data: chartData.map((d) => d.amount),
                     borderColor: '#8884d8',
                     backgroundColor: 'rgba(136, 132, 216, 0.1)',

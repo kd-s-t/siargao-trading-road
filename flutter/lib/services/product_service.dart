@@ -119,4 +119,19 @@ class ProductService {
       throw Exception(error['error'] ?? 'Failed to restore product');
     }
   }
+
+  static Future<int> resetStocks() async {
+    final response = await ApiService.post('/products/reset-stocks', body: {});
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final updated = data['updated'];
+      if (updated is int) return updated;
+      if (updated is num) return updated.toInt();
+      return 0;
+    } else {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Failed to reset stocks');
+    }
+  }
 }

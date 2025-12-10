@@ -64,4 +64,24 @@ class Product {
       'deleted_at': deletedAt?.toIso8601String(),
     };
   }
+
+  Product copyWith({
+    int? stockQuantity,
+  }) {
+    return Product(
+      id: id,
+      supplierId: supplierId,
+      name: name,
+      description: description,
+      sku: sku,
+      price: price,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
+      unit: unit,
+      category: category,
+      imageUrl: imageUrl,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      deletedAt: deletedAt,
+    );
+  }
 }

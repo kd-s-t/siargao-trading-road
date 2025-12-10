@@ -18,7 +18,7 @@ export function UserStatsCards({ user, analytics }: UserStatsCardsProps) {
       delay: 0,
     },
     {
-      label: 'Total Earnings',
+      label: user.role === 'supplier' ? 'Total Earnings' : 'Total Spend',
       value: `₱${analytics.total_earnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       delay: 0.1,
     },

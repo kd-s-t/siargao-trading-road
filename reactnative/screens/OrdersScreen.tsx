@@ -151,6 +151,20 @@ export default function OrdersScreen() {
     }
   };
 
+  const handleMarkPaid = async (orderId: number) => {
+    try {
+      setUpdatingStatus(orderId);
+      await orderService.markPaymentAsPaid(orderId);
+      await loadOrders();
+      setSnackbar({ visible: true, message: 'Payment marked as paid', type: 'success' });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to mark as paid';
+      setSnackbar({ visible: true, message: errorMessage, type: 'error' });
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const handleMarkDelivered = (orderId: number) => {
     Alert.alert(
       'Mark as Delivered',
@@ -543,6 +557,24 @@ export default function OrdersScreen() {
                     </Button>
                   )}
 
+                  {user?.role === 'supplier' && (
+                    <Button
+                      mode="outlined"
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleMarkPaid(order.id);
+                      }}
+                      style={styles.actionButton}
+                      disabled={
+                        updatingStatus === order.id ||
+                        order.payment_status === 'paid' ||
+                        order.status === 'cancelled'
+                      }
+                    >
+                      {order.payment_status === 'paid' ? 'Paid' : 'Mark Paid'}
+                    </Button>
+                  )}
+
                   {user?.role === 'supplier' && order.status === 'preparing' && (
                     <Button
                       mode="outlined"
@@ -553,7 +585,25 @@ export default function OrdersScreen() {
                       style={styles.actionButton}
                       disabled={updatingStatus === order.id}
                     >
-                      Mark In Transit
+                      Mark In Transit v2
+                    </Button>
+                  )}
+
+                  {user?.role === 'supplier' && (
+                    <Button
+                      mode="outlined"
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleMarkPaid(order.id);
+                      }}
+                      style={styles.actionButton}
+                      disabled={
+                        updatingStatus === order.id ||
+                        order.payment_status === 'paid' ||
+                        order.status === 'cancelled'
+                      }
+                    >
+                      {order.payment_status === 'paid' ? 'Paid' : 'Mark Paid'}
                     </Button>
                   )}
 

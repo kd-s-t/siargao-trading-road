@@ -138,6 +138,42 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     return supplier.isOpen;
   }
 
+  String _getNextOpeningMessage(String? openingTime) {
+    if (openingTime == null || openingTime.trim().isEmpty) {
+      return 'Opens tomorrow';
+    }
+    
+    final opening = _parseTime(openingTime);
+    if (opening == null) {
+      return 'Opens tomorrow at ${_formatTime(openingTime)}';
+    }
+    
+    final now = DateTime.now();
+    DateTime nextOpening;
+    
+    if (opening.isAfter(now)) {
+      nextOpening = opening;
+    } else {
+      nextOpening = opening.add(const Duration(days: 1));
+    }
+    
+    final difference = nextOpening.difference(now);
+    final hours = difference.inHours;
+    final minutes = difference.inMinutes % 60;
+    
+    if (nextOpening.day == now.day) {
+      if (hours > 0) {
+        return 'Opens today in $hours ${hours == 1 ? 'hour' : 'hours'}';
+      } else if (minutes > 0) {
+        return 'Opens today in $minutes ${minutes == 1 ? 'minute' : 'minutes'}';
+      } else {
+        return 'Opens today at ${_formatTime(openingTime)}';
+      }
+    } else {
+      return 'Opens tomorrow at ${_formatTime(openingTime)}';
+    }
+  }
+
   Widget _buildFilters() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
@@ -309,19 +345,6 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                             vertical: 4,
                                           ),
                                         ),
-                                      if (!isOpen &&
-                                          supplier.openingTime != null &&
-                                          supplier.openingTime!.trim().isNotEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 8.0),
-                                          child: Text(
-                                            'Opens tomorrow at ${supplier.openingTime!}',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ),
                                     ],
                                   ),
                                   const SizedBox(height: 4),
@@ -477,7 +500,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                           const SizedBox(height: 12),
                           Center(
                             child: Text(
-                              'Opens tomorrow at ${_formatTime(supplier.openingTime)}',
+                              _getNextOpeningMessage(supplier.openingTime),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 16,

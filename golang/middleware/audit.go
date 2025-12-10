@@ -6,6 +6,7 @@ import (
 	"log"
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -43,14 +44,20 @@ func AuditLogMiddleware() gin.HandlerFunc {
 
 		var requestBody string
 		if c.Request.Body != nil {
-			bodyBytes, err := io.ReadAll(c.Request.Body)
-			if err == nil && len(bodyBytes) > 0 {
-				if len(bodyBytes) <= 10000 {
-					requestBody = string(bodyBytes)
-				} else {
-					requestBody = string(bodyBytes[:10000]) + "... (truncated)"
+			contentType := c.ContentType()
+			if strings.Contains(contentType, "multipart/form-data") {
+				// Avoid logging binary multipart bodies (e.g., file uploads)
+				requestBody = "(multipart/form-data omitted)"
+			} else {
+				bodyBytes, err := io.ReadAll(c.Request.Body)
+				if err == nil && len(bodyBytes) > 0 {
+					if len(bodyBytes) <= 10000 {
+						requestBody = string(bodyBytes)
+					} else {
+						requestBody = string(bodyBytes[:10000]) + "... (truncated)"
+					}
+					c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 				}
-				c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 			}
 		}
 

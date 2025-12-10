@@ -12,7 +12,6 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  static const _versionTag = 'v7';
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -24,15 +23,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   double? _latitude;
   double? _longitude;
 
-  bool _validatePhilippineMobile(String mobile) {
-    final cleaned = mobile.replaceAll(RegExp(r'[^0-9]'), '');
-    if (cleaned.startsWith('63')) {
-      return cleaned.length == 12 && cleaned.substring(2, 3) == '9';
+  String? _normalizePhilippineMobile(String mobile) {
+    final digits = mobile.replaceAll(RegExp(r'[^0-9]'), '');
+    var trimmed = digits;
+    if (trimmed.startsWith('0')) {
+      trimmed = trimmed.substring(1);
+    } else if (trimmed.startsWith('63')) {
+      trimmed = trimmed.substring(2);
     }
-    if (cleaned.startsWith('0')) {
-      return cleaned.length == 11 && cleaned.substring(1, 2) == '9';
+    if (trimmed.length != 10 || !trimmed.startsWith('9')) {
+      return null;
     }
-    return cleaned.length == 10 && cleaned.startsWith('9');
+    return '+63$trimmed';
   }
 
   @override
@@ -60,11 +62,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final normalizedPhone = _normalizePhilippineMobile(_mobileController.text.trim());
       await authProvider.register(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         name: _nameController.text.trim(),
-        phone: _mobileController.text.trim(),
+        phone: normalizedPhone ?? _mobileController.text.trim(),
         role: _role,
         latitude: _latitude,
         longitude: _longitude,
@@ -124,8 +127,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              'Create a new account $_versionTag',
+                            const Text(
+                              'Create a new account',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 16,
@@ -142,7 +145,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  '$_versionTag: $_error',
+                                  _error!,
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     color: Colors.red,
@@ -188,15 +191,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               decoration: const InputDecoration(
                                 labelText: 'Mobile *',
                                 border: OutlineInputBorder(),
-                                helperText: 'Philippine mobile number (e.g., 9606075119)',
+                                prefixText: '+63 ',
+                                helperText: 'Philippine mobile number (e.g., 9123456789)',
                                 helperMaxLines: 2,
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your mobile number';
                                 }
-                                if (!_validatePhilippineMobile(value)) {
-                                  return 'Please enter a valid Philippine mobile number';
+                                if (_normalizePhilippineMobile(value) == null) {
+                                  return 'Enter a valid PH mobile (start with 9, 10 digits)';
                                 }
                                 return null;
                               },

@@ -94,9 +94,13 @@ export default function TruckScreen() {
   const handleSubmitOrder = async () => {
     if (!draftOrder) return;
 
+    const totalQuantity = draftOrder.order_items.reduce((sum, item) => sum + item.quantity, 0);
+    const deliveryFee = deliveryOption === 'deliver' ? totalQuantity * 20 : 0;
+    const finalTotal = draftOrder.total_amount + deliveryFee;
+
     Alert.alert(
       'Submit Order',
-      `Are you sure you want to submit this order for ₱${draftOrder.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}?`,
+      `Are you sure you want to submit this order for ₱${finalTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${deliveryFee > 0 ? ` (includes delivery ₱${deliveryFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` : ''}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -104,12 +108,10 @@ export default function TruckScreen() {
           onPress: async () => {
             setSubmitting(true);
             try {
-              const totalQuantity = draftOrder.order_items.reduce((sum, item) => sum + item.quantity, 0);
-              const deliveryFee = deliveryOption === 'deliver' ? totalQuantity * 20 : 0;
-
               await orderService.submitOrder(draftOrder.id, {
                 payment_method: paymentMethod,
                 delivery_option: deliveryOption,
+                payment_status: paymentMethod === 'gcash' ? 'pending' : undefined,
                 notes: notes.trim() || undefined,
                 delivery_fee: deliveryFee,
                 distance: 0,

@@ -279,6 +279,33 @@ func RestoreProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, product)
 }
 
+func ResetProductStocks(c *gin.Context) {
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	role, _ := c.Get("role")
+
+	if role != "supplier" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers can reset stocks"})
+		return
+	}
+
+	result := database.DB.Model(&models.Product{}).
+		Where("supplier_id = ?", userID).
+		Where("deleted_at IS NULL").
+		Where("stock_quantity != 0").
+		Update("stock_quantity", 0)
+
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to reset stocks"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"updated": result.RowsAffected})
+}
+
 func BulkCreateProducts(c *gin.Context) {
 	userID, err := getUserID(c)
 	if err != nil {

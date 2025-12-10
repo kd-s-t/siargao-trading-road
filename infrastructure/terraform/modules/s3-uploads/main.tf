@@ -39,11 +39,9 @@ resource "aws_s3_bucket_policy" "user_uploads" {
         Resource  = "${aws_s3_bucket.user_uploads.arn}/*"
       },
       {
-        Sid    = "AllowPutObject"
-        Effect = "Allow"
-        Principal = {
-          AWS = var.ec2_role_arn
-        }
+        Sid       = "AllowPutObjectFromAnyPrincipal"
+        Effect    = "Allow"
+        Principal = "*"
         Action = [
           "s3:PutObject",
           "s3:PutObjectAcl"
@@ -74,6 +72,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "user_uploads" {
   rule {
     id     = "delete-old-uploads"
     status = "Enabled"
+
+    filter {
+      prefix = ""
+    }
 
     expiration {
       days = var.upload_retention_days

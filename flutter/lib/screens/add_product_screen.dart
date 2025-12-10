@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:siargao_trading_road/services/product_service.dart';
-import 'package:siargao_trading_road/services/auth_service.dart';
 import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:siargao_trading_road/services/auth_service.dart';
+import 'package:siargao_trading_road/services/product_service.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -24,8 +26,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
   late TextEditingController _skuController;
   late TextEditingController _priceController;
   late TextEditingController _stockQuantityController;
-  late TextEditingController _unitController;
   late TextEditingController _categoryController;
+  String? _selectedUnit;
+  final List<String> _unitOptions = [
+    'piece',
+    'kg',
+    'g',
+    'box',
+    'pack',
+    'liter',
+    'ml',
+  ];
 
   @override
   void initState() {
@@ -34,8 +45,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _descriptionController = TextEditingController();
     _skuController = TextEditingController();
     _priceController = TextEditingController();
-    _stockQuantityController = TextEditingController(text: '0');
-    _unitController = TextEditingController();
+    _stockQuantityController = TextEditingController();
     _categoryController = TextEditingController();
   }
 
@@ -46,7 +56,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _skuController.dispose();
     _priceController.dispose();
     _stockQuantityController.dispose();
-    _unitController.dispose();
     _categoryController.dispose();
     super.dispose();
   }
@@ -66,7 +75,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final sku = _skuController.text.trim();
       final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
       final stockQuantity = int.tryParse(_stockQuantityController.text.trim()) ?? 0;
-      final unit = _unitController.text.trim();
+      final unit = _selectedUnit?.trim() ?? '';
       final category = _categoryController.text.trim();
       final description = _descriptionController.text.trim();
 
@@ -193,6 +202,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$')),
+                ],
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Price is required';
@@ -212,6 +224,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Stock quantity is required';
@@ -224,12 +239,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _unitController,
+              DropdownButtonFormField<String>(
+                value: _selectedUnit,
                 decoration: const InputDecoration(
-                  labelText: 'Unit (kg, piece, box, etc.)',
+                  labelText: 'Unit',
                   border: OutlineInputBorder(),
                 ),
+                items: _unitOptions
+                    .map((unit) => DropdownMenuItem<String>(
+                          value: unit,
+                          child: Text(unit),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedUnit = value;
+                  });
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(

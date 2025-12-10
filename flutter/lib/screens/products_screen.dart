@@ -26,6 +26,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   final List<Timer> _animationTimers = [];
   String _searchQuery = '';
   bool _updatingStock = false;
+  bool _bulkUpdatingStocks = false;
   Timer? _searchDebounce;
 
   void addProduct(Product product) {
@@ -176,31 +177,118 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
   }
 
+  Future<void> _handleResetAllStocks() async {
+    if (_bulkUpdatingStocks) return;
+    final hasNonZeroStock = _products.any((p) => p.deletedAt == null && p.stockQuantity != 0);
+    if (!hasNonZeroStock) {
+      if (mounted) {
+        SnackbarHelper.showInfo(context, 'All stocks are already at 0');
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Stocks'),
+        content: const Text('Set stock of all products to 0?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      _bulkUpdatingStocks = true;
+    });
+
+    try {
+      await ProductService.resetStocks();
+      if (!mounted) return;
+
+      final updatedList = _products.map((p) {
+        if (p.deletedAt != null) return p;
+        return p.copyWith(stockQuantity: 0);
+      }).toList();
+
+      setState(() {
+        _products = updatedList;
+        _filteredProducts = _filteredProducts.map((p) {
+          if (p.deletedAt != null) return p;
+          return p.copyWith(stockQuantity: 0);
+        }).toList();
+        _bulkUpdatingStocks = false;
+      });
+      _startItemAnimations();
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'All stocks reset to 0');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _bulkUpdatingStocks = false;
+      });
+      SnackbarHelper.showError(context, 'Failed to reset stocks: ${e.toString()}');
+    }
+  }
+
   Widget _buildBody() {
     if (_loading && _products.isEmpty) {
       return Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search products',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-                isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              ),
-              onChanged: (value) {
-                _searchDebounce?.cancel();
-                setState(() {
-                  _searchQuery = value;
-                });
-                _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-                  if (mounted) {
-                    _loadProducts(force: true);
-                  }
-                });
-              },
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'Search products',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    onChanged: (value) {
+                      _searchDebounce?.cancel();
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                      _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                        if (mounted) {
+                          _loadProducts(force: true);
+                        }
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
+                  icon: _bulkUpdatingStocks
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.restart_alt, size: 18),
+                  label: const Text('Empty stocks'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+              ],
             ),
           ),
           const Expanded(child: ShimmerProductList()),
@@ -380,25 +468,48 @@ class _ProductsScreenState extends State<ProductsScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: TextField(
-            decoration: const InputDecoration(
-              hintText: 'Search products',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            ),
-            onChanged: (value) {
-              _searchDebounce?.cancel();
-              setState(() {
-                _searchQuery = value;
-              });
-              _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-                if (mounted) {
-                  _loadProducts(force: true);
-                }
-              });
-            },
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Search products',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                  onChanged: (value) {
+                    _searchDebounce?.cancel();
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                      if (mounted) {
+                        _loadProducts(force: true);
+                      }
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
+                icon: _bulkUpdatingStocks
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.restart_alt, size: 18),
+                label: const Text('Empty stocks'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+            ],
           ),
         ),
         Expanded(

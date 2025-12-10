@@ -17,6 +17,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   bool _loading = true;
   Map<String, dynamic> _analytics = {};
   List<Map<String, dynamic>> _dailyRevenue = [];
+  bool _isStore = false;
 
   @override
   void initState() {
@@ -36,6 +37,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       final user = authProvider.user;
 
       if (user == null) return;
+      _isStore = user.role == 'store';
 
       final now = DateTime.now();
       final thisMonth = DateTime(now.year, now.month);
@@ -89,6 +91,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           : dailyRevenueList;
 
       setState(() {
+        _isStore = user.role == 'store';
         _analytics = {
           'totalRevenue': totalRevenue,
           'thisMonthRevenue': thisMonthRevenue,
@@ -100,6 +103,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           'inTransitOrders': inTransitOrders,
           'preparingOrders': preparingOrders,
           'cancelledOrders': cancelledOrders,
+          'role': user.role,
         };
         _dailyRevenue = last7Days.map((e) => {
           'date': e.key,
@@ -153,6 +157,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100)
         : 0.0;
 
+    final titleLabel = _isStore ? 'Total Spend' : 'Total Revenue';
+    final monthlyLabel = _isStore ? 'This Month\'s Spend' : 'This Month';
+
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -172,9 +179,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Total Revenue',
-              style: TextStyle(
+            Text(
+              titleLabel,
+              style: const TextStyle(
                 fontSize: 16,
                 color: Colors.white70,
                 fontWeight: FontWeight.w500,
@@ -196,9 +203,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'This Month',
-                      style: TextStyle(fontSize: 12, color: Colors.white70),
+                    Text(
+                      monthlyLabel,
+                      style: const TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                     Text(
                       '₱${NumberFormat('#,##0.00').format(thisMonthRevenue)}',
@@ -251,7 +258,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           padding: const EdgeInsets.all(40),
           child: Center(
             child: Text(
-              'No revenue data available',
+              _isStore ? 'No spend data available' : 'No revenue data available',
               style: TextStyle(color: Colors.grey[600]),
             ),
           ),
@@ -260,6 +267,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
 
     final maxRevenue = _dailyRevenue.map((e) => e['revenue'] as double).reduce((a, b) => a > b ? a : b);
+    final chartTitle = _isStore ? 'Spend Trend (Last 7 Days)' : 'Revenue Trend (Last 7 Days)';
+    final barLabel = _isStore ? 'Spend' : 'Revenue';
     
     return Card(
       elevation: 4,
@@ -269,9 +278,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Revenue Trend (Last 7 Days)',
-              style: TextStyle(
+            Text(
+              chartTitle,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -361,6 +370,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   }).toList(),
                 ),
               ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(barLabel),
+              ],
             ),
           ],
         ),

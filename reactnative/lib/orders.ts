@@ -125,6 +125,7 @@ export const orderService = {
     data: {
       payment_method: string;
       delivery_option: string;
+      payment_status?: string;
       delivery_fee?: number;
       distance?: number;
       shipping_address?: string;

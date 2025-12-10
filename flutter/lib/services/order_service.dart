@@ -259,6 +259,18 @@ class OrderService {
     }
   }
 
+  static Future<Order> markPaymentAsPending(int orderId) async {
+    final response = await ApiService.post('/orders/$orderId/payment/pending', body: {});
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return Order.fromJson(data);
+    } else {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Failed to revert payment');
+    }
+  }
+
   static Future<List<Message>> getMessages(int orderId) async {
     final response = await ApiService.get('/orders/$orderId/messages');
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
@@ -29,6 +31,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   String? _statusFilter;
   String? _error;
   int? _updatingStatus;
+  int? _updatingPayment;
   bool _isLoading = false;
   bool _hasLoaded = false;
 
@@ -142,6 +145,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       SnackbarHelper.showInfo(context, 'Downloading invoice...');
 
       final invoiceUrl = '${ApiService.baseUrl}/orders/${order.id}/invoice';
+      debugPrint('invoice download url: $invoiceUrl');
       
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
@@ -152,6 +156,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           'Authorization': 'Bearer $token',
         },
       );
+      debugPrint('invoice download status: ${response.statusCode}, bytes: ${response.bodyBytes.length}');
 
       if (response.statusCode == 200) {
         final directory = await getApplicationDocumentsDirectory();
@@ -164,7 +169,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
         await file.writeAsBytes(response.bodyBytes);
         
         final xFile = XFile(file.path);
-        await Share.shareXFiles([xFile]);
+        final box = context.findRenderObject() as RenderBox?;
+        final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+        if (origin != null) {
+          await Share.shareXFiles([xFile], sharePositionOrigin: origin);
+        } else {
+          await Share.shareXFiles([xFile]);
+        }
         
         if (mounted) {
           SnackbarHelper.showSuccess(context, 'Invoice downloaded successfully');
@@ -204,7 +215,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   Future<void> _handleMarkPaymentAsPaid(int orderId) async {
     setState(() {
-      _updatingStatus = orderId;
+      _updatingPayment = orderId;
     });
 
     try {
@@ -220,10 +231,57 @@ class _OrdersScreenState extends State<OrdersScreen> {
     } finally {
       if (mounted) {
         setState(() {
-          _updatingStatus = null;
+          _updatingPayment = null;
         });
       }
     }
+  }
+
+  Future<void> _handleMarkPaymentAsPending(int orderId) async {
+    setState(() {
+      _updatingPayment = orderId;
+    });
+
+    try {
+      await OrderService.markPaymentAsPending(orderId);
+      await _loadOrders(force: true);
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Payment reverted to pending');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Failed to revert payment: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _updatingPayment = null;
+        });
+      }
+    }
+  }
+
+  void _handleCancelOrder(int orderId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Order'),
+        content: const Text('Are you sure you want to cancel this order?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleUpdateStatus(orderId, 'cancelled');
+            },
+            child: const Text('Yes, cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildBody() {
@@ -572,6 +630,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                   spacing: 8,
                                                   runSpacing: 8,
                                                   children: [
+                                                    if (user?.role == 'store' &&
+                                                        (order.status == 'draft' || order.status == 'preparing'))
+                                                      OutlinedButton(
+                                                        onPressed: _updatingStatus == order.id
+                                                            ? null
+                                                            : () => _handleCancelOrder(order.id),
+                                                        child: _updatingStatus == order.id
+                                                            ? const SizedBox(
+                                                                width: 16,
+                                                                height: 16,
+                                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                                              )
+                                                            : const Text('Cancel Order'),
+                                                      ),
                                                     if (order.status == 'delivered')
                                                       OutlinedButton.icon(
                                                         onPressed: () => _handleDownloadInvoice(order),
@@ -605,19 +677,36 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                             : const Text('Mark Delivered'),
                                                       ),
                                                     if (user?.role == 'supplier' &&
-                                                        (order.status == 'in_transit' || order.status == 'delivered') &&
+                                                        (order.status == 'preparing' ||
+                                                         order.status == 'in_transit' ||
+                                                         order.status == 'delivered') &&
                                                         order.paymentStatus != 'paid')
                                                       OutlinedButton(
-                                                        onPressed: _updatingStatus == order.id
+                                                        onPressed: _updatingPayment == order.id
                                                             ? null
                                                             : () => _handleMarkPaymentAsPaid(order.id),
-                                                        child: _updatingStatus == order.id
+                                                        child: _updatingPayment == order.id
                                                             ? const SizedBox(
                                                                 width: 16,
                                                                 height: 16,
                                                                 child: CircularProgressIndicator(strokeWidth: 2),
                                                               )
                                                             : const Text('Mark as Paid'),
+                                                      ),
+                                                    if (user?.role == 'supplier' &&
+                                                        order.paymentStatus == 'paid' &&
+                                                        order.status != 'cancelled')
+                                                      OutlinedButton(
+                                                        onPressed: _updatingPayment == order.id
+                                                            ? null
+                                                            : () => _handleMarkPaymentAsPending(order.id),
+                                                        child: _updatingPayment == order.id
+                                                            ? const SizedBox(
+                                                                width: 16,
+                                                                height: 16,
+                                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                                              )
+                                                            : const Text('Revert Payment'),
                                                       ),
                                                   ],
                                                 ),

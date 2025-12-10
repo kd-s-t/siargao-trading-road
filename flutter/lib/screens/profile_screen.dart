@@ -207,6 +207,71 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     }
   }
 
+  Uri? _buildSocialUri(String type, String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+    switch (type) {
+      case 'email':
+        return Uri.parse(trimmed.startsWith('mailto:') ? trimmed : 'mailto:$trimmed');
+      case 'facebook':
+        return Uri.tryParse('fb://facewebmodal/f?href=${Uri.encodeComponent(trimmed)}');
+      case 'instagram': {
+        final uri = Uri.tryParse(trimmed);
+        if (uri == null) return null;
+        final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+        if (segments.isEmpty) return null;
+        final username = segments.first.startsWith('@') ? segments.first.substring(1) : segments.first;
+        return Uri.tryParse('instagram://user?username=$username');
+      }
+      case 'twitter': {
+        final uri = Uri.tryParse(trimmed);
+        if (uri == null) return null;
+        final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+        if (segments.isEmpty) return null;
+        final handle = segments.first.startsWith('@') ? segments.first.substring(1) : segments.first;
+        return Uri.tryParse('twitter://user?screen_name=$handle');
+      }
+      case 'linkedin': {
+        final uri = Uri.tryParse(trimmed);
+        if (uri == null) return null;
+        final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+        if (segments.length < 2 || segments.first != 'in') return null;
+        return Uri.tryParse('linkedin://in/${segments[1]}');
+      }
+      case 'youtube': {
+        final uri = Uri.tryParse(trimmed);
+        if (uri == null) return null;
+        if (uri.host.contains('youtu.be')) {
+          final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+          if (segments.isEmpty) return null;
+          return Uri.tryParse('vnd.youtube://${segments.first}');
+        }
+        if (uri.queryParameters.containsKey('v')) {
+          final videoId = uri.queryParameters['v'];
+          if (videoId == null || videoId.isEmpty) return null;
+          return Uri.tryParse('vnd.youtube://$videoId');
+        }
+        final path = uri.pathSegments.where((s) => s.isNotEmpty).join('/');
+        if (path.isEmpty) return null;
+        return Uri.tryParse('youtube://www.youtube.com/$path');
+      }
+      case 'tiktok': {
+        final uri = Uri.tryParse(trimmed);
+        if (uri == null) return null;
+        final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+        if (segments.isEmpty) return null;
+        final username = segments.first.startsWith('@') ? segments.first.substring(1) : segments.first;
+        return Uri.tryParse('tiktok://user/profile/$username');
+      }
+      case 'website': {
+        final uri = Uri.tryParse(trimmed.startsWith('http') ? trimmed : 'https://$trimmed');
+        return uri;
+      }
+      default:
+        return null;
+    }
+  }
+
   Future<void> _selectTime(BuildContext context, bool isOpening) async {
     final now = DateTime.now();
     final initialTime = TimeOfDay.fromDateTime(now);
@@ -582,15 +647,21 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
         runSpacing: 12,
         alignment: WrapAlignment.center,
         children: links.map((link) {
+          final type = link['type'] as String;
+          final raw = link['url'] as String;
           return IconButton(
-            icon: _getSocialIcon(link['type'] as String),
+            icon: _getSocialIcon(type),
             iconSize: 28,
             padding: const EdgeInsets.all(8),
             constraints: const BoxConstraints(),
             onPressed: () async {
-              final url = Uri.parse(link['url'] as String);
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url);
+              final uri = _buildSocialUri(type, raw);
+              if (uri == null) return;
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } else {
+                if (!mounted) return;
+                SnackbarHelper.showError(context, 'App not available for $type');
               }
             },
           );
@@ -716,9 +787,17 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
               if (user.address != null && user.address!.isNotEmpty)
                 _buildDetailRow('Address', user.address!),
               if (userLocation != null) ...[
-                _buildDetailRow(
-                  'Location',
-                  'Lat: ${user.latitude!.toStringAsFixed(6)}, Lng: ${user.longitude!.toStringAsFixed(6)}',
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    'Lat: ${user.latitude!.toStringAsFixed(6)}, Lng: ${user.longitude!.toStringAsFixed(6)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 ClipRRect(

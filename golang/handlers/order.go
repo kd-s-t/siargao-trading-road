@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -11,6 +13,7 @@ import (
 	"siargao-trading-road/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jung-kurt/gofpdf"
 )
 
 func getUserID(c *gin.Context) (uint, error) {
@@ -618,6 +621,52 @@ func MarkPaymentAsPaid(c *gin.Context) {
 	c.JSON(http.StatusOK, order)
 }
 
+func MarkPaymentAsPending(c *gin.Context) {
+	orderID := c.Param("id")
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	role, _ := c.Get("role")
+	if role != "supplier" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers can revert payment"})
+		return
+	}
+
+	var order models.Order
+	if err := database.DB.Where("id = ? AND supplier_id = ?", orderID, userID).First(&order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "order not found or access denied"})
+		return
+	}
+
+	if order.PaymentMethod != models.PaymentMethodGCash {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "payment revert is only applicable for GCash orders"})
+		return
+	}
+
+	if order.PaymentStatus == models.PaymentStatusPending {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "payment is already pending"})
+		return
+	}
+
+	order.PaymentStatus = models.PaymentStatusPending
+	if err := database.DB.Save(&order).Error; err != nil {
+		log.Printf("MarkPaymentAsPending: failed to update payment status. orderID=%s, userID=%d, error=%v", orderID, userID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update payment status", "details": err.Error()})
+		return
+	}
+
+	if err := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").First(&order, order.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load order details"})
+		return
+	}
+
+	log.Printf("MarkPaymentAsPending: payment reverted to pending. orderID=%s, userID=%d", orderID, userID)
+	c.JSON(http.StatusOK, order)
+}
+
 func GetDraftOrder(c *gin.Context) {
 	userID, err := getUserID(c)
 	if err != nil {
@@ -677,6 +726,169 @@ func SendInvoiceEmail(c *gin.Context) {
 		"message": "Invoice email sent successfully",
 		"to":      order.Store.Email,
 	})
+}
+
+func DownloadInvoice(c *gin.Context) {
+	id := c.Param("id")
+	userID, _ := c.Get("user_id")
+	role, _ := c.Get("role")
+
+	var order models.Order
+	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").Where("id = ?", id)
+
+	if role == "supplier" {
+		query = query.Where("supplier_id = ?", userID)
+	} else if role == "store" {
+		query = query.Where("store_id = ?", userID)
+	}
+
+	if err := query.First(&order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
+		return
+	}
+
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.SetMargins(12, 15, 12)
+	pdf.SetAutoPageBreak(true, 20)
+	pdf.AddPage()
+	hasLogo := false
+	if logoBytes, err := base64.StdEncoding.DecodeString(embeddedLogoBase64); err == nil {
+		if pdf.RegisterImageOptionsReader("app-logo", gofpdf.ImageOptions{ImageType: "PNG"}, bytes.NewReader(logoBytes)) == nil {
+			hasLogo = true
+			pageW, _ := pdf.GetPageSize()
+			left, _, right, _ := pdf.GetMargins()
+			usable := pageW - left - right
+			logoW := 70.0
+			x := left + (usable-logoW)/2
+			pdf.ImageOptions("app-logo", x, 10, logoW, 0, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
+		}
+	}
+
+	primaryBlue := struct{ r, g, b int }{r: 0, g: 86, b: 155}
+	teal := struct{ r, g, b int }{r: 0, g: 170, b: 190}
+
+	// Header band
+	pdf.SetFillColor(primaryBlue.r, primaryBlue.g, primaryBlue.b)
+	pdf.Rect(0, 0, 210, 24, "F")
+
+	// Curved accent using teal
+	pdf.SetFillColor(teal.r, teal.g, teal.b)
+	pdf.Rect(0, 17, 210, 9, "F")
+
+	// Header text
+	pdf.SetTextColor(255, 255, 255)
+	pdf.SetFont("Arial", "B", 18)
+	pdf.SetXY(15, 8)
+	pdf.CellFormat(60, 8, "Invoice", "", 0, "L", false, 0, "")
+	pdf.SetFont("Arial", "B", 12)
+	pdf.SetXY(135, 8)
+	pdf.CellFormat(60, 8, fmt.Sprintf("No: %d", order.ID), "", 0, "R", false, 0, "")
+
+	// Center logo in header if registered
+	if hasLogo {
+		pageW, _ := pdf.GetPageSize()
+		left, _, right, _ := pdf.GetMargins()
+		usable := pageW - left - right
+		logoW := 45.0
+		x := left + (usable-logoW)/2
+		pdf.ImageOptions("app-logo", x, 5, logoW, 0, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
+	}
+
+	// Body start
+	pdf.SetY(26)
+	pdf.SetTextColor(0, 0, 0)
+	pdf.SetFont("Arial", "", 11)
+	pdf.CellFormat(0, 7, fmt.Sprintf("Date: %s", order.CreatedAt.Format("2006-01-02")), "", 1, "R", false, 0, "")
+	pdf.Ln(2)
+
+	// Sender / Recipient blocks
+	pdf.SetFont("Arial", "B", 12)
+	pdf.CellFormat(95, 7, "Sender (Supplier)", "", 0, "L", false, 0, "")
+	pdf.CellFormat(95, 7, "Recipient (Store)", "", 1, "R", false, 0, "")
+
+	senderLines := []string{order.Supplier.Name}
+	if order.Supplier.Address != "" {
+		senderLines = append(senderLines, order.Supplier.Address)
+	}
+	if order.Supplier.Email != "" {
+		senderLines = append(senderLines, order.Supplier.Email)
+	}
+	if order.Supplier.Phone != "" {
+		senderLines = append(senderLines, order.Supplier.Phone)
+	}
+
+	recipientLines := []string{order.Store.Name}
+	if order.Store.Address != "" {
+		recipientLines = append(recipientLines, order.Store.Address)
+	}
+	if order.Store.Email != "" {
+		recipientLines = append(recipientLines, order.Store.Email)
+	}
+	if order.Store.Phone != "" {
+		recipientLines = append(recipientLines, order.Store.Phone)
+	}
+
+	maxLines := len(senderLines)
+	if len(recipientLines) > maxLines {
+		maxLines = len(recipientLines)
+	}
+
+	pdf.SetFont("Arial", "", 10)
+	for i := 0; i < maxLines; i++ {
+		leftVal := ""
+		if i < len(senderLines) {
+			leftVal = senderLines[i]
+		}
+		rightVal := ""
+		if i < len(recipientLines) {
+			rightVal = recipientLines[i]
+		}
+		pdf.CellFormat(95, 6, leftVal, "", 0, "L", false, 0, "")
+		pdf.CellFormat(95, 6, rightVal, "", 1, "R", false, 0, "")
+	}
+
+	pdf.Ln(6)
+
+	pdf.SetFont("Arial", "B", 12)
+	pdf.CellFormat(80, 8, "Item", "1", 0, "L", false, 0, "")
+	pdf.CellFormat(30, 8, "Qty", "1", 0, "L", false, 0, "")
+	pdf.CellFormat(40, 8, "Unit Price", "1", 0, "L", false, 0, "")
+	pdf.CellFormat(40, 8, "Subtotal", "1", 1, "L", false, 0, "")
+
+	pdf.SetFont("Arial", "", 12)
+	for _, item := range order.OrderItems {
+		name := item.Product.Name
+		if name == "" {
+			name = fmt.Sprintf("Product %d", item.ProductID)
+		}
+		pdf.CellFormat(80, 8, name, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(30, 8, fmt.Sprintf("%d", item.Quantity), "1", 0, "L", false, 0, "")
+		pdf.CellFormat(40, 8, fmt.Sprintf("PHP %.2f", item.UnitPrice), "1", 0, "L", false, 0, "")
+		pdf.CellFormat(40, 8, fmt.Sprintf("PHP %.2f", item.Subtotal), "1", 1, "L", false, 0, "")
+	}
+
+	pdf.SetFont("Arial", "B", 12)
+	pdf.CellFormat(150, 8, "Total", "1", 0, "R", false, 0, "")
+	pdf.CellFormat(40, 8, fmt.Sprintf("PHP %.2f", order.TotalAmount), "1", 1, "L", false, 0, "")
+
+	var buf bytes.Buffer
+	pageH, _ := pdf.GetPageSize()
+	if pdf.GetY() > pageH-25 {
+		pdf.SetY(pageH - 25)
+	} else {
+		pdf.SetY(pageH - 25)
+	}
+	pdf.SetFont("Arial", "", 9)
+	pdf.CellFormat(0, 6, "Siargao Trading Road · siargaotradingroad.com · info@siargaotradingroad.com", "", 1, "C", false, 0, "")
+
+	if err := pdf.Output(&buf); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate invoice"})
+		return
+	}
+
+	c.Header("Content-Type", "application/pdf")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"invoice-%d.pdf\"", order.ID))
+	c.Data(http.StatusOK, "application/pdf", buf.Bytes())
 }
 
 func GetOrderMessages(c *gin.Context) {

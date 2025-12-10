@@ -382,6 +382,7 @@ export function TruckView({
                   await mobileOrderService.submitOrder(draftOrder.id, {
                     payment_method: paymentMethod,
                     delivery_option: deliveryOption,
+                    payment_status: paymentMethod === 'gcash' ? 'pending' : undefined,
                     shipping_address: deliveryOption === 'deliver' ? shippingAddress : undefined,
                     payment_proof_url: paymentProofUrl,
                     notes: notes,

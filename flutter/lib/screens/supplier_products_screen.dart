@@ -587,7 +587,6 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
                                               decoration: const InputDecoration(
                                                 labelText: 'Quantity',
                                                 border: OutlineInputBorder(),
-                                                hintText: '1',
                                               ),
                                               keyboardType: TextInputType.number,
                                               onChanged: (value) {

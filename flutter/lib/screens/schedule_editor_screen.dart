@@ -144,6 +144,70 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
         exception: exception,
         onUpdate: () => _loadScheduleExceptions(),
       ),
+    ).whenComplete(() {
+      if (mounted) {
+        setState(() {
+          _selectedException = null;
+        });
+      }
+    });
+  }
+
+  Widget _buildDayCell(BuildContext context, DateTime day, {bool isSelected = false, bool isToday = false}) {
+    final isClosed = _isDateClosed(day);
+    final backgroundColor = isSelected
+        ? Theme.of(context).primaryColor
+        : isToday
+            ? Colors.blue.shade100
+            : isClosed
+                ? Colors.red.shade50
+                : Colors.transparent;
+    final textColor = isSelected
+        ? Colors.white
+        : isClosed
+            ? Colors.red.shade700
+            : Colors.black87;
+
+    return Container(
+      margin: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: isClosed && !isSelected
+            ? Border.all(color: Colors.red.shade200)
+            : null,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Text(
+            '${day.day}',
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (isClosed)
+            Positioned(
+              bottom: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white24 : Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Closed',
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.red.shade700,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -222,6 +286,19 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
                       formatButtonVisible: true,
                       titleCentered: true,
                     ),
+                    calendarBuilders: CalendarBuilders(
+                      defaultBuilder: (context, day, focusedDay) => _buildDayCell(context, day),
+                      todayBuilder: (context, day, focusedDay) => _buildDayCell(
+                        context,
+                        day,
+                        isToday: true,
+                      ),
+                      selectedBuilder: (context, day, focusedDay) => _buildDayCell(
+                        context,
+                        day,
+                        isSelected: true,
+                      ),
+                    ),
                   ),
                 ),
                 if (_selectedException != null)
@@ -244,17 +321,30 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            Text(
-                              _selectedException!.isClosed ? 'Closed' : 'Open',
-                              style: TextStyle(
-                                color: _selectedException!.isClosed ? Colors.red : Colors.green,
-                                fontWeight: FontWeight.w600,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _selectedException!.isClosed ? Colors.red.shade50 : Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: _selectedException!.isClosed ? Colors.red.shade200 : Colors.green.shade200,
+                                ),
+                              ),
+                              child: Text(
+                                _selectedException!.isClosed ? 'Closed' : 'Open',
+                                style: TextStyle(
+                                  color: _selectedException!.isClosed ? Colors.red.shade700 : Colors.green.shade700,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 12),
                             if (!_selectedException!.isClosed && _selectedException!.openingTime != null)
                               Expanded(
-                                child: Text('${_selectedException!.openingTime} - ${_selectedException!.closingTime ?? ""}'),
+                                child: Text(
+                                  '${_selectedException!.openingTime} - ${_selectedException!.closingTime ?? ""}',
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
                               ),
                           ],
                         ),
@@ -409,80 +499,106 @@ class _DateDetailsSheetState extends State<_DateDetailsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            DateFormat('EEEE, MMMM d, yyyy').format(widget.exception.date),
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              DateFormat('EEEE, MMMM d, yyyy').format(widget.exception.date),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 2,
-          ),
-          const SizedBox(height: 16),
-          SwitchListTile(
-            title: const Text('Closed'),
-            value: _isClosed,
-            onChanged: (value) {
-              setState(() {
-                _isClosed = value;
-              });
-            },
-          ),
-          if (!_isClosed) ...[
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: () => _selectTime(context, true),
-              child: TextField(
-                controller: TextEditingController(text: _openingTime ?? ''),
-                decoration: const InputDecoration(
-                  labelText: 'Opening Time',
-                  suffixIcon: Icon(Icons.access_time),
-                ),
-                enabled: false,
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Mark day closed'),
+              value: _isClosed,
+              onChanged: (value) {
+                setState(() {
+                  _isClosed = value;
+                });
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _isClosed ? 'Day is closed' : 'Day is open',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _isClosed ? Colors.red.shade700 : Colors.green.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _isClosed ? 'This day is marked closed; time slots are disabled.' : 'Add opening and closing times to mark this day as open.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: () => _selectTime(context, false),
-              child: TextField(
-                controller: TextEditingController(text: _closingTime ?? ''),
-                decoration: const InputDecoration(
-                  labelText: 'Closing Time',
-                  suffixIcon: Icon(Icons.access_time),
+            if (!_isClosed) ...[
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () => _selectTime(context, true),
+                child: TextField(
+                  controller: TextEditingController(text: _openingTime ?? ''),
+                  decoration: const InputDecoration(
+                    labelText: 'Opening Time',
+                    suffixIcon: Icon(Icons.access_time),
+                  ),
+                  enabled: false,
                 ),
-                enabled: false,
               ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () => _selectTime(context, false),
+                child: TextField(
+                  controller: TextEditingController(text: _closingTime ?? ''),
+                  decoration: const InputDecoration(
+                    labelText: 'Closing Time',
+                    suffixIcon: Icon(Icons.access_time),
+                  ),
+                  enabled: false,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            TextField(
+              controller: TextEditingController(text: _notes),
+              onChanged: (value) {
+                _notes = value;
+              },
+              decoration: const InputDecoration(
+                labelText: 'Notes',
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loading ? null : _save,
+              child: _loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save'),
             ),
           ],
-          const SizedBox(height: 8),
-          TextField(
-            controller: TextEditingController(text: _notes),
-            onChanged: (value) {
-              _notes = value;
-            },
-            decoration: const InputDecoration(
-              labelText: 'Notes',
-            ),
-            maxLines: 3,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loading ? null : _save,
-            child: _loading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
-          ),
-        ],
+        ),
       ),
     );
   }

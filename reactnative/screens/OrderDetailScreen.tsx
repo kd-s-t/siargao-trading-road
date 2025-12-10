@@ -53,6 +53,7 @@ export default function OrderDetailScreen() {
   const [chatMessage, setChatMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState(false);
   const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
     visible: false,
     message: '',
@@ -64,6 +65,9 @@ export default function OrderDetailScreen() {
   const [submittingRating, setSubmittingRating] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const messagesScrollRef = useRef<ScrollView>(null);
+
+  const paymentStatus = (order?.payment_status || '').trim().toLowerCase();
+  const isPaid = paymentStatus === 'paid';
 
   useEffect(() => {
     if (orderId && !order) {
@@ -82,6 +86,21 @@ export default function OrderDetailScreen() {
       setSnackbar({ visible: true, message: 'Failed to load order', type: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMarkPaid = async () => {
+    if (!order?.id) return;
+    try {
+      setMarkingPaid(true);
+      const updated = await orderService.markPaymentAsPaid(order.id);
+      setOrder(updated);
+      setSnackbar({ visible: true, message: 'Payment marked as paid', type: 'success' });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to mark as paid';
+      setSnackbar({ visible: true, message: errorMessage, type: 'error' });
+    } finally {
+      setMarkingPaid(false);
     }
   };
 
@@ -287,6 +306,21 @@ export default function OrderDetailScreen() {
     );
   };
 
+  const handleCancelOrder = () => {
+    Alert.alert(
+      'Cancel Order',
+      'Are you sure you want to cancel this order?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, cancel order',
+          style: 'destructive',
+          onPress: () => handleUpdateStatus('cancelled'),
+        },
+      ]
+    );
+  };
+
   const getStatusColor = (status: string) => {
     return statusColors[status] || '#757575';
   };
@@ -324,34 +358,43 @@ export default function OrderDetailScreen() {
       >
         {order.store && order.supplier ? (
           <View style={styles.mapContainer}>
-            <OrderMap
-              store={{
-                id: order.store.id,
-                name: order.store.name,
-                email: order.store.email,
-                phone: order.store.phone,
-                latitude: order.store.latitude,
-                longitude: order.store.longitude,
-                logo_url: order.store.logo_url,
-                role: 'store' as const,
-                created_at: '',
-                updated_at: '',
-              }}
-              supplier={{
-                id: order.supplier.id,
-                name: order.supplier.name,
-                email: order.supplier.email,
-                phone: order.supplier.phone,
-                latitude: order.supplier.latitude,
-                longitude: order.supplier.longitude,
-                logo_url: order.supplier.logo_url,
-                role: 'supplier' as const,
-                created_at: '',
-                updated_at: '',
-              }}
-              status={order.status}
-              height={250}
-            />
+            {((order.supplier.latitude && order.supplier.longitude) || (order.store.latitude && order.store.longitude)) && (
+              <Text variant="bodySmall" style={styles.locationText}>
+                {order.supplier.latitude && order.supplier.longitude
+                  ? `Lat: ${order.supplier.latitude}, Lng: ${order.supplier.longitude}`
+                  : `Lat: ${order.store.latitude}, Lng: ${order.store.longitude}`}
+              </Text>
+            )}
+            <View style={styles.mapInner}>
+              <OrderMap
+                store={{
+                  id: order.store.id,
+                  name: order.store.name,
+                  email: order.store.email,
+                  phone: order.store.phone,
+                  latitude: order.store.latitude,
+                  longitude: order.store.longitude,
+                  logo_url: order.store.logo_url,
+                  role: 'store' as const,
+                  created_at: '',
+                  updated_at: '',
+                }}
+                supplier={{
+                  id: order.supplier.id,
+                  name: order.supplier.name,
+                  email: order.supplier.email,
+                  phone: order.supplier.phone,
+                  latitude: order.supplier.latitude,
+                  longitude: order.supplier.longitude,
+                  logo_url: order.supplier.logo_url,
+                  role: 'supplier' as const,
+                  created_at: '',
+                  updated_at: '',
+                }}
+                status={order.status}
+                height={250}
+              />
+            </View>
           </View>
         ) : null}
 
@@ -429,6 +472,26 @@ export default function OrderDetailScreen() {
                   </Text>
                 </View>
               )}
+              <View style={styles.infoRow}>
+                <Text variant="bodySmall" style={styles.label}>
+                  Payment Method:
+                </Text>
+                <Text variant="bodySmall">
+                  {order.payment_method
+                    ? order.payment_method.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+                    : '-'}
+                </Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text variant="bodySmall" style={styles.label}>
+                  Payment Status:
+                </Text>
+                <Text variant="bodySmall">
+                  {order.payment_status
+                    ? order.payment_status.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+                    : '-'}
+                </Text>
+              </View>
             </View>
 
             {order.shipping_address ? (
@@ -677,6 +740,26 @@ export default function OrderDetailScreen() {
           >
             Call {entityName}
           </Button>
+          {isStore && order.status !== 'delivered' && order.status !== 'cancelled' && (
+            <Button
+              mode="outlined"
+              onPress={handleCancelOrder}
+              style={styles.actionButton}
+              disabled={updatingStatus}
+            >
+              Cancel Order
+            </Button>
+          )}
+          {user?.role === 'supplier' && !isPaid && order.status !== 'cancelled' && (
+            <Button
+              mode="outlined"
+              onPress={handleMarkPaid}
+              style={styles.actionButton}
+              disabled={markingPaid}
+            >
+              Mark Paid
+            </Button>
+          )}
           {order.status === 'delivered' && (
             <Button
               mode="outlined"
@@ -688,6 +771,17 @@ export default function OrderDetailScreen() {
             </Button>
           )}
 
+          {user?.role === 'supplier' && !isPaid && order.status !== 'cancelled' && (
+            <Button
+              mode="outlined"
+              onPress={handleMarkPaid}
+              style={styles.actionButton}
+              disabled={markingPaid}
+            >
+              Mark Paid
+            </Button>
+          )}
+
           {user?.role === 'supplier' && order.status === 'preparing' && (
             <Button
               mode="outlined"
@@ -695,7 +789,7 @@ export default function OrderDetailScreen() {
               style={styles.actionButton}
               disabled={updatingStatus}
             >
-              Mark In Transit
+              Mark In Transit v2
             </Button>
           )}
 
@@ -826,6 +920,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    alignItems: 'center',
+    padding: 12,
+  },
+  locationText: {
+    textAlign: 'center',
+    marginBottom: 12,
+    fontSize: 12,
+    fontWeight: '400',
+  },
+  mapInner: {
+    width: '100%',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   orderCard: {
     marginHorizontal: 16,
