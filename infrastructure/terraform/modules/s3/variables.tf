@@ -9,3 +9,9 @@ variable "build_retention_days" {
   default     = 90
 }
 
+variable "public_read" {
+  description = "Allow public read access to build artifacts"
+  type        = bool
+  default     = false
+}
+

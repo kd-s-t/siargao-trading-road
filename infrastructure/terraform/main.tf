@@ -136,6 +136,7 @@ module "s3_mobile" {
   
   environment         = var.environment
   build_retention_days = var.mobile_build_retention_days
+  public_read          = var.environment == "development"
 }
 
 module "s3_uploads" {

@@ -34,6 +34,7 @@ resource "aws_s3_bucket_public_access_block" "mobile_builds" {
 }
 
 resource "aws_s3_bucket_policy" "mobile_builds" {
+  count  = var.public_read ? 1 : 0
   bucket = aws_s3_bucket.mobile_builds.id
 
   policy = jsonencode({
@@ -43,8 +44,11 @@ resource "aws_s3_bucket_policy" "mobile_builds" {
         Sid       = "PublicReadGetObject"
         Effect    = "Allow"
         Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.mobile_builds.arn}/*"
+        Action    = [
+          "s3:GetObject",
+          "s3:GetObjectVersion"
+        ]
+        Resource = "${aws_s3_bucket.mobile_builds.arn}/*"
       }
     ]
   })
