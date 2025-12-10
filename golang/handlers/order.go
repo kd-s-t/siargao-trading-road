@@ -16,6 +16,8 @@ import (
 	"github.com/jung-kurt/gofpdf"
 )
 
+const embeddedLogoBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9pJr9wAAAABJRU5ErkJggg=="
+
 func getUserID(c *gin.Context) (uint, error) {
 	userIDVal, exists := c.Get("user_id")
 	if !exists {
