@@ -108,6 +108,8 @@ class _StoreDrawerState extends State<StoreDrawer> {
       debugShowCheckedModeBanner: false,
       navigatorKey: StoreDrawer.navigatorKey,
       home: Scaffold(
+        extendBody: true,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: _buildAppBar(context),
         body: PageView(
           controller: _pageController,
@@ -127,13 +129,11 @@ class _StoreDrawerState extends State<StoreDrawer> {
               _safeSetState(() {
                 _currentIndex = index;
               });
-              if (mounted && _pageController.hasClients) {
-                _pageController.animateToPage(
-                  index,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                ).catchError((_) {});
-              }
+              _pageController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              ).catchError((_) {});
             },
             backgroundColor: Colors.transparent,
             color: Theme.of(context).colorScheme.primary,

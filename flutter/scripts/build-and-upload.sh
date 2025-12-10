@@ -12,9 +12,9 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Default values
-ENVIRONMENT="production"
+ENVIRONMENT="development"
 AWS_REGION="us-east-1"
-API_URL="https://siargaotradingroad.com/api"
+API_URL="http://localhost:3020/api"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -53,7 +53,7 @@ done
 # Set S3 bucket name
 S3_BUCKET="siargaotradingroad-mobile-builds-${ENVIRONMENT}"
 
-echo -e "${GREEN}🚀 Flutter APK Build and Upload${NC}"
+echo -e "${GREEN}Flutter APK Build and Upload${NC}"
 echo "=========================================="
 echo "Environment: $ENVIRONMENT"
 echo "S3 Bucket:   $S3_BUCKET"
@@ -87,13 +87,13 @@ VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
 COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "local")
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
-echo -e "${GREEN}📦 Building Flutter APK...${NC}"
+echo -e "${GREEN}Building Flutter APK...${NC}"
 echo "Version: $VERSION"
 echo "Commit:  $COMMIT_SHA"
 echo ""
 
 # Build APK with production API URL
-echo -e "${GREEN}🔨 Building APK with API URL: $API_URL${NC}"
+echo -e "${GREEN}Building APK with API URL: $API_URL${NC}"
 $FLUTTER_CMD build apk --release --dart-define=API_URL="$API_URL"
 
 # Find the APK file
@@ -105,14 +105,14 @@ if [ ! -f "$APK_PATH" ]; then
   exit 1
 fi
 
-echo -e "${GREEN}✅ Build completed: $APK_PATH${NC}"
+echo -e "${GREEN}Build completed: $APK_PATH${NC}"
 
 # Upload to S3
 S3_KEY="android/siargao-trading-road-${VERSION}-${COMMIT_SHA}-${TIMESTAMP}.apk"
 S3_KEY_LATEST="android/latest.apk"
 
 echo ""
-echo -e "${GREEN}☁️  Uploading to S3...${NC}"
+echo -e "${GREEN}Uploading to S3...${NC}"
 echo "  Versioned: s3://${S3_BUCKET}/${S3_KEY}"
 echo "  Latest:     s3://${S3_BUCKET}/${S3_KEY_LATEST}"
 
@@ -124,8 +124,8 @@ DOWNLOAD_URL="https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${S3_KEY}"
 LATEST_URL="https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${S3_KEY_LATEST}"
 
 echo ""
-echo -e "${GREEN}✅ Upload complete!${NC}"
+echo -e "${GREEN}Upload complete!${NC}"
 echo "  Download URL: $DOWNLOAD_URL"
 echo "  Latest URL:    $LATEST_URL"
 echo ""
-echo -e "${GREEN}🎉 Build and upload completed!${NC}"
+echo -e "${GREEN}Build and upload completed!${NC}"
