@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack -p 3021",
-    "build": "next build --webpack",
+    "build": "BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA=true BROWSERSLIST_IGNORE_OLD_DATA=true next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "storybook": "STORYBOOK_DISABLE_TELEMETRY=1 storybook dev -p 2022",
