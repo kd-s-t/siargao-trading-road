@@ -54,14 +54,11 @@ flutter:
   
   assets:
     - assets/
-    - assets/str.png
-    - assets/logo_full.png
     - assets/splash.png
-    - assets/logov2.png
 
 flutter_launcher_icons:
   android: true
-  image_path: "assets/logov3.png"
+  image_path: "assets/applogo.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/logov3.png"
+  adaptive_icon_foreground: "assets/applogo.png"
   adaptive_icon_foreground_inset: 27

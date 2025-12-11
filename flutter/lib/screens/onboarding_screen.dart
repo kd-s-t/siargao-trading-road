@@ -24,7 +24,7 @@ class OnboardingScreen extends StatelessWidget {
         PageViewModel(
           title: 'Welcome to Siargao Trading Road',
           body: 'Connect with local suppliers and stores in Siargao. Buy and sell products with ease.',
-          image: Image.asset('assets/logov3.png', height: 200),
+          image: Image.asset('assets/applogo.png', height: 200),
           decoration: const PageDecoration(
             titleTextStyle: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             bodyTextStyle: TextStyle(fontSize: 16),

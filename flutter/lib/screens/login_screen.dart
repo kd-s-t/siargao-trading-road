@@ -247,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       child: ScaleTransition(
                         scale: _logoScaleAnimation,
                         child: Image.asset(
-                          'assets/str.png',
+                          'assets/splash.png',
                           width: 320,
                           height: 128,
                         ),

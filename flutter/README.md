@@ -63,9 +63,6 @@ flutter/
 │       └── error_handler.dart            # Global error handling & bug reporting
 │
 ├── assets/                               # App assets
-│   ├── str.png                           # App logo
-│   ├── logo_full.png                     # Full brand logo
-│   ├── logov2.png                        # App icon
 │   └── splash.png                        # Splash screen
 │
 ├── pubspec.yaml                          # Dependencies & project config

@@ -137,13 +137,13 @@ class _StoreDrawerState extends State<StoreDrawer> {
             },
             backgroundColor: Colors.transparent,
             color: Theme.of(context).colorScheme.primary,
-            buttonBackgroundColor: Theme.of(context).colorScheme.secondary,
+            buttonBackgroundColor: Colors.white.withOpacity(0.9),
             animationCurve: Curves.easeInOut,
             animationDuration: const Duration(milliseconds: 300),
-            items: const [
-              Icon(Icons.store, size: 30, color: Colors.white),
-              Icon(Icons.list_alt, size: 30, color: Colors.white),
-              Icon(Icons.account_circle, size: 30, color: Colors.white),
+            items: [
+              Icon(Icons.store, size: 30, color: _currentIndex == 0 ? Theme.of(context).colorScheme.secondary : Colors.white),
+              Icon(Icons.list_alt, size: 30, color: _currentIndex == 1 ? Theme.of(context).colorScheme.secondary : Colors.white),
+              Icon(Icons.account_circle, size: 30, color: _currentIndex == 2 ? Theme.of(context).colorScheme.secondary : Colors.white),
             ],
           ),
         ),

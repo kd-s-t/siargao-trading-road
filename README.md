@@ -1,5 +1,5 @@
 <div align="center"> 
-	<img src="./logo.png" width="100%" style="border: 1px solid;" /> 
+	<img src="./originalfulllogo.png" width="100%" style="border: 1px solid;" /> 
 </div>
 
 # Siargao Trading Road

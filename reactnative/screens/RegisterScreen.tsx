@@ -159,7 +159,7 @@ export default function RegisterScreen() {
       >
         <View style={styles.logoContainer}>
           <Image
-            source={require('../assets/str.png')}
+            source={require('../assets/splash.png')}
             style={styles.logo}
             resizeMode="contain"
           />
