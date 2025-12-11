@@ -74,7 +74,7 @@ terraform.tfvars
 
 # Security keys
 *.pem
-infrastructure/terraform/modules/security/splitsafe-key-development.pem
+infrastructure/terraform/modules/security/siargaotradingroad-key-development.pem
 
 # Migration scripts with credentials (use migrate_production.sh.example instead)
 golang/migrate_production.sh

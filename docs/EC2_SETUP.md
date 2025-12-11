@@ -122,7 +122,7 @@ If you need to destroy the instance, you must:
 
 1. **SSH into the server:**
    ```bash
-   ssh -i infrastructure/terraform/modules/security/splitsafe-key-development.pem ubuntu@34.204.178.33
+   ssh -i infrastructure/terraform/modules/security/siargaotradingroad-key-development.pem ubuntu@34.204.178.33
    ```
 
 2. **Remove the corrupted config and create a clean one:**

@@ -16,7 +16,7 @@ resource "aws_key_pair" "siargaotradingroad_key" {
 
 resource "local_file" "private_key" {
   content  = tls_private_key.siargaotradingroad_key.private_key_openssh
-  filename = "${path.module}/splitsafe-key-${var.environment}.pem"
+  filename = "${path.module}/siargaotradingroad-key-${var.environment}.pem"
   file_permission = "0600"
 }
 

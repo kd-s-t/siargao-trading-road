@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SSH_KEY="infrastructure/terraform/modules/security/splitsafe-key-development.pem"
+SSH_KEY="infrastructure/terraform/modules/security/siargaotradingroad-key-development.pem"
 SERVER="ubuntu@34.204.178.33"
 
 echo "Fixing 502 Bad Gateway issue..."
