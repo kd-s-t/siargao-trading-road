@@ -242,6 +242,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Widget _buildBody() {
+    final bottomPadding = MediaQuery.of(context).padding.bottom + 72;
     if (_loading && _products.isEmpty) {
       return Column(
         children: [
@@ -300,7 +301,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     if (_products.isEmpty) {
       listChild = ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        padding: EdgeInsets.fromLTRB(16, 24, 16, bottomPadding),
         children: [
           Center(
             child: Column(
@@ -325,7 +326,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     } else if (_filteredProducts.isEmpty) {
       listChild = ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: EdgeInsets.only(bottom: bottomPadding),
         children: const [
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -340,7 +341,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       );
     } else {
       listChild = ListView.builder(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: EdgeInsets.only(bottom: bottomPadding),
         itemCount: _filteredProducts.length,
         itemBuilder: (context, index) {
           final product = _filteredProducts[index];
@@ -564,7 +565,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
             _startItemAnimations();
           }
         },
-        child: const Icon(Icons.add),
+        child: Image.asset(
+          'assets/add-product.png',
+          width: 28,
+          height: 28,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }
