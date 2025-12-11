@@ -102,12 +102,16 @@ func UploadImage(c *gin.Context) {
 		key = fmt.Sprintf("uploads/%s/%d/%s", role, userID, fmt.Sprintf("%d%s", time.Now().Unix(), ext))
 	}
 
+	contentType := file.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
 	_, err = svc.PutObject(&s3.PutObjectInput{
 		Bucket:      aws.String(config.S3Bucket),
 		Key:         aws.String(key),
 		Body:        src,
-		ContentType: aws.String(file.Header.Get("Content-Type")),
-		ACL:         aws.String("public-read"),
+		ContentType: aws.String(contentType),
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload file"})
