@@ -71,14 +71,23 @@ func AuditLogMiddleware() gin.HandlerFunc {
 
 		duration := time.Since(startTime)
 		statusCode := c.Writer.Status()
+		fullPath := c.FullPath()
+		if fullPath == "" {
+			fullPath = c.Request.URL.Path
+		}
+		contentType := c.Writer.Header().Get("Content-Type")
 
 		var responseBody string
 		if writer.body.Len() > 0 {
-			bodyBytes := writer.body.Bytes()
-			if len(bodyBytes) <= 10000 {
-				responseBody = string(bodyBytes)
+			if strings.Contains(contentType, "application/pdf") || strings.Contains(fullPath, "/invoice") {
+				responseBody = ""
 			} else {
-				responseBody = string(bodyBytes[:10000]) + "... (truncated)"
+				bodyBytes := writer.body.Bytes()
+				if len(bodyBytes) <= 10000 {
+					responseBody = string(bodyBytes)
+				} else {
+					responseBody = string(bodyBytes[:10000]) + "... (truncated)"
+				}
 			}
 		}
 
@@ -89,11 +98,6 @@ func AuditLogMiddleware() gin.HandlerFunc {
 
 		ipAddress := c.ClientIP()
 		userAgent := c.Request.UserAgent()
-
-		fullPath := c.FullPath()
-		if fullPath == "" {
-			fullPath = c.Request.URL.Path
-		}
 
 		auditLog := models.AuditLog{
 			UserID:       userID,
