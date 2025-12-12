@@ -106,7 +106,8 @@ func CreateProduct(c *gin.Context) {
 	}
 
 	var supplierID uint
-	if role == "admin" {
+	switch role {
+	case "admin":
 		if req.SupplierID == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "supplier_id is required when creating product as admin"})
 			return
@@ -117,9 +118,9 @@ func CreateProduct(c *gin.Context) {
 			return
 		}
 		supplierID = *req.SupplierID
-	} else if role == "supplier" {
+	case "supplier":
 		supplierID = userID
-	} else {
+	default:
 		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers and admins can create products"})
 		return
 	}

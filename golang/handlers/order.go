@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -15,10 +16,11 @@ import (
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/gin-gonic/gin"
 	"github.com/jung-kurt/gofpdf"
 )
@@ -60,9 +62,10 @@ func GetOrders(c *gin.Context) {
 		query = query.Where("status != ?", "draft")
 	}
 
-	if role == "supplier" {
+	switch role {
+	case "supplier":
 		query = query.Where("supplier_id = ?", userID)
-	} else if role == "store" {
+	case "store":
 		query = query.Where("store_id = ?", userID)
 	}
 
@@ -82,9 +85,10 @@ func GetOrder(c *gin.Context) {
 	var order models.Order
 	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").Where("id = ?", id)
 
-	if role == "supplier" {
+	switch role {
+	case "supplier":
 		query = query.Where("supplier_id = ?", userID)
-	} else if role == "store" {
+	case "store":
 		query = query.Where("store_id = ?", userID)
 	}
 
@@ -134,9 +138,10 @@ func UpdateOrderStatus(c *gin.Context) {
 	var order models.Order
 	query := database.DB.Where("id = ?", id)
 
-	if role == "supplier" {
+	switch role {
+	case "supplier":
 		query = query.Where("supplier_id = ?", userID)
-	} else if role == "store" {
+	case "store":
 		query = query.Where("store_id = ?", userID)
 	}
 
@@ -716,9 +721,10 @@ func SendInvoiceEmail(c *gin.Context) {
 	var order models.Order
 	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").Where("id = ?", id)
 
-	if role == "supplier" {
+	switch role {
+	case "supplier":
 		query = query.Where("supplier_id = ?", userID)
-	} else if role == "store" {
+	case "store":
 		query = query.Where("store_id = ?", userID)
 	}
 
@@ -746,9 +752,10 @@ func DownloadInvoice(c *gin.Context) {
 	var order models.Order
 	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").Where("id = ?", id)
 
-	if role == "supplier" {
+	switch role {
+	case "supplier":
 		query = query.Where("supplier_id = ?", userID)
-	} else if role == "store" {
+	case "store":
 		query = query.Where("store_id = ?", userID)
 	}
 
@@ -920,26 +927,36 @@ func DownloadInvoice(c *gin.Context) {
 }
 
 func uploadInvoiceToS3(cfg *config.Config, key string, content []byte) (string, error) {
-	awsConfig := &aws.Config{}
-	if cfg.AWSRegion != "" {
-		awsConfig.Region = aws.String(cfg.AWSRegion)
-	}
+	ctx := context.Background()
+	var awsCfg aws.Config
+	var cfgErr error
+
 	if cfg.AWSAccessKey != "" && cfg.AWSSecretKey != "" {
-		awsConfig.Credentials = credentials.NewStaticCredentials(cfg.AWSAccessKey, cfg.AWSSecretKey, "")
+		awsCfg, cfgErr = awsconfig.LoadDefaultConfig(ctx,
+			awsconfig.WithRegion(cfg.AWSRegion),
+			awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+				cfg.AWSAccessKey,
+				cfg.AWSSecretKey,
+				"",
+			)),
+		)
+	} else {
+		awsCfg, cfgErr = awsconfig.LoadDefaultConfig(ctx,
+			awsconfig.WithRegion(cfg.AWSRegion),
+		)
 	}
 
-	sess, err := session.NewSession(awsConfig)
-	if err != nil {
-		return "", fmt.Errorf("create session: %w", err)
+	if cfgErr != nil {
+		return "", fmt.Errorf("create config: %w", cfgErr)
 	}
 
-	svc := s3.New(sess)
-	_, err = svc.PutObject(&s3.PutObjectInput{
+	svc := s3.NewFromConfig(awsCfg)
+	_, err := svc.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(cfg.S3Bucket),
 		Key:         aws.String(key),
 		Body:        bytes.NewReader(content),
 		ContentType: aws.String("application/pdf"),
-		ACL:         aws.String("public-read"),
+		ACL:         types.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
 		return "", fmt.Errorf("put object: %w", err)
@@ -1013,11 +1030,12 @@ func GetOrderMessages(c *gin.Context) {
 	var order models.Order
 	query := database.DB.Where("id = ?", orderID)
 
-	if role == "supplier" {
+	switch role {
+	case "supplier":
 		query = query.Where("supplier_id = ?", userID)
-	} else if role == "store" {
+	case "store":
 		query = query.Where("store_id = ?", userID)
-	} else {
+	default:
 		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers and stores can view messages"})
 		return
 	}
@@ -1055,11 +1073,12 @@ func CreateOrderMessage(c *gin.Context) {
 	var order models.Order
 	query := database.DB.Where("id = ?", orderID)
 
-	if role == "supplier" {
+	switch role {
+	case "supplier":
 		query = query.Where("supplier_id = ?", userID)
-	} else if role == "store" {
+	case "store":
 		query = query.Where("store_id = ?", userID)
-	} else {
+	default:
 		log.Printf("CreateOrderMessage: invalid role. orderID=%s, userID=%d, role=%s", orderID, userID, role)
 		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers and stores can send messages"})
 		return

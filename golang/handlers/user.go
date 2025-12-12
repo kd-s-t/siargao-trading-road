@@ -296,7 +296,8 @@ func GetMyAnalytics(c *gin.Context) {
 	var totalEarnings float64
 	var orders []models.Order
 
-	if user.Role == "store" {
+	switch user.Role {
+	case "store":
 		database.DB.Model(&models.Order{}).
 			Where("store_id = ? AND status != ?", userID, "draft").
 			Count(&totalOrders)
@@ -316,7 +317,7 @@ func GetMyAnalytics(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch orders"})
 			return
 		}
-	} else if user.Role == "supplier" {
+	case "supplier":
 		database.DB.Model(&models.Order{}).
 			Where("supplier_id = ? AND status != ?", userID, "draft").
 			Count(&totalOrders)
@@ -342,7 +343,8 @@ func GetMyAnalytics(c *gin.Context) {
 	var totalProductsBought int64
 	var productsBought []map[string]interface{}
 
-	if user.Role == "store" {
+	switch user.Role {
+	case "store":
 		for _, order := range orders {
 			for _, item := range order.OrderItems {
 				totalProductsBought += int64(item.Quantity)
@@ -363,7 +365,7 @@ func GetMyAnalytics(c *gin.Context) {
 		for _, productInfo := range productCounts {
 			productsBought = append(productsBought, productInfo)
 		}
-	} else if user.Role == "supplier" {
+	case "supplier":
 		var products []models.Product
 		if err := database.DB.Where("supplier_id = ?", userID).Find(&products).Error; err == nil {
 			for _, product := range products {
@@ -383,12 +385,13 @@ func GetMyAnalytics(c *gin.Context) {
 
 	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
 	var recentOrders []models.Order
-	if user.Role == "store" {
+	switch user.Role {
+	case "store":
 		database.DB.Preload("OrderItems").Preload("OrderItems.Product").Preload("Supplier").
 			Where("store_id = ? AND status != ? AND created_at >= ?", userID, "draft", thirtyDaysAgo).
 			Order("created_at DESC").
 			Find(&recentOrders)
-	} else {
+	default:
 		database.DB.Preload("OrderItems").Preload("OrderItems.Product").Preload("Store").
 			Where("supplier_id = ? AND status != ? AND created_at >= ?", userID, "draft", thirtyDaysAgo).
 			Order("created_at DESC").
@@ -472,7 +475,8 @@ func GetUserAnalytics(c *gin.Context) {
 	var totalEarnings float64
 	var orders []models.Order
 
-	if user.Role == "store" {
+	switch user.Role {
+	case "store":
 		database.DB.Model(&models.Order{}).
 			Where("store_id = ? AND status != ?", userID, "draft").
 			Count(&totalOrders)
@@ -492,7 +496,7 @@ func GetUserAnalytics(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch orders"})
 			return
 		}
-	} else if user.Role == "supplier" {
+	case "supplier":
 		database.DB.Model(&models.Order{}).
 			Where("supplier_id = ? AND status != ?", userID, "draft").
 			Count(&totalOrders)
@@ -512,7 +516,7 @@ func GetUserAnalytics(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch orders"})
 			return
 		}
-	} else {
+	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "analytics only available for stores and suppliers"})
 		return
 	}
@@ -521,7 +525,8 @@ func GetUserAnalytics(c *gin.Context) {
 	var totalProductsBought int64
 	var productsBought []map[string]interface{}
 
-	if user.Role == "store" {
+	switch user.Role {
+	case "store":
 		for _, order := range orders {
 			for _, item := range order.OrderItems {
 				totalProductsBought += int64(item.Quantity)
@@ -542,7 +547,7 @@ func GetUserAnalytics(c *gin.Context) {
 		for _, productInfo := range productCounts {
 			productsBought = append(productsBought, productInfo)
 		}
-	} else if user.Role == "supplier" {
+	case "supplier":
 		var products []models.Product
 		if err := database.DB.Where("supplier_id = ?", userID).Find(&products).Error; err == nil {
 			for _, product := range products {
@@ -562,12 +567,13 @@ func GetUserAnalytics(c *gin.Context) {
 
 	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
 	var recentOrders []models.Order
-	if user.Role == "store" {
+	switch user.Role {
+	case "store":
 		database.DB.Preload("OrderItems").Preload("OrderItems.Product").Preload("Supplier").
 			Where("store_id = ? AND status != ? AND created_at >= ?", userID, "draft", thirtyDaysAgo).
 			Order("created_at DESC").
 			Find(&recentOrders)
-	} else {
+	default:
 		database.DB.Preload("OrderItems").Preload("OrderItems.Product").Preload("Store").
 			Where("supplier_id = ? AND status != ? AND created_at >= ?", userID, "draft", thirtyDaysAgo).
 			Order("created_at DESC").

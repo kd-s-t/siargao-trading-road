@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -8,10 +9,10 @@ import (
 
 	"siargao-trading-road/config"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
 )
 
@@ -70,27 +71,31 @@ func UploadImage(c *gin.Context) {
 	}
 	defer src.Close()
 
-	awsConfig := &aws.Config{}
-
-	if config.AWSRegion != "" {
-		awsConfig.Region = aws.String(config.AWSRegion)
-	}
+	ctx := context.Background()
+	var awsCfg aws.Config
+	var cfgErr error
 
 	if config.AWSAccessKey != "" && config.AWSSecretKey != "" {
-		awsConfig.Credentials = credentials.NewStaticCredentials(
-			config.AWSAccessKey,
-			config.AWSSecretKey,
-			"",
+		awsCfg, cfgErr = awsconfig.LoadDefaultConfig(ctx,
+			awsconfig.WithRegion(config.AWSRegion),
+			awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+				config.AWSAccessKey,
+				config.AWSSecretKey,
+				"",
+			)),
+		)
+	} else {
+		awsCfg, cfgErr = awsconfig.LoadDefaultConfig(ctx,
+			awsconfig.WithRegion(config.AWSRegion),
 		)
 	}
 
-	sess, err := session.NewSession(awsConfig)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create AWS session"})
+	if cfgErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create AWS config"})
 		return
 	}
 
-	svc := s3.New(sess)
+	svc := s3.NewFromConfig(awsCfg)
 
 	role, _ := c.Get("role")
 	folderType := c.Query("type")
@@ -107,7 +112,7 @@ func UploadImage(c *gin.Context) {
 		contentType = "application/octet-stream"
 	}
 
-	_, err = svc.PutObject(&s3.PutObjectInput{
+	_, err = svc.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(config.S3Bucket),
 		Key:         aws.String(key),
 		Body:        src,

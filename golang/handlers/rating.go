@@ -146,11 +146,12 @@ func CreateRating(c *gin.Context) {
 
 	// Determine who is being rated
 	var ratedID uint
-	if role == "store" {
+	switch role {
+	case "store":
 		ratedID = order.SupplierID // Store rates supplier
-	} else if role == "supplier" {
+	case "supplier":
 		ratedID = order.StoreID // Supplier rates store
-	} else {
+	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid role for rating"})
 		return
 	}
