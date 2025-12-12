@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	_ "embed"
 	"errors"
 	"fmt"
 	"log"
