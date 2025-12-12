@@ -20,7 +20,7 @@ jobs:
 
       - name: Build frontend image
         env:
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           IMAGE_TAG: ${{ github.sha }}
           NEXT_PUBLIC_API_URL: https://siargaotradingroad.com/api
           NEXT_PUBLIC_ENVIRONMENT: production
@@ -38,7 +38,7 @@ jobs:
 
       - name: Build API image
         env:
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🐳 Building Go API image..."
@@ -52,7 +52,7 @@ jobs:
 
       - name: Save frontend image
         env:
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "💾 Saving frontend image..."
@@ -62,7 +62,7 @@ jobs:
 
       - name: Save API image
         env:
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "💾 Saving API image..."
@@ -110,7 +110,7 @@ jobs:
 
       - name: Create ECR repositories if they don't exist
         run: |
-          for REPO_NAME in "siargaotradingroad-development-frontend" "siargaotradingroad-development-api"; do
+          for REPO_NAME in "siargaotradingroad-production-frontend" "siargaotradingroad-production-api"; do
             echo "🔍 Checking if ECR repository $REPO_NAME exists..."
             
             if ! aws ecr describe-repositories --repository-names $REPO_NAME --region us-east-1 2>/dev/null; then
@@ -139,7 +139,7 @@ jobs:
       - name: Load frontend image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "📥 Loading frontend image..."
@@ -152,7 +152,7 @@ jobs:
       - name: Load API image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "📥 Loading API image..."
@@ -165,7 +165,7 @@ jobs:
       - name: Push frontend image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "📤 Pushing frontend image to ECR..."
@@ -176,7 +176,7 @@ jobs:
       - name: Push API image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "📤 Pushing API image to ECR..."
@@ -186,7 +186,7 @@ jobs:
 
       - name: Verify frontend image in ECR
         env:
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🔍 Verifying frontend image in ECR..."
@@ -199,7 +199,7 @@ jobs:
 
       - name: Verify API image in ECR
         env:
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🔍 Verifying API image in ECR..."
@@ -225,7 +225,7 @@ jobs:
 
       - name: Clean up old ECR images
         env:
-          ECR_REPOSITORY: siargaotradingroad-development
+          ECR_REPOSITORY: siargaotradingroad-production
           KEEP_IMAGES: 5
         run: |
           echo "🧹 Cleaning up old ECR images..."
@@ -292,7 +292,7 @@ jobs:
 
       - name: Add EC2 to known hosts
         run: |
-          EC2_HOST="34.204.178.33"
+          EC2_HOST="3.237.15.10"
           EC2_PORT="${EC2_PORT:-22}"
           
           echo "🔍 Adding EC2 host to known_hosts..."
@@ -320,7 +320,7 @@ jobs:
 
       - name: Install Docker and AWS CLI on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
             set -e
             echo "🔧 Checking and installing required tools..."
             
@@ -399,7 +399,7 @@ jobs:
 
       - name: Setup project directory and repository
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -421,14 +421,14 @@ jobs:
 
       - name: Load environment from SSM
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
             cd ~/siargao-trading-road
             
             echo "🔑 Loading environment from SSM Parameter Store..."
-            SSM_PATH="/siargaotradingroad/development"
+            SSM_PATH="/siargaotradingroad/production"
             AWS_REGION="us-east-1"
             aws ssm get-parameters-by-path --path "$SSM_PATH" --with-decryption --recursive --region "$AWS_REGION" --query 'Parameters[*].[Name,Value]' --output text | awk -F '\t' '{split($1,a,"/"); print a[length(a)] "=" $2}' > .env || echo "# No SSM parameters found" > .env
             echo "✅ .env created from SSM at $SSM_PATH"
@@ -438,7 +438,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -454,18 +454,18 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
             
             echo "🔍 Verifying images exist in ECR..."
-            if ! aws ecr describe-images --repository-name siargaotradingroad-development-frontend --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
+            if ! aws ecr describe-images --repository-name siargaotradingroad-production-frontend --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
               echo "❌ Frontend image does not exist in ECR!"
               exit 1
             fi
             
-            if ! aws ecr describe-images --repository-name siargaotradingroad-development-api --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
+            if ! aws ecr describe-images --repository-name siargaotradingroad-production-api --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
               echo "❌ API image does not exist in ECR!"
               exit 1
             fi
@@ -478,7 +478,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -486,8 +486,8 @@ jobs:
             
             ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
             IMAGE_TAG="${{ github.sha }}"
-            FRONTEND_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-frontend:\${IMAGE_TAG}"
-            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
+            FRONTEND_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-production-frontend:\${IMAGE_TAG}"
+            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-production-api:\${IMAGE_TAG}"
             
             echo "🐳 Pulling frontend image..."
             docker pull "\${FRONTEND_IMAGE}"
@@ -501,7 +501,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -509,8 +509,8 @@ jobs:
             
             ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
             IMAGE_TAG="${{ github.sha }}"
-            FRONTEND_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-frontend:\${IMAGE_TAG}"
-            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
+            FRONTEND_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-production-frontend:\${IMAGE_TAG}"
+            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-production-api:\${IMAGE_TAG}"
             
             echo "📝 Updating docker-compose.yml with image tags..."
             printf 'version: '\''3.8'\''\n\nservices:\n  api:\n    image: %s\n    container_name: siargao-api\n    ports:\n      - "3020:3020"\n    env_file:\n      - .env\n    environment:\n      - PORT=3020\n      - GIN_MODE=release\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\n  frontend:\n    image: %s\n    container_name: siargao-frontend\n    ports:\n      - "3021:3021"\n    env_file:\n      - .env\n    environment:\n      - PORT=3021\n      - NODE_ENV=production\n    depends_on:\n      - api\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\nnetworks:\n  siargao-network:\n    driver: bridge\n' "\${API_IMAGE}" "\${FRONTEND_IMAGE}" > docker-compose.yml
@@ -519,7 +519,7 @@ jobs:
 
       - name: Stop existing containers
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -535,7 +535,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -554,7 +554,7 @@ jobs:
 
       - name: Start containers
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -567,7 +567,7 @@ jobs:
 
       - name: Verify deployment
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -591,7 +591,7 @@ jobs:
 
       - name: Add EC2 to known hosts
         run: |
-          EC2_HOST="34.204.178.33"
+          EC2_HOST="3.237.15.10"
           EC2_PORT="${EC2_PORT:-22}"
           
           echo "🔍 Adding EC2 host to known_hosts..."
@@ -607,7 +607,7 @@ jobs:
 
       - name: Clean up Docker resources on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@34.204.178.33 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -619,7 +619,7 @@ jobs:
             df -h / | tail -1
             
             echo "🗑️ Removing old images (keeping latest 2)..."
-            docker images --format "{{.Repository}}:{{.Tag}}" | grep siargaotradingroad-development | sort -V | head -n -2 | xargs -r docker rmi -f || true
+            docker images --format "{{.Repository}}:{{.Tag}}" | grep siargaotradingroad-production | sort -V | head -n -2 | xargs -r docker rmi -f || true
             
             echo "🧹 Pruning unused Docker resources (excluding running containers)..."
             docker system prune -a -f || true
