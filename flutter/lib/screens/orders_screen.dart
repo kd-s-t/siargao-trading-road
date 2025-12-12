@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
@@ -156,6 +154,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           'Authorization': 'Bearer $token',
         },
       );
+      if (!mounted) return;
       debugPrint('invoice download status: ${response.statusCode}, bytes: ${response.bodyBytes.length}');
 
       if (response.statusCode == 200) {
@@ -167,6 +166,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         final file = File('${directory.path}/$fileName');
         
         await file.writeAsBytes(response.bodyBytes);
+        if (!mounted) return;
         
         final xFile = XFile(file.path);
         final box = context.findRenderObject() as RenderBox?;

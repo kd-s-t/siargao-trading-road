@@ -523,7 +523,7 @@ class _TruckScreenState extends State<TruckScreen> with TickerProviderStateMixin
               }
               
               return card;
-            }).toList(),
+            }),
             Card(
               margin: const EdgeInsets.symmetric(vertical: 8),
               child: Padding(

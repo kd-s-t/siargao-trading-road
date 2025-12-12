@@ -514,21 +514,13 @@ class _DateDetailsSheetState extends State<_DateDetailsSheet> {
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 2,
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Mark day closed'),
-              value: _isClosed,
-              onChanged: (value) {
-                setState(() {
-                  _isClosed = value;
-                });
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+            const SizedBox(height: 12),
+            Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     _isClosed ? 'Day is closed' : 'Day is open',
@@ -537,6 +529,7 @@ class _DateDetailsSheetState extends State<_DateDetailsSheet> {
                       fontWeight: FontWeight.w700,
                       color: _isClosed ? Colors.red.shade700 : Colors.green.shade700,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -545,9 +538,20 @@ class _DateDetailsSheetState extends State<_DateDetailsSheet> {
                       fontSize: 12,
                       color: Colors.grey.shade700,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: Text(_isClosed ? 'Mark day open' : 'Mark day closed'),
+              value: _isClosed,
+              onChanged: (value) {
+                setState(() {
+                  _isClosed = value;
+                });
+              },
             ),
             if (!_isClosed) ...[
               const SizedBox(height: 8),

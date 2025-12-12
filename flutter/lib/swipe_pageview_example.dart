@@ -94,7 +94,7 @@ class _SwipePagerState extends State<SwipePager> {
                   width: active ? 22 : 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(active ? 0.95 : 0.45),
+                    color: Colors.white.withValues(alpha: active ? 0.95 : 0.45),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 );

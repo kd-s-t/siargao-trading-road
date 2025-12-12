@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:siargao_trading_road/screens/dashboard_screen.dart';
 import 'package:siargao_trading_road/screens/order_detail_screen.dart';
@@ -8,6 +9,7 @@ import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/schedule_editor_screen.dart';
 import 'package:siargao_trading_road/screens/ratings_screen.dart';
 import 'package:siargao_trading_road/navigation/smooth_page_route.dart';
+import 'package:siargao_trading_road/providers/auth_provider.dart';
 class AdminDrawer extends StatefulWidget {
   const AdminDrawer({super.key});
 
@@ -90,6 +92,7 @@ class _AdminDrawerState extends State<AdminDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: AdminDrawer.navigatorKey,
@@ -126,12 +129,12 @@ class _AdminDrawerState extends State<AdminDrawer> {
             },
             backgroundColor: Colors.transparent,
             color: Theme.of(context).colorScheme.primary,
-            buttonBackgroundColor: Colors.white.withOpacity(0.9),
+            buttonBackgroundColor: Colors.white.withValues(alpha: 0.9),
             animationCurve: Curves.easeInOut,
             animationDuration: const Duration(milliseconds: 300),
             items: [
-              Icon(Icons.dashboard, size: 30, color: _currentIndex == 0 ? Theme.of(context).colorScheme.secondary : Colors.white),
-              Icon(Icons.account_circle, size: 30, color: _currentIndex == 1 ? Theme.of(context).colorScheme.secondary : Colors.white),
+              _buildAssetIcon('assets/products.png', _currentIndex == 0, context),
+              _buildProfileIcon(authProvider, _currentIndex == 1, context),
             ],
           ),
         ),
@@ -159,6 +162,39 @@ class _AdminDrawerState extends State<AdminDrawer> {
           settings: settings,
         );
       },
+    );
+  }
+
+  Widget _buildProfileIcon(AuthProvider authProvider, bool isActive, BuildContext context) {
+    final logo = authProvider.user?.logoUrl;
+    if (logo != null && logo.isNotEmpty) {
+      return Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+            width: 2,
+          ),
+          color: Colors.white,
+        ),
+        child: ClipOval(
+          child: Image.network(
+            logo,
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+    return Icon(Icons.account_circle, size: 30, color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white);
+  }
+
+  Widget _buildAssetIcon(String assetPath, bool isActive, BuildContext context) {
+    return ImageIcon(
+      AssetImage(assetPath),
+      size: 30,
+      color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
     );
   }
 }

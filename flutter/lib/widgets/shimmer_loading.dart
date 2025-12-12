@@ -71,11 +71,11 @@ class ShimmerSupplierList extends StatelessWidget {
                 Container(
                   width: double.infinity,
                   height: 180,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: const Radius.circular(4),
-                      topRight: const Radius.circular(4),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(4),
+                      topRight: Radius.circular(4),
                     ),
                   ),
                 ),
@@ -86,7 +86,7 @@ class ShimmerSupplierList extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
+                          const CircleAvatar(
                             radius: 40,
                             backgroundColor: Colors.white,
                           ),
@@ -648,7 +648,7 @@ class ShimmerProfile extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      CircleAvatar(
+                      const CircleAvatar(
                         radius: 40,
                         backgroundColor: Colors.white,
                       ),

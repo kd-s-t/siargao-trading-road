@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	_ "embed"
 	"errors"
 	"fmt"
 	"log"
@@ -21,6 +22,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jung-kurt/gofpdf"
 )
+
+//go:embed assets/splash.png
+var embeddedSplash []byte
 
 func getUserID(c *gin.Context) (uint, error) {
 	userIDVal, exists := c.Get("user_id")
@@ -762,23 +766,7 @@ func DownloadInvoice(c *gin.Context) {
 	pdf.SetMargins(12, 15, 12)
 	pdf.SetAutoPageBreak(true, 20)
 	pdf.AddPage()
-	hasLogo := false
-	logoPath := filepath.Join("assets", "splash.png")
-	if logoBytes, err := os.ReadFile(logoPath); err == nil {
-		if pdf.RegisterImageOptionsReader("app-logo", gofpdf.ImageOptions{ImageType: "PNG"}, bytes.NewReader(logoBytes)) == nil {
-			hasLogo = true
-			pageW, _ := pdf.GetPageSize()
-			left, _, right, _ := pdf.GetMargins()
-			usable := pageW - left - right
-			logoW := 70.0
-			x := left + (usable-logoW)/2
-			pdf.ImageOptions("app-logo", x, 10, logoW, 0, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
-		} else {
-			log.Printf("DownloadInvoice: failed to register logo from %s", logoPath)
-		}
-	} else {
-		log.Printf("DownloadInvoice: logo not found at %s: %v", logoPath, err)
-	}
+	hasLogo := registerLogo(pdf)
 
 	primaryBlue := struct{ r, g, b int }{r: 0, g: 86, b: 155}
 	teal := struct{ r, g, b int }{r: 0, g: 170, b: 190}
@@ -866,10 +854,11 @@ func DownloadInvoice(c *gin.Context) {
 	pdf.Ln(6)
 
 	pdf.SetFont("Arial", "B", 12)
-	pdf.CellFormat(80, 8, "Item", "1", 0, "L", false, 0, "")
-	pdf.CellFormat(30, 8, "Qty", "1", 0, "L", false, 0, "")
-	pdf.CellFormat(40, 8, "Unit Price", "1", 0, "L", false, 0, "")
-	pdf.CellFormat(40, 8, "Subtotal", "1", 1, "L", false, 0, "")
+	pdf.CellFormat(78, 8, "Item", "1", 0, "L", false, 0, "")
+	pdf.CellFormat(22, 8, "Qty", "1", 0, "L", false, 0, "")
+	pdf.CellFormat(26, 8, "Unit", "1", 0, "L", false, 0, "")
+	pdf.CellFormat(30, 8, "Unit Price", "1", 0, "L", false, 0, "")
+	pdf.CellFormat(30, 8, "Subtotal", "1", 1, "L", false, 0, "")
 
 	pdf.SetFont("Arial", "", 12)
 	for _, item := range order.OrderItems {
@@ -877,15 +866,20 @@ func DownloadInvoice(c *gin.Context) {
 		if name == "" {
 			name = fmt.Sprintf("Product %d", item.ProductID)
 		}
-		pdf.CellFormat(80, 8, name, "1", 0, "L", false, 0, "")
-		pdf.CellFormat(30, 8, fmt.Sprintf("%d", item.Quantity), "1", 0, "L", false, 0, "")
-		pdf.CellFormat(40, 8, fmt.Sprintf("PHP %.2f", item.UnitPrice), "1", 0, "L", false, 0, "")
-		pdf.CellFormat(40, 8, fmt.Sprintf("PHP %.2f", item.Subtotal), "1", 1, "L", false, 0, "")
+		unit := item.Product.Unit
+		if unit == "" {
+			unit = "-"
+		}
+		pdf.CellFormat(78, 8, name, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(22, 8, fmt.Sprintf("%d", item.Quantity), "1", 0, "L", false, 0, "")
+		pdf.CellFormat(26, 8, unit, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(30, 8, fmt.Sprintf("PHP %.2f", item.UnitPrice), "1", 0, "L", false, 0, "")
+		pdf.CellFormat(30, 8, fmt.Sprintf("PHP %.2f", item.Subtotal), "1", 1, "L", false, 0, "")
 	}
 
 	pdf.SetFont("Arial", "B", 12)
-	pdf.CellFormat(150, 8, "Total", "1", 0, "R", false, 0, "")
-	pdf.CellFormat(40, 8, fmt.Sprintf("PHP %.2f", order.TotalAmount), "1", 1, "L", false, 0, "")
+	pdf.CellFormat(156, 8, "Total", "1", 0, "R", false, 0, "")
+	pdf.CellFormat(30, 8, fmt.Sprintf("PHP %.2f", order.TotalAmount), "1", 1, "L", false, 0, "")
 
 	var buf bytes.Buffer
 	pageH, _ := pdf.GetPageSize()
@@ -953,6 +947,53 @@ func uploadInvoiceToS3(cfg *config.Config, key string, content []byte) (string, 
 
 	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.S3Bucket, cfg.AWSRegion, key)
 	return url, nil
+}
+
+func registerLogo(pdf *gofpdf.Fpdf) bool {
+	// Try embedded first
+	if len(embeddedSplash) > 0 {
+		if pdf.RegisterImageOptionsReader("app-logo", gofpdf.ImageOptions{ImageType: "PNG"}, bytes.NewReader(embeddedSplash)) == nil {
+			pageW, _ := pdf.GetPageSize()
+			left, _, right, _ := pdf.GetMargins()
+			usable := pageW - left - right
+			logoW := 70.0
+			x := left + (usable-logoW)/2
+			pdf.ImageOptions("app-logo", x, 10, logoW, 0, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
+			return true
+		}
+	}
+
+	// Fallback to file paths
+	candidates := []string{
+		filepath.Join("assets", "splash.png"),
+		filepath.Join("golang", "assets", "splash.png"),
+	}
+	if cwd, err := os.Getwd(); err == nil {
+		candidates = append(candidates, filepath.Join(cwd, "assets", "splash.png"))
+		candidates = append(candidates, filepath.Join(cwd, "golang", "assets", "splash.png"))
+	}
+	if exe, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exe)
+		candidates = append(candidates, filepath.Join(exeDir, "assets", "splash.png"))
+		candidates = append(candidates, filepath.Join(exeDir, "..", "assets", "splash.png"))
+	}
+
+	for _, logoPath := range candidates {
+		if logoBytes, err := os.ReadFile(logoPath); err == nil {
+			if pdf.RegisterImageOptionsReader("app-logo", gofpdf.ImageOptions{ImageType: "PNG"}, bytes.NewReader(logoBytes)) == nil {
+				pageW, _ := pdf.GetPageSize()
+				left, _, right, _ := pdf.GetMargins()
+				usable := pageW - left - right
+				logoW := 70.0
+				x := left + (usable-logoW)/2
+				pdf.ImageOptions("app-logo", x, 10, logoW, 0, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
+				return true
+			}
+		}
+	}
+
+	log.Printf("DownloadInvoice: logo not found in any candidate path")
+	return false
 }
 
 func GetOrderMessages(c *gin.Context) {

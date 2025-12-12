@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:siargao_trading_road/screens/suppliers_screen.dart';
 import 'package:siargao_trading_road/screens/supplier_products_screen.dart';
@@ -11,6 +12,7 @@ import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/schedule_editor_screen.dart';
 import 'package:siargao_trading_road/screens/ratings_screen.dart';
 import 'package:siargao_trading_road/navigation/smooth_page_route.dart';
+import 'package:siargao_trading_road/providers/auth_provider.dart';
 class StoreDrawer extends StatefulWidget {
   const StoreDrawer({super.key});
 
@@ -104,6 +106,7 @@ class _StoreDrawerState extends State<StoreDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: StoreDrawer.navigatorKey,
@@ -137,13 +140,13 @@ class _StoreDrawerState extends State<StoreDrawer> {
             },
             backgroundColor: Colors.transparent,
             color: Theme.of(context).colorScheme.primary,
-            buttonBackgroundColor: Colors.white.withOpacity(0.9),
+            buttonBackgroundColor: Colors.white.withValues(alpha: 0.9),
             animationCurve: Curves.easeInOut,
             animationDuration: const Duration(milliseconds: 300),
             items: [
-              Icon(Icons.store, size: 30, color: _currentIndex == 0 ? Theme.of(context).colorScheme.secondary : Colors.white),
-              Icon(Icons.list_alt, size: 30, color: _currentIndex == 1 ? Theme.of(context).colorScheme.secondary : Colors.white),
-              Icon(Icons.account_circle, size: 30, color: _currentIndex == 2 ? Theme.of(context).colorScheme.secondary : Colors.white),
+              _buildAssetIcon('assets/suppliers.png', _currentIndex == 0, context),
+              _buildAssetIcon('assets/orders.png', _currentIndex == 1, context),
+              _buildProfileIcon(authProvider, _currentIndex == 2, context),
             ],
           ),
         ),
@@ -187,6 +190,39 @@ class _StoreDrawerState extends State<StoreDrawer> {
           settings: settings,
         );
       },
+    );
+  }
+
+  Widget _buildProfileIcon(AuthProvider authProvider, bool isActive, BuildContext context) {
+    final logo = authProvider.user?.logoUrl;
+    if (logo != null && logo.isNotEmpty) {
+      return Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+            width: 2,
+          ),
+          color: Colors.white,
+        ),
+        child: ClipOval(
+          child: Image.network(
+            logo,
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+    return Icon(Icons.account_circle, size: 30, color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white);
+  }
+
+  Widget _buildAssetIcon(String assetPath, bool isActive, BuildContext context) {
+    return ImageIcon(
+      AssetImage(assetPath),
+      size: 30,
+      color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
     );
   }
 }

@@ -130,7 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             const Text(
                               'Create a new account',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey,
                               ),
