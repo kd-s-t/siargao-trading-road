@@ -56,7 +56,7 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    DateTime _parseDate(String key) {
+    DateTime parseDate(String key) {
       final value = json[key];
       if (value is String) {
         final parsed = DateTime.tryParse(value);
@@ -87,8 +87,8 @@ class User {
       closingTime: json['closing_time'] as String?,
       closedDaysOfWeek: json['closed_days_of_week'] as String?,
       isOpen: json['is_open'] as bool? ?? true,
-      createdAt: _parseDate('created_at'),
-      updatedAt: _parseDate('updated_at'),
+      createdAt: parseDate('created_at'),
+      updatedAt: parseDate('updated_at'),
       averageRating: json['average_rating'] != null ? (json['average_rating'] as num).toDouble() : null,
       ratingCount: json['rating_count'] as int?,
       featureFlags: (json['feature_flags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],

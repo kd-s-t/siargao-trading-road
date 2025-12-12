@@ -33,18 +33,9 @@ class NotificationHandler {
     }
 
     BuildContext? context = navigatorKey.currentContext;
-    
-    if (context == null) {
-      context = StoreDrawer.navigatorKey.currentContext;
-    }
-    
-    if (context == null) {
-      context = SupplierDrawer.navigatorKey.currentContext;
-    }
-    
-    if (context == null) {
-      context = AdminDrawer.navigatorKey.currentContext;
-    }
+    context ??= StoreDrawer.navigatorKey.currentContext;
+    context ??= SupplierDrawer.navigatorKey.currentContext;
+    context ??= AdminDrawer.navigatorKey.currentContext;
 
     if (context == null) {
       if (kDebugMode) {

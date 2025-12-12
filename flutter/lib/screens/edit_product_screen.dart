@@ -49,7 +49,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _descriptionController = TextEditingController(text: product?.description ?? '');
     _skuController = TextEditingController(text: product?.sku ?? '');
     _priceController = TextEditingController(text: product?.price.toStringAsFixed(2) ?? '');
-    _stockQuantityController = TextEditingController(text: product?.stockQuantity?.toString() ?? '');
+    _stockQuantityController = TextEditingController(text: product?.stockQuantity.toString() ?? '');
     _selectedUnit = product?.unit;
     _categoryController = TextEditingController(text: product?.category ?? '');
     _imageUrl = product?.imageUrl;
@@ -254,7 +254,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedUnit,
+                initialValue: _selectedUnit,
                 decoration: const InputDecoration(
                   labelText: 'Unit',
                   border: OutlineInputBorder(),

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:image/image.dart' as img;
-import 'package:path/path.dart' as p;
 import 'package:siargao_trading_road/models/user.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
 
@@ -150,7 +149,7 @@ class AuthService {
     if (imageType == 'banner') {
       const targetWidth = 1200;
       const targetHeight = 675;
-      final aspectRatio = targetWidth / targetHeight;
+      const aspectRatio = targetWidth / targetHeight;
       final imageAspectRatio = decoded.width / decoded.height;
       
       int cropWidth, cropHeight, cropX, cropY;
@@ -201,10 +200,7 @@ class AuthService {
     }
 
     final compressedBytes = img.encodeJpg(processed, quality: 80);
-    final tempPath = p.join(
-      Directory.systemTemp.path,
-      'str_upload_${DateTime.now().millisecondsSinceEpoch}.jpg',
-    );
+    final tempPath = '${Directory.systemTemp.path}/str_upload_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final tempFile = File(tempPath);
     await tempFile.writeAsBytes(compressedBytes, flush: true);
 

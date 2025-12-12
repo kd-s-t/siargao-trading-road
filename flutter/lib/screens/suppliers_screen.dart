@@ -206,7 +206,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
           Expanded(
             flex: 2,
             child: DropdownButtonFormField<String>(
-              value: _statusFilter,
+              initialValue: _statusFilter,
               isExpanded: true,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),

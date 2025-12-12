@@ -371,7 +371,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
             _buildHoursCard(user),
           if (!_editing) _buildAnalyticsButton(),
           if (!_editing) _buildLogoutButton(authProvider),
-          SizedBox(height: kBottomNavigationBarHeight + 24),
+          const SizedBox(height: kBottomNavigationBarHeight + 24),
         ],
       ),
     );

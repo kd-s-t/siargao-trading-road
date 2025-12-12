@@ -140,7 +140,7 @@ class _StoreDrawerState extends State<StoreDrawer> {
             },
             backgroundColor: Colors.transparent,
             color: Theme.of(context).colorScheme.primary,
-            buttonBackgroundColor: Colors.white.withOpacity(0.9),
+            buttonBackgroundColor: Colors.white.withValues(alpha: 0.9),
             animationCurve: Curves.easeInOut,
             animationDuration: const Duration(milliseconds: 300),
             items: [

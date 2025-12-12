@@ -22,7 +22,6 @@ import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io';
 import 'dart:async';
-import 'package:flutter/rendering.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   const OrderDetailScreen({super.key});
@@ -35,7 +34,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Order? _order;
   bool _loading = true;
   bool _loadingMessages = false;
-  bool _updatingStatus = false;
+  final bool _updatingStatus = false;
   bool _updatingPayment = false;
   bool _submittingRating = false;
   List<Message> _messages = [];
@@ -461,6 +460,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           'Authorization': 'Bearer $token',
         },
       );
+      if (!mounted) return;
       debugPrint('invoice download status: ${response.statusCode}, bytes: ${response.bodyBytes.length}');
 
       if (response.statusCode == 200) {
@@ -472,6 +472,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         final file = File('${directory.path}/$fileName');
 
         await file.writeAsBytes(response.bodyBytes);
+        if (!mounted) return;
         final xFile = XFile(file.path);
         final box = context.findRenderObject() as RenderBox?;
         final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
