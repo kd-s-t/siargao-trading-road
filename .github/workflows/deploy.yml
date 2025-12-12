@@ -299,7 +299,7 @@ jobs:
           ssh-keyscan -p $EC2_PORT -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || {
             echo "⚠️ ssh-keyscan failed, trying alternative method..."
             # Try connecting once to add host key
-            ssh -o StrictHostKeyChecking=accept-new -p $EC2_PORT ${{ secrets.EC2_USER }}@$EC2_HOST "echo 'SSH connection test'" || {
+            ssh -o StrictHostKeyChecking=accept-new -p $EC2_PORT ubuntu@$EC2_HOST "echo 'SSH connection test'" || {
               echo "❌ SSH connection failed"
               exit 1
             }
@@ -320,7 +320,7 @@ jobs:
 
       - name: Install Docker and AWS CLI on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
             set -e
             echo "🔧 Checking and installing required tools..."
             
@@ -399,7 +399,7 @@ jobs:
 
       - name: Setup project directory and repository
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -421,7 +421,7 @@ jobs:
 
       - name: Load environment from SSM
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -438,7 +438,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -454,7 +454,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -478,7 +478,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -501,7 +501,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -519,7 +519,7 @@ jobs:
 
       - name: Stop existing containers
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -535,7 +535,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -554,7 +554,7 @@ jobs:
 
       - name: Start containers
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -567,7 +567,7 @@ jobs:
 
       - name: Verify deployment
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -597,7 +597,7 @@ jobs:
           echo "🔍 Adding EC2 host to known_hosts..."
           ssh-keyscan -p $EC2_PORT -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || {
             echo "⚠️ ssh-keyscan failed, trying alternative method..."
-            ssh -o StrictHostKeyChecking=accept-new -p $EC2_PORT ${{ secrets.EC2_USER }}@$EC2_HOST "echo 'SSH connection test'" || {
+            ssh -o StrictHostKeyChecking=accept-new -p $EC2_PORT ubuntu@$EC2_HOST "echo 'SSH connection test'" || {
               echo "❌ SSH connection failed"
               exit 1
             }
@@ -607,7 +607,7 @@ jobs:
 
       - name: Clean up Docker resources on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
