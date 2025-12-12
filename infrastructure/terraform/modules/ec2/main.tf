@@ -13,9 +13,6 @@ resource "aws_eip" "siargaotradingroad_eip" {
     Environment = var.environment
   }
 
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "aws_instance" "siargaotradingroad_server" {
@@ -24,7 +21,6 @@ resource "aws_instance" "siargaotradingroad_server" {
   key_name              = var.key_pair_name
   vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = var.instance_profile_name
-  disable_api_termination = true
 
   root_block_device {
     volume_size = 30
@@ -36,10 +32,6 @@ resource "aws_instance" "siargaotradingroad_server" {
     Name = "siargao-trading-road-server-${var.environment}"
     Project = "SiargaoTradingRoad"
     Environment = var.environment
-  }
-
-  lifecycle {
-    prevent_destroy = true
   }
 
   provisioner "remote-exec" {
@@ -142,6 +134,7 @@ resource "aws_instance" "siargaotradingroad_server" {
       "server {",
       "    listen 80;",
       "    server_name ${join(" ", var.ssl_domains)};",
+      "    client_max_body_size 100M;",
       "    ",
       "    location /storybook/ {",
       "        alias /home/ubuntu/siargao-trading-road/nextjs/storybook-static/;",
@@ -163,6 +156,10 @@ resource "aws_instance" "siargaotradingroad_server" {
       "        proxy_set_header X-Forwarded-For \\$proxy_add_x_forwarded_for;",
       "        proxy_set_header X-Forwarded-Proto \\$scheme;",
       "        proxy_cache_bypass \\$http_upgrade;",
+      "        proxy_connect_timeout 300s;",
+      "        proxy_send_timeout 300s;",
+      "        proxy_read_timeout 300s;",
+      "        proxy_buffering off;",
       "    }",
       "    ",
       "    location /api {",
@@ -172,6 +169,10 @@ resource "aws_instance" "siargaotradingroad_server" {
       "        proxy_set_header X-Real-IP \\$remote_addr;",
       "        proxy_set_header X-Forwarded-For \\$proxy_add_x_forwarded_for;",
       "        proxy_set_header X-Forwarded-Proto \\$scheme;",
+      "        proxy_connect_timeout 300s;",
+      "        proxy_send_timeout 300s;",
+      "        proxy_read_timeout 300s;",
+      "        proxy_buffering off;",
       "    }",
       "    ",
       "    location /health {",

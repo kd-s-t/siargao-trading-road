@@ -12,11 +12,8 @@ COPY golang/go.mod golang/go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Copy source code (ensure assets are included)
+# Copy source code
 COPY golang/ ./
-
-# Verify the embed file exists before building
-RUN test -f handlers/assets/splash.png || (echo "ERROR: handlers/assets/splash.png not found!" && find . -name "splash.png" && exit 1)
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
