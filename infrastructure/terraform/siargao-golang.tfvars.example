@@ -1,0 +1,33 @@
+aws_region = "us-east-1"
+environment = "production"
+
+instance_type = "t3.micro"
+public_key_path = "~/.ssh/id_rsa.pub"
+private_key_path = "~/.ssh/id_rsa"
+repo_url = "https://github.com/your-org/siargao-trading-road.git"
+
+create_eip = false
+
+enable_ssl = false
+ssl_domains = []
+ssl_email = "admin@siargaotradingroad.com"
+
+db_name = "siargaotradingroad"
+db_username = "siargaotradingroad_admin"
+db_password = ""
+
+rds_instance_class = "db.t3.micro"
+rds_allocated_storage = 20
+rds_max_allocated_storage = 100
+rds_engine_version = "15.4"
+rds_backup_retention_period = 7
+rds_skip_final_snapshot = false
+rds_publicly_accessible = false
+rds_allowed_cidr_blocks = []
+
+upload_retention_days = 365
+
+aws_access_key_id = ""
+aws_secret_access_key = ""
+jwt_secret = ""
+
