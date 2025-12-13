@@ -543,7 +543,7 @@ jobs:
             
             ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
             IMAGE_TAG="${{ github.sha }}"
-            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
+            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-production-api:\${IMAGE_TAG}"
             
             echo "🔄 Running database migrations..."
             docker run --rm --env-file .env \${API_IMAGE} /app/siargao-trading-road migrate || {
