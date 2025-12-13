@@ -116,8 +116,8 @@ echo -e "${GREEN}Uploading to S3...${NC}"
 echo "  Versioned: s3://${S3_BUCKET}/${S3_KEY}"
 echo "  Latest:     s3://${S3_BUCKET}/${S3_KEY_LATEST}"
 
-aws s3 cp "$APK_PATH" "s3://${S3_BUCKET}/${S3_KEY}" --region "$AWS_REGION"
-aws s3 cp "$APK_PATH" "s3://${S3_BUCKET}/${S3_KEY_LATEST}" --region "$AWS_REGION"
+aws s3 cp "$APK_PATH" "s3://${S3_BUCKET}/${S3_KEY}" --region "$AWS_REGION" --profile 38park2309
+aws s3 cp "$APK_PATH" "s3://${S3_BUCKET}/${S3_KEY_LATEST}" --region "$AWS_REGION" --profile 38park2309
 
 # Generate URLs
 DOWNLOAD_URL="https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${S3_KEY}"
