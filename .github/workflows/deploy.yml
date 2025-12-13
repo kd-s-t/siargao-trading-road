@@ -20,7 +20,7 @@ jobs:
 
       - name: Build API image
         env:
-          ECR_REPOSITORY: siargaotradingroad-production
+          ECR_REPOSITORY: siargaotradingroad-development
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🐳 Building Go API image..."
@@ -34,7 +34,7 @@ jobs:
 
       - name: Save API image
         env:
-          ECR_REPOSITORY: siargaotradingroad-production
+          ECR_REPOSITORY: siargaotradingroad-development
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "💾 Saving API image..."
@@ -73,7 +73,7 @@ jobs:
 
       - name: Create ECR repository if it doesn't exist
         run: |
-          REPO_NAME="siargaotradingroad-production-api"
+          REPO_NAME="siargaotradingroad-development-api"
           echo "🔍 Checking if ECR repository $REPO_NAME exists..."
           
           if ! aws ecr describe-repositories --repository-names $REPO_NAME --region us-east-1 2>/dev/null; then
@@ -96,7 +96,7 @@ jobs:
       - name: Load API image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: siargaotradingroad-production
+          ECR_REPOSITORY: siargaotradingroad-development
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "📥 Loading API image..."
@@ -109,7 +109,7 @@ jobs:
       - name: Push API image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: siargaotradingroad-production
+          ECR_REPOSITORY: siargaotradingroad-development
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "📤 Pushing API image to ECR..."
@@ -119,7 +119,7 @@ jobs:
 
       - name: Verify API image in ECR
         env:
-          ECR_REPOSITORY: siargaotradingroad-production
+          ECR_REPOSITORY: siargaotradingroad-development
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🔍 Verifying API image in ECR..."
@@ -145,7 +145,7 @@ jobs:
 
       - name: Clean up old ECR images
         env:
-          ECR_REPOSITORY: siargaotradingroad-production
+          ECR_REPOSITORY: siargaotradingroad-development
           KEEP_IMAGES: 5
         run: |
           echo "🧹 Cleaning up old ECR images..."
@@ -210,7 +210,7 @@ jobs:
 
       - name: Add EC2 to known hosts
         run: |
-          EC2_HOST="3.237.15.10"
+          EC2_HOST="44.192.83.29"
           EC2_PORT="${EC2_PORT:-22}"
           
           echo "🔍 Adding EC2 host to known_hosts..."
@@ -238,7 +238,7 @@ jobs:
 
       - name: Install Docker and AWS CLI on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << 'EOF'
             set -e
             echo "🔧 Checking and installing required tools..."
             
@@ -317,7 +317,7 @@ jobs:
 
       - name: Setup project directory and repository
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -339,14 +339,14 @@ jobs:
 
       - name: Load environment from SSM
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
             cd ~/siargao-trading-road
             
             echo "🔑 Loading environment from SSM Parameter Store..."
-            SSM_PATH="/siargaotradingroad/production"
+            SSM_PATH="/siargaotradingroad/development"
             AWS_REGION="us-east-1"
             aws ssm get-parameters-by-path --path "$SSM_PATH" --with-decryption --recursive --region "$AWS_REGION" --query 'Parameters[*].[Name,Value]' --output text | awk -F '\t' '{split($1,a,"/"); print a[length(a)] "=" $2}' > .env || echo "# No SSM parameters found" > .env
             echo "✅ .env created from SSM at $SSM_PATH"
@@ -356,7 +356,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -372,13 +372,13 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
             
             echo "🔍 Verifying API image exists in ECR..."
-            if ! aws ecr describe-images --repository-name siargaotradingroad-production-api --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
+            if ! aws ecr describe-images --repository-name siargaotradingroad-development-api --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
               echo "❌ API image does not exist in ECR!"
               exit 1
             fi
@@ -390,7 +390,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -398,7 +398,7 @@ jobs:
             
             ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
             IMAGE_TAG="${{ github.sha }}"
-            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-production-api:\${IMAGE_TAG}"
+            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
             
             echo "🐳 Pulling API image..."
             docker pull "\${API_IMAGE}"
@@ -410,7 +410,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -418,7 +418,7 @@ jobs:
             
             ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
             IMAGE_TAG="${{ github.sha }}"
-            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-production-api:\${IMAGE_TAG}"
+            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
             
             echo "📝 Updating docker-compose.yml with API image..."
             printf 'version: '\''3.8'\''\n\nservices:\n  api:\n    image: %s\n    container_name: siargao-api\n    ports:\n      - "3020:3020"\n    env_file:\n      - .env\n    environment:\n      - PORT=3020\n      - GIN_MODE=release\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\nnetworks:\n  siargao-network:\n    driver: bridge\n' "\${API_IMAGE}" > docker-compose.yml
@@ -427,7 +427,7 @@ jobs:
 
       - name: Stop existing containers
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -443,7 +443,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -451,7 +451,7 @@ jobs:
             
             ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
             IMAGE_TAG="${{ github.sha }}"
-            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-production-api:\${IMAGE_TAG}"
+            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
             
             echo "🔄 Running database migrations..."
             docker run --rm --env-file .env \${API_IMAGE} /app/siargao-trading-road migrate || {
@@ -462,7 +462,7 @@ jobs:
 
       - name: Start API container
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -475,7 +475,7 @@ jobs:
 
       - name: Verify deployment
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -499,7 +499,7 @@ jobs:
 
       - name: Add EC2 to known hosts
         run: |
-          EC2_HOST="3.237.15.10"
+          EC2_HOST="44.192.83.29"
           EC2_PORT="${EC2_PORT:-22}"
           
           echo "🔍 Adding EC2 host to known_hosts..."
@@ -515,7 +515,7 @@ jobs:
 
       - name: Clean up Docker resources on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.237.15.10 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << 'EOF'
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
@@ -527,7 +527,7 @@ jobs:
             df -h / | tail -1
             
             echo "🗑️ Removing old images (keeping latest 2)..."
-            docker images --format "{{.Repository}}:{{.Tag}}" | grep siargaotradingroad-production-api | sort -V | head -n -2 | xargs -r docker rmi -f || true
+            docker images --format "{{.Repository}}:{{.Tag}}" | grep siargaotradingroad-development-api | sort -V | head -n -2 | xargs -r docker rmi -f || true
             
             echo "🧹 Pruning unused Docker resources (excluding running containers)..."
             docker system prune -a -f || true
