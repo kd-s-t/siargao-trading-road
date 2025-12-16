@@ -20,7 +20,6 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/gin-gonic/gin"
 	"github.com/jung-kurt/gofpdf"
 )
@@ -956,7 +955,6 @@ func uploadInvoiceToS3(cfg *config.Config, key string, content []byte) (string, 
 		Key:         aws.String(key),
 		Body:        bytes.NewReader(content),
 		ContentType: aws.String("application/pdf"),
-		ACL:         types.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
 		return "", fmt.Errorf("put object: %w", err)

@@ -54,7 +54,8 @@ resource "random_password" "db_password" {
 module "security" {
   source = "./modules/security"
   
-  environment = var.environment
+  environment         = var.environment
+  allowed_cidr_blocks = var.ec2_allowed_cidr_blocks
 }
 
 module "iam" {

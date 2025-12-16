@@ -8,6 +8,14 @@ resource "aws_s3_bucket" "user_uploads" {
   }
 }
 
+resource "aws_s3_bucket_ownership_controls" "user_uploads" {
+  bucket = aws_s3_bucket.user_uploads.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
 resource "aws_s3_bucket_versioning" "user_uploads" {
   bucket = aws_s3_bucket.user_uploads.id
 
@@ -51,7 +59,10 @@ resource "aws_s3_bucket_policy" "user_uploads" {
     ]
   })
 
-  depends_on = [aws_s3_bucket_public_access_block.user_uploads]
+  depends_on = [
+    aws_s3_bucket_public_access_block.user_uploads,
+    aws_s3_bucket_ownership_controls.user_uploads
+  ]
 }
 
 resource "aws_s3_bucket_cors_configuration" "user_uploads" {

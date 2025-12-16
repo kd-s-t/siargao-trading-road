@@ -31,7 +31,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late TextEditingController _stockQuantityController;
   late TextEditingController _categoryController;
   String? _selectedUnit;
-  final List<String> _unitOptions = [
+  List<String> _unitOptions = [
     'piece',
     'kg',
     'g',
@@ -39,6 +39,13 @@ class _EditProductScreenState extends State<EditProductScreen> {
     'pack',
     'liter',
     'ml',
+    'bottle',
+    'bag',
+    'dozen',
+    'pair',
+    'set',
+    'can',
+    'loaf',
   ];
 
   @override
@@ -51,6 +58,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _priceController = TextEditingController(text: product?.price.toStringAsFixed(2) ?? '');
     _stockQuantityController = TextEditingController(text: product?.stockQuantity.toString() ?? '');
     _selectedUnit = product?.unit;
+    if (_selectedUnit != null && !_unitOptions.contains(_selectedUnit)) {
+      _unitOptions = List.from(_unitOptions)..add(_selectedUnit!);
+    }
+    _unitOptions = _unitOptions.toSet().toList();
     _categoryController = TextEditingController(text: product?.category ?? '');
     _imageUrl = product?.imageUrl;
   }
@@ -253,22 +264,31 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedUnit,
-                decoration: const InputDecoration(
-                  labelText: 'Unit',
-                  border: OutlineInputBorder(),
-                ),
-                items: _unitOptions
-                    .map((unit) => DropdownMenuItem<String>(
-                          value: unit,
-                          child: Text(unit),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedUnit = value;
-                  });
+              Builder(
+                builder: (context) {
+                  final uniqueUnits = _unitOptions.toSet().toList();
+                  final validValue = _selectedUnit != null && uniqueUnits.contains(_selectedUnit) 
+                      ? _selectedUnit 
+                      : null;
+                  
+                  return DropdownButtonFormField<String>(
+                    value: validValue,
+                    decoration: const InputDecoration(
+                      labelText: 'Unit',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: uniqueUnits
+                        .map((unit) => DropdownMenuItem<String>(
+                              value: unit,
+                              child: Text(unit),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedUnit = value;
+                      });
+                    },
+                  );
                 },
               ),
               const SizedBox(height: 16),

@@ -11,7 +11,9 @@ if [ "$ENV" != "local" ] && [ "$ENV" != "production" ]; then
     exit 1
 fi
 
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+GOLANG_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$GOLANG_DIR"
 
 if [ "$ENV" = "local" ]; then
     echo "Reseeding local database..."

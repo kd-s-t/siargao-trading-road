@@ -69,9 +69,8 @@ coverage/
 *.tfstate
 *.tfstate.*
 .terraform.lock.hcl
-terraform.tfvars
-terraform.tfvars.production
-!terraform.tfvars.example
+*.tfvars
+!*.tfvars.example
 
 # Security keys
 *.pem

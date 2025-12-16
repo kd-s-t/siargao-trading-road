@@ -30,7 +30,7 @@ class OrderDetailScreen extends StatefulWidget {
   State<OrderDetailScreen> createState() => _OrderDetailScreenState();
 }
 
-class _OrderDetailScreenState extends State<OrderDetailScreen> {
+class _OrderDetailScreenState extends State<OrderDetailScreen> with SingleTickerProviderStateMixin {
   Order? _order;
   bool _loading = true;
   bool _loadingMessages = false;
@@ -50,15 +50,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   static const bool _showApiResponse = false;
   StreamSubscription<RemoteMessage>? _fcmSubscription;
   Timer? _messagePollTimer;
+  AnimationController? _refreshAnimationController;
+  final FocusScopeNode _focusScopeNode = FocusScopeNode();
+
+  VoidCallback? _messageControllerListener;
 
   @override
   void initState() {
     super.initState();
-    _messageController.addListener(() {
+    _refreshAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _messageControllerListener = () {
       if (mounted) {
         setState(() {});
       }
-    });
+    };
+    _messageController.addListener(_messageControllerListener!);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         Future.delayed(const Duration(milliseconds: 100), () {
@@ -72,8 +81,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   @override
   void dispose() {
+    try {
+      if (mounted) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+    } catch (_) {
+    }
     _fcmSubscription?.cancel();
     _messagePollTimer?.cancel();
+    if (_messageControllerListener != null) {
+      _messageController.removeListener(_messageControllerListener!);
+    }
     _messageController.dispose();
     _ratingCommentController.dispose();
     _scrollController.dispose();
@@ -212,6 +230,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         setState(() {
           _loadingMessages = true;
         });
+        _refreshAnimationController?.repeat();
       } catch (e) {
         return;
       }
@@ -269,7 +288,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   void _startMessagePolling() {
     _messagePollTimer?.cancel();
-    _messagePollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _messagePollTimer = Timer.periodic(const Duration(minutes: 3), (timer) {
       if (!mounted || _order?.id == null) {
         timer.cancel();
         return;
@@ -293,11 +312,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
 
   Future<void> _handleUpdateStatus(String status) async {
-    if (_order?.id == null) return;
+    if (_order?.id == null || !mounted) return;
 
-    setState(() {
-      _updatingPayment = true;
-    });
+    if (mounted) {
+      setState(() {
+        _updatingPayment = true;
+      });
+    }
 
     try {
       await OrderService.updateOrderStatus(_order!.id, status);
@@ -342,11 +363,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _handleMarkPaymentAsPaid() async {
-    if (_order?.id == null) return;
+    if (_order?.id == null || !mounted) return;
 
-    setState(() {
-      _updatingPayment = true;
-    });
+    if (mounted) {
+      setState(() {
+        _updatingPayment = true;
+      });
+    }
 
     try {
       await OrderService.markPaymentAsPaid(_order!.id);
@@ -368,11 +391,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _handleMarkPaymentAsPending() async {
-    if (_order?.id == null) return;
+    if (_order?.id == null || !mounted) return;
 
-    setState(() {
-      _updatingPayment = true;
-    });
+    if (mounted) {
+      setState(() {
+        _updatingPayment = true;
+      });
+    }
 
     try {
       await OrderService.markPaymentAsPending(_order!.id);
@@ -508,16 +533,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _handleSubmitRating() async {
-    if (_order == null) return;
+    if (_order == null || !mounted) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
     if (user == null) return;
 
     final ratedId = user.role == 'store' ? _order!.supplierId : _order!.storeId;
 
-    setState(() {
-      _submittingRating = true;
-    });
+    if (mounted) {
+      setState(() {
+        _submittingRating = true;
+      });
+    }
 
     try {
       await RatingService.createRating(
@@ -528,11 +555,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ? null
             : _ratingCommentController.text.trim(),
       );
-      setState(() {
-        _showRatingDialog = false;
-        _ratingValue = 5;
-        _ratingCommentController.clear();
-      });
+      if (mounted) {
+        setState(() {
+          _showRatingDialog = false;
+          _ratingValue = 5;
+          _ratingCommentController.clear();
+        });
+      }
       await _loadOrder();
       if (mounted) {
         SnackbarHelper.showSuccess(context, 'Rating submitted successfully');
@@ -594,10 +623,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _handleSendTextMessage(String text) async {
-    if (_order?.id == null || _isMessagingClosed() || text.isEmpty) return;
+    if (_order?.id == null || _isMessagingClosed() || text.isEmpty || !mounted) return;
 
     _messageController.clear();
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
 
     try {
       await OrderService.createMessage(_order!.id, text);
@@ -640,11 +671,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
-        try {
-          final authProvider = Provider.of<AuthProvider>(context);
-          final user = authProvider.user;
+    try {
+      final authProvider = Provider.of<AuthProvider>(context);
+      final user = authProvider.user;
 
           if (_loading) {
             return Scaffold(
@@ -743,16 +772,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           final entity = isStore ? _order!.supplier : _order!.store;
           final entityName = isStore ? 'Supplier' : 'Store';
 
-          return Scaffold(
-            appBar: AppBar(
-              title: Text('Order #${_order!.id}'),
-            ),
-            body: SafeArea(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+          return FocusScope(
+            node: _focusScopeNode,
+            child: Scaffold(
+              appBar: AppBar(
+                title: Text('Order #${_order!.id}'),
+              ),
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  key: const Key('order_detail_scroll'),
+                  controller: _scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                   if (kDebugMode && _showApiResponse && _apiResponse != null)
                     Container(
                       margin: const EdgeInsets.all(16),
@@ -810,49 +842,47 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   if (_hasActionButtons(user))
                     _buildActionsCard(entity, entityName, user),
                   if (_order!.ratings != null && _order!.ratings!.isNotEmpty) _buildRatingsCard(),
-                  if (_canRate()) _buildRateButton(entity, user),
-                  const SizedBox(height: 32),
-                ],
-              ),
-            ),
-            ),
-      bottomSheet: _showRatingDialog ? _buildRatingDialogSheet(user) : null,
-    );
-        } catch (e) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Order Details')),
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'An error occurred',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      e.toString(),
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text('Go Back'),
-                    ),
-                  ],
+                      if (_canRate()) _buildRateButton(entity, user),
+                    ],
+                  ),
                 ),
               ),
+              bottomSheet: _showRatingDialog ? _buildRatingDialogSheet(user) : null,
             ),
           );
-        }
-      },
-    );
+    } catch (e) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Order Details')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'An error occurred',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  e.toString(),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Go Back'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildRatingDialogSheet(user) {
@@ -1338,7 +1368,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(Icons.refresh),
+                  icon: _loadingMessages && _refreshAnimationController != null
+                      ? RotationTransition(
+                          turns: _refreshAnimationController!,
+                          child: const Icon(Icons.refresh),
+                        )
+                      : const Icon(Icons.refresh),
                   onPressed: _loadingMessages ? null : _loadMessages,
                 ),
               ],
@@ -1352,11 +1387,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: _loadingMessages && _messages.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                        : _messages.isEmpty
-                        ? const Center(child: Text('No messages yet'))
-                        : ListView.builder(
+                child: _messages.isEmpty
+                    ? const Center(child: Text('No messages yet'))
+                    : ListView.builder(
                                 controller: _messagesScrollController,
                                 padding: const EdgeInsets.all(8),
                                 itemCount: _messages.length,

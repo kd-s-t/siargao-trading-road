@@ -95,6 +95,12 @@ variable "rds_allowed_cidr_blocks" {
   default     = []
 }
 
+variable "ec2_allowed_cidr_blocks" {
+  description = "List of CIDR blocks allowed to access EC2 (SSH, HTTP, HTTPS, API ports). If empty, allows all (0.0.0.0/0)"
+  type        = list(string)
+  default     = []
+}
+
 variable "mobile_build_retention_days" {
   description = "Number of days to retain mobile app builds in S3"
   type        = number
