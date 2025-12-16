@@ -204,17 +204,38 @@ class AuthService {
     final tempFile = File(tempPath);
     await tempFile.writeAsBytes(compressedBytes, flush: true);
 
-    final response = await ApiService.postMultipart('/upload', tempFile.path, 'file');
+    try {
+      final response = await ApiService.postMultipart('/upload', tempFile.path, 'file');
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return {
-        'url': data['url'] as String,
-        'key': data['key'] as String,
-      };
-    } else {
-      final error = jsonDecode(response.body) as Map<String, dynamic>;
-      throw Exception(error['error'] ?? 'Failed to upload image');
+      if (response.statusCode == 200) {
+        try {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          return {
+            'url': data['url'] as String,
+            'key': data['key'] as String,
+          };
+        } catch (e) {
+          throw Exception('Invalid response from server: ${response.body}');
+        }
+      } else {
+        String errorMessage = 'Upload failed with status ${response.statusCode}';
+        try {
+          final error = jsonDecode(response.body) as Map<String, dynamic>;
+          errorMessage = error['error'] as String? ?? error['message'] as String? ?? errorMessage;
+        } catch (_) {
+          if (response.body.isNotEmpty) {
+            errorMessage = '${errorMessage}: ${response.body}';
+          }
+        }
+        throw Exception(errorMessage);
+      }
+    } finally {
+      try {
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+      } catch (_) {
+      }
     }
   }
 

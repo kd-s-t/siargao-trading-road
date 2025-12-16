@@ -1,8 +1,8 @@
 #!/bin/bash
 
-API_URL="https://siargaotradingroad.com/api"
+API_URL="${API_URL:-http://ec2-44-192-83-29.compute-1.amazonaws.com/api}"
 
-echo "Testing Logo and Banner Upload on Production API"
+echo "Testing Logo and Banner Upload on API: $API_URL"
 echo "================================================="
 echo ""
 

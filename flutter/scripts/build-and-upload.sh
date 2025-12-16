@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 # Default values
 ENVIRONMENT="development"
 AWS_REGION="us-east-1"
-API_URL="http://localhost:3020/api"
+API_URL="http://ec2-44-192-83-29.compute-1.amazonaws.com/api"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -37,7 +37,7 @@ while [[ $# -gt 0 ]]; do
       echo "Options:"
       echo "  --environment ENV    Environment (development, staging, production) [default: production]"
       echo "  --region REGION     AWS region [default: us-east-1]"
-      echo "  --api-url URL       API URL to use [default: https://siargaotradingroad.com/api]"
+      echo "  --api-url URL       API URL to use [default: http://ec2-44-192-83-29.compute-1.amazonaws.com/api]"
       echo "  --help              Show this help message"
       echo ""
       exit 0
