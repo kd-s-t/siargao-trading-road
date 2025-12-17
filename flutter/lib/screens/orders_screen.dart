@@ -361,16 +361,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
                                   return Card(
                                     margin: const EdgeInsets.only(bottom: 16),
-                                    child: InkWell(
-                                      onTap: () {
-                                        Navigator.pushNamed(
-                                          context,
-                                          '/order-detail',
-                                          arguments: {
-                                            'orderId': order.id,
-                                          },
-                                        );
-                                      },
+                                    child: Focus(
+                                      skipTraversal: true,
+                                      canRequestFocus: false,
+                                      child: InkWell(
+                                        onTap: () {
+                                          if (!mounted) return;
+                                          Navigator.pushNamed(
+                                            context,
+                                            '/order-detail',
+                                            arguments: {
+                                              'orderId': order.id,
+                                            },
+                                          );
+                                        },
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
@@ -716,7 +720,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                         ],
                                       ),
                                     ),
-                                  );
+                                  ),
+                                );
                                 },
                               ),
                       ),

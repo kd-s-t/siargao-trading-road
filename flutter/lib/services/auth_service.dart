@@ -224,7 +224,7 @@ class AuthService {
           errorMessage = error['error'] as String? ?? error['message'] as String? ?? errorMessage;
         } catch (_) {
           if (response.body.isNotEmpty) {
-            errorMessage = '${errorMessage}: ${response.body}';
+            errorMessage = '$errorMessage: ${response.body}';
           }
         }
         throw Exception(errorMessage);

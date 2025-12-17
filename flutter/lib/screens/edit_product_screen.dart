@@ -272,7 +272,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                       : null;
                   
                   return DropdownButtonFormField<String>(
-                    value: validValue,
+                    initialValue: validValue,
                     decoration: const InputDecoration(
                       labelText: 'Unit',
                       border: OutlineInputBorder(),
