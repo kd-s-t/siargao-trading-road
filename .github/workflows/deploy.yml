@@ -379,18 +379,42 @@ jobs:
             
             echo "🔍 Verifying API image exists in ECR..."
             REPO_NAME="siargaotradingroad-development-api"
+            REGION="us-east-1"
             
-            if aws ecr describe-images --repository-name $REPO_NAME --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
+            echo "Checking if repository exists..."
+            if ! aws ecr describe-repositories --repository-names $REPO_NAME --region $REGION 2>/dev/null; then
+              echo "❌ ECR repository $REPO_NAME does not exist!"
+              exit 1
+            fi
+            echo "✅ Repository exists"
+            
+            echo "Checking for image with tag: $IMAGE_TAG"
+            if aws ecr describe-images --repository-name $REPO_NAME --image-ids imageTag=$IMAGE_TAG --region $REGION 2>/dev/null; then
               echo "✅ API image with tag $IMAGE_TAG verified in ECR"
               echo "$IMAGE_TAG" > /tmp/deployment_image_tag.txt
-            elif aws ecr describe-images --repository-name $REPO_NAME --image-ids imageTag=latest --region us-east-1 2>/dev/null; then
-              echo "⚠️ Image with tag $IMAGE_TAG not found, but 'latest' tag exists. Using 'latest' tag."
-              echo "latest" > /tmp/deployment_image_tag.txt
             else
-              echo "❌ API image does not exist in ECR (checked tags: $IMAGE_TAG, latest)"
-              echo "Available images:"
-              aws ecr describe-images --repository-name $REPO_NAME --region us-east-1 --query 'imageDetails[*].imageTags' --output table 2>/dev/null || echo "Cannot list images"
-              exit 1
+              echo "⚠️ Image with tag $IMAGE_TAG not found, checking for 'latest' tag..."
+              if aws ecr describe-images --repository-name $REPO_NAME --image-ids imageTag=latest --region $REGION 2>/dev/null; then
+                echo "⚠️ Using 'latest' tag as fallback"
+                echo "latest" > /tmp/deployment_image_tag.txt
+              else
+                echo "❌ API image does not exist in ECR (checked tags: $IMAGE_TAG, latest)"
+                echo ""
+                echo "Attempting to list all images in repository..."
+                IMAGE_LIST=\$(aws ecr describe-images --repository-name $REPO_NAME --region $REGION --query 'imageDetails[*].imageTags[0]' --output text 2>&1)
+                if [ \$? -eq 0 ] && [ ! -z "\$IMAGE_LIST" ]; then
+                  echo "Available image tags:"
+                  echo "\$IMAGE_LIST" | tr '\t' '\n'
+                else
+                  echo "⚠️ Cannot list images. This may indicate:"
+                  echo "   - Repository is empty (push-ecr job may have failed)"
+                  echo "   - EC2 instance lacks ECR read permissions"
+                  echo "   - AWS credentials issue"
+                  echo ""
+                  echo "Error details: \$IMAGE_LIST"
+                fi
+                exit 1
+              fi
             fi
           EOF
 
