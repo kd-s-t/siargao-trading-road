@@ -591,12 +591,16 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
             ),
             if (!_editing && (user.role == 'store' || user.role == 'supplier') && user.ratingCount != null && user.ratingCount! > 0) ...[
               const SizedBox(height: 12),
-              InkWell(
-                onTap: () {
-                  Navigator.pushNamed(context, '/ratings');
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
+              Focus(
+                skipTraversal: true,
+                canRequestFocus: false,
+                child: InkWell(
+                  onTap: () {
+                    if (!mounted) return;
+                    Navigator.pushNamed(context, '/ratings');
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   child: Row(
@@ -619,6 +623,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                   ),
                 ),
               ),
+            ),
             ],
             if (!_editing) _buildSocialLinks(user),
           ],
@@ -1167,9 +1172,15 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
               Row(
                 children: [
                   Expanded(
-                    child: InkWell(
-                      onTap: () => _selectTime(context, true),
-                      child: TextField(
+                    child: Focus(
+                      skipTraversal: true,
+                      canRequestFocus: false,
+                      child: InkWell(
+                        onTap: () {
+                          if (!mounted) return;
+                          _selectTime(context, true);
+                        },
+                        child: TextField(
                         controller: _openingTimeController,
                         decoration: const InputDecoration(
                           labelText: 'Opening Time',
@@ -1180,14 +1191,21 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                         ),
                         enabled: false,
                       ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: InkWell(
-                      onTap: () => _selectTime(context, false),
-                      child: TextField(
-                        controller: _closingTimeController,
+                    child: Focus(
+                      skipTraversal: true,
+                      canRequestFocus: false,
+                      child: InkWell(
+                        onTap: () {
+                          if (!mounted) return;
+                          _selectTime(context, false);
+                        },
+                        child: TextField(
+                          controller: _closingTimeController,
                         decoration: const InputDecoration(
                           labelText: 'Closing Time',
                           border: OutlineInputBorder(),
@@ -1196,6 +1214,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                           suffixIcon: Icon(Icons.access_time),
                         ),
                         enabled: false,
+                      ),
                       ),
                     ),
                   ),

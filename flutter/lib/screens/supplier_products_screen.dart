@@ -311,11 +311,14 @@ class _SupplierProductsScreenState extends State<SupplierProductsScreen> {
               children: [
                 InkWell(
                   onTap: () {
+                    if (!mounted) return;
                     Navigator.pushNamed(
                       context,
                       '/truck',
                       arguments: {'supplierId': widget.supplierId},
-                    ).then((_) => _loadDraftOrder());
+                    ).then((_) {
+                      if (mounted) _loadDraftOrder();
+                    });
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),

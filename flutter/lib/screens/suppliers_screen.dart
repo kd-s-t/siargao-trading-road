@@ -94,6 +94,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   }
 
   void _handleSupplierPress(Supplier supplier) {
+    if (!mounted) return;
     Navigator.pushNamed(
       context,
       '/supplier-products',

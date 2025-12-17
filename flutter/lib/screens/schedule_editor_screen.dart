@@ -556,7 +556,10 @@ class _DateDetailsSheetState extends State<_DateDetailsSheet> {
             if (!_isClosed) ...[
               const SizedBox(height: 8),
               InkWell(
-                onTap: () => _selectTime(context, true),
+                onTap: () {
+                  if (!mounted) return;
+                  _selectTime(context, true);
+                },
                 child: TextField(
                   controller: TextEditingController(text: _openingTime ?? ''),
                   decoration: const InputDecoration(
@@ -568,7 +571,10 @@ class _DateDetailsSheetState extends State<_DateDetailsSheet> {
               ),
               const SizedBox(height: 8),
               InkWell(
-                onTap: () => _selectTime(context, false),
+                onTap: () {
+                  if (!mounted) return;
+                  _selectTime(context, false);
+                },
                 child: TextField(
                   controller: TextEditingController(text: _closingTime ?? ''),
                   decoration: const InputDecoration(
