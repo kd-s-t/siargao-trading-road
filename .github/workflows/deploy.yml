@@ -372,36 +372,41 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 "bash -s" << EOF
             set -e
             source ~/.bashrc
-            export PATH=$PATH:/usr/bin:/usr/local/bin
+            export PATH=\$PATH:/usr/bin:/usr/local/bin
             
-            echo "🔍 Verifying API image exists in ECR..."
             REPO_NAME="siargaotradingroad-development-api"
             REGION="us-east-1"
+            IMAGE_TAG="$IMAGE_TAG"
+            
+            echo "🔍 Verifying API image exists in ECR..."
+            echo "Repository: \$REPO_NAME"
+            echo "Region: \$REGION"
+            echo "Image tag: \$IMAGE_TAG"
             
             echo "Checking if repository exists..."
-            if ! aws ecr describe-repositories --repository-names $REPO_NAME --region $REGION 2>/dev/null; then
-              echo "❌ ECR repository $REPO_NAME does not exist!"
+            if ! aws ecr describe-repositories --repository-names "\$REPO_NAME" --region "\$REGION" 2>/dev/null; then
+              echo "❌ ECR repository \$REPO_NAME does not exist!"
               exit 1
             fi
             echo "✅ Repository exists"
             
-            echo "Checking for image with tag: $IMAGE_TAG"
-            if aws ecr describe-images --repository-name $REPO_NAME --image-ids imageTag=$IMAGE_TAG --region $REGION 2>/dev/null; then
-              echo "✅ API image with tag $IMAGE_TAG verified in ECR"
-              echo "$IMAGE_TAG" > /tmp/deployment_image_tag.txt
+            echo "Checking for image with tag: \$IMAGE_TAG"
+            if aws ecr describe-images --repository-name "\$REPO_NAME" --image-ids imageTag=\$IMAGE_TAG --region "\$REGION" 2>/dev/null; then
+              echo "✅ API image with tag \$IMAGE_TAG verified in ECR"
+              echo "\$IMAGE_TAG" > /tmp/deployment_image_tag.txt
             else
-              echo "⚠️ Image with tag $IMAGE_TAG not found, checking for 'latest' tag..."
-              if aws ecr describe-images --repository-name $REPO_NAME --image-ids imageTag=latest --region $REGION 2>/dev/null; then
+              echo "⚠️ Image with tag \$IMAGE_TAG not found, checking for 'latest' tag..."
+              if aws ecr describe-images --repository-name "\$REPO_NAME" --image-ids imageTag=latest --region "\$REGION" 2>/dev/null; then
                 echo "⚠️ Using 'latest' tag as fallback"
                 echo "latest" > /tmp/deployment_image_tag.txt
               else
-                echo "❌ API image does not exist in ECR (checked tags: $IMAGE_TAG, latest)"
+                echo "❌ API image does not exist in ECR (checked tags: \$IMAGE_TAG, latest)"
                 echo ""
                 echo "Attempting to list all images in repository..."
-                IMAGE_LIST=\$(aws ecr describe-images --repository-name $REPO_NAME --region $REGION --query 'imageDetails[*].imageTags[0]' --output text 2>&1)
+                IMAGE_LIST=\$(aws ecr describe-images --repository-name "\$REPO_NAME" --region "\$REGION" --query 'imageDetails[*].imageTags[0]' --output text 2>&1)
                 if [ \$? -eq 0 ] && [ ! -z "\$IMAGE_LIST" ]; then
                   echo "Available image tags:"
                   echo "\$IMAGE_LIST" | tr '\t' '\n'
