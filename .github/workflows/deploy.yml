@@ -378,11 +378,19 @@ jobs:
             export PATH=$PATH:/usr/bin:/usr/local/bin
             
             echo "🔍 Verifying API image exists in ECR..."
-            if ! aws ecr describe-images --repository-name siargaotradingroad-development-api --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
-              echo "❌ API image does not exist in ECR!"
+            REPO_NAME="siargaotradingroad-development-api"
+            
+            if aws ecr describe-images --repository-name $REPO_NAME --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
+              echo "✅ API image with tag $IMAGE_TAG verified in ECR"
+            elif aws ecr describe-images --repository-name $REPO_NAME --image-ids imageTag=latest --region us-east-1 2>/dev/null; then
+              echo "⚠️ Image with tag $IMAGE_TAG not found, but 'latest' tag exists. Using 'latest' tag."
+              export IMAGE_TAG=latest
+            else
+              echo "❌ API image does not exist in ECR (checked tags: $IMAGE_TAG, latest)"
+              echo "Available images:"
+              aws ecr describe-images --repository-name $REPO_NAME --region us-east-1 --query 'imageDetails[*].imageTags' --output table 2>/dev/null || echo "Cannot list images"
               exit 1
             fi
-            echo "✅ API image verified in ECR"
           EOF
 
       - name: Pull API image
@@ -401,8 +409,21 @@ jobs:
             API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
             
             echo "🐳 Pulling API image..."
-            docker pull "\${API_IMAGE}"
-            echo "✅ API image pulled successfully"
+            if docker pull "\${API_IMAGE}" 2>/dev/null; then
+              echo "✅ API image pulled successfully with tag $IMAGE_TAG"
+              echo "$IMAGE_TAG" > /tmp/deployment_image_tag.txt
+            else
+              echo "⚠️ Failed to pull image with tag $IMAGE_TAG, trying 'latest'..."
+              IMAGE_TAG="latest"
+              API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
+              if docker pull "\${API_IMAGE}"; then
+                echo "✅ API image pulled successfully with tag latest"
+                echo "$IMAGE_TAG" > /tmp/deployment_image_tag.txt
+              else
+                echo "❌ Failed to pull API image from ECR"
+                exit 1
+              fi
+            fi
           EOF
 
       - name: Update docker-compose.yml
@@ -417,10 +438,14 @@ jobs:
             cd ~/siargao-trading-road
             
             ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
-            IMAGE_TAG="${{ github.sha }}"
+            if [ -f /tmp/deployment_image_tag.txt ]; then
+              IMAGE_TAG=\$(cat /tmp/deployment_image_tag.txt)
+            else
+              IMAGE_TAG="${{ github.sha }}"
+            fi
             API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
             
-            echo "📝 Updating docker-compose.yml with API image..."
+            echo "📝 Updating docker-compose.yml with API image (tag: \$IMAGE_TAG)..."
             printf 'version: '\''3.8'\''\n\nservices:\n  api:\n    image: %s\n    container_name: siargao-api\n    ports:\n      - "3020:3020"\n    env_file:\n      - .env\n    environment:\n      - PORT=3020\n      - GIN_MODE=release\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\nnetworks:\n  siargao-network:\n    driver: bridge\n' "\${API_IMAGE}" > docker-compose.yml
             echo "✅ docker-compose.yml updated"
           EOF
@@ -450,10 +475,14 @@ jobs:
             cd ~/siargao-trading-road
             
             ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
-            IMAGE_TAG="${{ github.sha }}"
+            if [ -f /tmp/deployment_image_tag.txt ]; then
+              IMAGE_TAG=\$(cat /tmp/deployment_image_tag.txt)
+            else
+              IMAGE_TAG="${{ github.sha }}"
+            fi
             API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
             
-            echo "🔄 Running database migrations..."
+            echo "🔄 Running database migrations (using tag: \$IMAGE_TAG)..."
             docker run --rm --env-file .env \${API_IMAGE} /app/siargao-trading-road migrate || {
               echo "⚠️ Migration command not found, migrations will run on container start"
             }
