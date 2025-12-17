@@ -382,9 +382,10 @@ jobs:
             
             if aws ecr describe-images --repository-name $REPO_NAME --image-ids imageTag=$IMAGE_TAG --region us-east-1 2>/dev/null; then
               echo "✅ API image with tag $IMAGE_TAG verified in ECR"
+              echo "$IMAGE_TAG" > /tmp/deployment_image_tag.txt
             elif aws ecr describe-images --repository-name $REPO_NAME --image-ids imageTag=latest --region us-east-1 2>/dev/null; then
               echo "⚠️ Image with tag $IMAGE_TAG not found, but 'latest' tag exists. Using 'latest' tag."
-              export IMAGE_TAG=latest
+              echo "latest" > /tmp/deployment_image_tag.txt
             else
               echo "❌ API image does not exist in ECR (checked tags: $IMAGE_TAG, latest)"
               echo "Available images:"
