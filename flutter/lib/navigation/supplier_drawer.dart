@@ -229,10 +229,29 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
   }
 
   Widget _buildAssetIcon(String assetPath, bool isActive, BuildContext context) {
-    return ImageIcon(
-      AssetImage(assetPath),
-      size: 30,
-      color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+    IconData fallbackIcon;
+    if (assetPath.contains('suppliers')) {
+      fallbackIcon = Icons.store;
+    } else if (assetPath.contains('orders')) {
+      fallbackIcon = Icons.shopping_cart;
+    } else if (assetPath.contains('products')) {
+      fallbackIcon = Icons.inventory;
+    } else {
+      fallbackIcon = Icons.category;
+    }
+    
+    return Image.asset(
+      assetPath,
+      width: 30,
+      height: 30,
+      errorBuilder: (context, error, stackTrace) {
+        return Icon(
+          fallbackIcon,
+          size: 30,
+          color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+        );
+      },
     );
   }
+
 }

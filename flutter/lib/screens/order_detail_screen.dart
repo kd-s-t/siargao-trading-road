@@ -12,7 +12,6 @@ import 'package:siargao_trading_road/widgets/order_map.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:siargao_trading_road/services/auth_service.dart';
@@ -498,14 +497,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> with SingleTicker
 
         await file.writeAsBytes(response.bodyBytes);
         if (!mounted) return;
-        final xFile = XFile(file.path);
-        final box = context.findRenderObject() as RenderBox?;
-        final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-        if (origin != null) {
-          await Share.shareXFiles([xFile], sharePositionOrigin: origin);
-        } else {
-          await Share.shareXFiles([xFile]);
-        }
 
         if (mounted) {
           SnackbarHelper.showSuccess(context, 'Invoice downloaded successfully');
@@ -667,6 +658,61 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> with SingleTicker
         SnackbarHelper.showError(context, 'Failed to send image: ${e.toString()}');
       }
     }
+  }
+
+  void _showImageModal(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                color: Colors.black87,
+                child: Center(
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.white,
+                            size: 64,
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 16,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -1327,19 +1373,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> with SingleTicker
       return const SizedBox.shrink();
     }
     
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ElevatedButton.icon(
-          onPressed: () {
-            setState(() {
-              _showRatingDialog = true;
-            });
-          },
-          icon: const Icon(Icons.star),
-          label: Text('Rate ${user?.role == 'store' ? _order!.supplier?.name : _order!.store?.name}'),
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ElevatedButton.icon(
+        onPressed: () {
+          setState(() {
+            _showRatingDialog = true;
+          });
+        },
+        icon: const Icon(Icons.star),
+        label: Text('Rate ${user?.role == 'store' ? _order!.supplier?.name : _order!.store?.name}'),
       ),
     );
   }
@@ -1422,16 +1465,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> with SingleTicker
                                               ),
                                             ),
                                           if (message.imageUrl != null && message.imageUrl!.isNotEmpty)
-                                            ClipRRect(
-                                              borderRadius: BorderRadius.circular(8),
-                                              child: Image.network(
-                                                message.imageUrl!,
-                                                fit: BoxFit.cover,
-                                                width: 200,
-                                                height: 200,
-                                                errorBuilder: (context, error, stackTrace) {
-                                                  return const Icon(Icons.broken_image);
-                                                },
+                                            GestureDetector(
+                                              onTap: () => _showImageModal(message.imageUrl!),
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Image.network(
+                                                  message.imageUrl!,
+                                                  fit: BoxFit.cover,
+                                                  width: 200,
+                                                  height: 200,
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return const Icon(Icons.broken_image);
+                                                  },
+                                                ),
                                               ),
                                             )
                                           else if (message.content.isNotEmpty)

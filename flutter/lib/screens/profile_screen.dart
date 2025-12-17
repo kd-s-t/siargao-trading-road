@@ -207,17 +207,23 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     }
   }
 
-  Uri? _buildSocialUri(String type, String raw) {
+  Uri? _buildSocialUri(String type, String raw, {bool webFallback = false}) {
     final trimmed = raw.trim();
     if (trimmed.isEmpty) return null;
     switch (type) {
       case 'email':
         return Uri.parse(trimmed.startsWith('mailto:') ? trimmed : 'mailto:$trimmed');
       case 'facebook':
+        if (webFallback) {
+          return Uri.tryParse(trimmed.startsWith('http') ? trimmed : 'https://$trimmed');
+        }
         return Uri.tryParse('fb://facewebmodal/f?href=${Uri.encodeComponent(trimmed)}');
       case 'instagram': {
         final uri = Uri.tryParse(trimmed);
         if (uri == null) return null;
+        if (webFallback) {
+          return Uri.tryParse(trimmed.startsWith('http') ? trimmed : 'https://$trimmed');
+        }
         final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
         if (segments.isEmpty) return null;
         final username = segments.first.startsWith('@') ? segments.first.substring(1) : segments.first;
@@ -226,6 +232,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
       case 'twitter': {
         final uri = Uri.tryParse(trimmed);
         if (uri == null) return null;
+        if (webFallback) {
+          return Uri.tryParse(trimmed.startsWith('http') ? trimmed : 'https://$trimmed');
+        }
         final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
         if (segments.isEmpty) return null;
         final handle = segments.first.startsWith('@') ? segments.first.substring(1) : segments.first;
@@ -234,6 +243,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
       case 'linkedin': {
         final uri = Uri.tryParse(trimmed);
         if (uri == null) return null;
+        if (webFallback) {
+          return Uri.tryParse(trimmed.startsWith('http') ? trimmed : 'https://$trimmed');
+        }
         final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
         if (segments.length < 2 || segments.first != 'in') return null;
         return Uri.tryParse('linkedin://in/${segments[1]}');
@@ -241,6 +253,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
       case 'youtube': {
         final uri = Uri.tryParse(trimmed);
         if (uri == null) return null;
+        if (webFallback) {
+          return Uri.tryParse(trimmed.startsWith('http') ? trimmed : 'https://$trimmed');
+        }
         if (uri.host.contains('youtu.be')) {
           final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
           if (segments.isEmpty) return null;
@@ -258,6 +273,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
       case 'tiktok': {
         final uri = Uri.tryParse(trimmed);
         if (uri == null) return null;
+        if (webFallback) {
+          return Uri.tryParse(trimmed.startsWith('http') ? trimmed : 'https://$trimmed');
+        }
         final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
         if (segments.isEmpty) return null;
         final username = segments.first.startsWith('@') ? segments.first.substring(1) : segments.first;
@@ -660,13 +678,21 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
             padding: const EdgeInsets.all(8),
             constraints: const BoxConstraints(),
             onPressed: () async {
-              final uri = _buildSocialUri(type, raw);
-              if (uri == null) return;
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              final appUri = _buildSocialUri(type, raw, webFallback: false);
+              if (appUri != null && await canLaunchUrl(appUri)) {
+                try {
+                  await launchUrl(appUri, mode: LaunchMode.externalApplication);
+                  return;
+                } catch (e) {
+                }
+              }
+              
+              final webUri = _buildSocialUri(type, raw, webFallback: true);
+              if (webUri != null && await canLaunchUrl(webUri)) {
+                await launchUrl(webUri, mode: LaunchMode.externalApplication);
               } else {
                 if (!mounted) return;
-                SnackbarHelper.showError(context, 'App not available for $type');
+                SnackbarHelper.showError(context, 'Unable to open $type link');
               }
             },
           );

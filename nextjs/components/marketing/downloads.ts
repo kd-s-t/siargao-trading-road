@@ -1,5 +1,5 @@
 export const getDownloadUrls = () => {
-  const environment = 'development';
+  const environment = 'production';
   const awsRegion = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
   const bucketName = `siargaotradingroad-mobile-builds-${environment}`;
   const s3BaseUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com`;

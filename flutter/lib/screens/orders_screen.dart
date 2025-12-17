@@ -7,7 +7,6 @@ import 'package:siargao_trading_road/models/order.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
 import 'package:siargao_trading_road/utils/snackbar_helper.dart';
@@ -30,6 +29,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
   String? _error;
   int? _updatingStatus;
   int? _updatingPayment;
+  int? _markingInTransit;
+  int? _markingDelivered;
   bool _isLoading = false;
   bool _hasLoaded = false;
 
@@ -138,6 +139,30 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
+  Future<void> _handleMarkInTransit(int orderId) async {
+    setState(() {
+      _markingInTransit = orderId;
+    });
+
+    try {
+      await OrderService.updateOrderStatus(orderId, 'in_transit');
+      await _loadOrders(force: true);
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Order status updated to In Transit');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Failed to update status: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _markingInTransit = null;
+        });
+      }
+    }
+  }
+
   Future<void> _handleDownloadInvoice(Order order) async {
     try {
       SnackbarHelper.showInfo(context, 'Downloading invoice...');
@@ -168,15 +193,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
         await file.writeAsBytes(response.bodyBytes);
         if (!mounted) return;
         
-        final xFile = XFile(file.path);
-        final box = context.findRenderObject() as RenderBox?;
-        final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-        if (origin != null) {
-          await Share.shareXFiles([xFile], sharePositionOrigin: origin);
-        } else {
-          await Share.shareXFiles([xFile]);
-        }
-        
         if (mounted) {
           SnackbarHelper.showSuccess(context, 'Invoice downloaded successfully');
         }
@@ -204,13 +220,37 @@ class _OrdersScreenState extends State<OrdersScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _handleUpdateStatus(orderId, 'delivered');
+              _handleMarkDeliveredConfirm(orderId);
             },
             child: const Text('Confirm'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleMarkDeliveredConfirm(int orderId) async {
+    setState(() {
+      _markingDelivered = orderId;
+    });
+
+    try {
+      await OrderService.updateOrderStatus(orderId, 'delivered');
+      await _loadOrders(force: true);
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Order status updated to Delivered');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Failed to update status: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _markingDelivered = null;
+        });
+      }
+    }
   }
 
   Future<void> _handleMarkPaymentAsPaid(int orderId) async {
@@ -656,10 +696,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                       ),
                                                     if (user?.role == 'supplier' && order.status == 'preparing')
                                                       OutlinedButton(
-                                                        onPressed: _updatingStatus == order.id
+                                                        onPressed: _markingInTransit == order.id
                                                             ? null
-                                                            : () => _handleUpdateStatus(order.id, 'in_transit'),
-                                                        child: _updatingStatus == order.id
+                                                            : () => _handleMarkInTransit(order.id),
+                                                        child: _markingInTransit == order.id
                                                             ? const SizedBox(
                                                                 width: 16,
                                                                 height: 16,
@@ -669,10 +709,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                       ),
                                                     if (user?.role == 'supplier' && order.status == 'in_transit')
                                                       OutlinedButton(
-                                                        onPressed: (_updatingStatus == order.id || (order.paymentMethod == 'gcash' && order.paymentStatus != 'paid'))
+                                                        onPressed: (_markingDelivered == order.id || (order.paymentMethod == 'gcash' && order.paymentStatus != 'paid'))
                                                             ? null
                                                             : () => _handleMarkDelivered(order.id),
-                                                        child: _updatingStatus == order.id
+                                                        child: _markingDelivered == order.id
                                                             ? const SizedBox(
                                                                 width: 16,
                                                                 height: 16,
