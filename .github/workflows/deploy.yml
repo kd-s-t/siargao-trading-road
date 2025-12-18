@@ -534,17 +534,31 @@ jobs:
             echo "🔐 Logging into ECR..."
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "\${ECR_REGISTRY}"
             
-            if [ -f /tmp/deployment_image_tag.txt ]; then
-              IMAGE_TAG=\$(cat /tmp/deployment_image_tag.txt)
-            else
-              IMAGE_TAG="${{ github.sha }}"
-            fi
-            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
+            COMMIT_TAG="${{ github.sha }}"
+            API_IMAGE_COMMIT="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${COMMIT_TAG}"
+            API_IMAGE_LATEST="\${ECR_REGISTRY}/siargaotradingroad-development-api:latest"
             
-            echo "🐳 Ensuring image is pulled: \$API_IMAGE"
-            docker pull "\${API_IMAGE}" || {
-              echo "⚠️ Failed to pull image, docker-compose will attempt to pull"
-            }
+            echo "🐳 Attempting to pull image with commit tag: \$COMMIT_TAG"
+            if docker pull "\${API_IMAGE_COMMIT}" 2>/dev/null; then
+              IMAGE_TAG="\${COMMIT_TAG}"
+              API_IMAGE="\${API_IMAGE_COMMIT}"
+              echo "✅ Image pulled successfully with commit tag"
+            else
+              echo "⚠️ Commit tag not found, trying 'latest'..."
+              if docker pull "\${API_IMAGE_LATEST}"; then
+                IMAGE_TAG="latest"
+                API_IMAGE="\${API_IMAGE_LATEST}"
+                echo "✅ Image pulled successfully with 'latest' tag"
+              else
+                echo "❌ Failed to pull image with both commit tag and 'latest'"
+                exit 1
+              fi
+            fi
+            
+            echo "\$IMAGE_TAG" > /tmp/deployment_image_tag.txt
+            
+            echo "📝 Updating docker-compose.yml with working image tag: \$IMAGE_TAG"
+            printf 'services:\n  api:\n    image: %s\n    container_name: siargao-api\n    ports:\n      - "3020:3020"\n    env_file:\n      - .env\n    environment:\n      - PORT=3020\n      - GIN_MODE=release\n    restart: unless-stopped\n    networks:\n      - siargao-network\n\nnetworks:\n  siargao-network:\n    driver: bridge\n' "\${API_IMAGE}" > docker-compose.yml
             
             echo "🚀 Starting API container with docker-compose..."
             docker compose up -d
