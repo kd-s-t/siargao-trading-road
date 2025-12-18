@@ -520,12 +520,31 @@ jobs:
           EOF
 
       - name: Start API container
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@44.192.83.29 << EOF
             set -e
             source ~/.bashrc
             export PATH=$PATH:/usr/bin:/usr/local/bin
             cd ~/siargao-trading-road
+            
+            ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+            
+            echo "🔐 Logging into ECR..."
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "\${ECR_REGISTRY}"
+            
+            if [ -f /tmp/deployment_image_tag.txt ]; then
+              IMAGE_TAG=\$(cat /tmp/deployment_image_tag.txt)
+            else
+              IMAGE_TAG="${{ github.sha }}"
+            fi
+            API_IMAGE="\${ECR_REGISTRY}/siargaotradingroad-development-api:\${IMAGE_TAG}"
+            
+            echo "🐳 Ensuring image is pulled: \$API_IMAGE"
+            docker pull "\${API_IMAGE}" || {
+              echo "⚠️ Failed to pull image, docker-compose will attempt to pull"
+            }
             
             echo "🚀 Starting API container with docker-compose..."
             docker compose up -d
