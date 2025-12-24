@@ -49,6 +49,33 @@ Base user table for both suppliers and stores.
 - `store_name`: Name of the store
 - `business_license`: Business license number (optional)
 
+### employees
+Employees managed by suppliers and stores.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | SERIAL | PRIMARY KEY | Auto-incrementing employee ID |
+| owner_user_id | INTEGER | FOREIGN KEY, NOT NULL | Reference to users.id (supplier or store owner) |
+| username | VARCHAR | NOT NULL | Employee username, unique per owner |
+| password | VARCHAR | NOT NULL | Bcrypt hashed password |
+| name | VARCHAR | | Employee name |
+| phone | VARCHAR | | Contact phone number |
+| role | VARCHAR(50) | | Optional employee role or label |
+| can_manage_inventory | BOOLEAN | NOT NULL, DEFAULT true | Permission flag |
+| can_manage_orders | BOOLEAN | NOT NULL, DEFAULT true | Permission flag |
+| can_chat | BOOLEAN | NOT NULL, DEFAULT true | Permission flag for messaging |
+| can_change_status | BOOLEAN | NOT NULL, DEFAULT true | Permission flag for status changes |
+| can_rate | BOOLEAN | NOT NULL, DEFAULT false | Employees cannot rate |
+| status_active | BOOLEAN | NOT NULL, DEFAULT true | Active/inactive toggle |
+| created_at | TIMESTAMP | | Record creation timestamp |
+| updated_at | TIMESTAMP | | Record update timestamp |
+| deleted_at | TIMESTAMP | INDEX | Soft delete timestamp |
+
+**Indexes:**
+- `(owner_user_id, username)` (unique)
+- `owner_user_id`
+- `deleted_at`
+
 ## Future Tables (Planned)
 
 ### products

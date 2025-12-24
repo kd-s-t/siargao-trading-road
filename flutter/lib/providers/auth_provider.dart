@@ -6,10 +6,12 @@ import 'package:siargao_trading_road/services/auth_service.dart';
 class AuthProvider with ChangeNotifier {
   User? _user;
   bool _loading = true;
+  bool _isEmployee = false;
 
   User? get user => _user;
   bool get loading => _loading;
   bool get isAuthenticated => _user != null;
+  bool get isEmployee => _isEmployee;
 
   AuthProvider() {
     _checkAuth();
@@ -19,6 +21,7 @@ class AuthProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
+      _isEmployee = prefs.getBool('is_employee') ?? false;
       
       if (token != null) {
         try {
@@ -46,6 +49,45 @@ class AuthProvider with ChangeNotifier {
     final response = await AuthService.login(email, password);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', response.token);
+    await prefs.setBool('is_employee', false);
+    _isEmployee = false;
+    _user = await AuthService.getMe();
+    notifyListeners();
+  }
+
+  Future<void> unifiedLogin(String emailOrUsername, String password) async {
+    final response = await AuthService.unifiedLogin(emailOrUsername, password);
+    final prefs = await SharedPreferences.getInstance();
+    
+    if (response is EmployeeLoginResponse) {
+      await prefs.setString('token', response.token);
+      await prefs.setBool('is_employee', true);
+      _isEmployee = true;
+      _user = response.user;
+    } else if (response is LoginResponse) {
+      await prefs.setString('token', response.token);
+      await prefs.setBool('is_employee', false);
+      _isEmployee = false;
+      _user = response.user;
+    }
+    
+    notifyListeners();
+  }
+
+  Future<void> employeeLogin({
+    required String ownerEmail,
+    required String username,
+    required String password,
+  }) async {
+    final response = await AuthService.employeeLogin(
+      ownerEmail: ownerEmail,
+      username: username,
+      password: password,
+    );
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', response.token);
+    await prefs.setBool('is_employee', true);
+    _isEmployee = true;
     _user = await AuthService.getMe();
     notifyListeners();
   }
@@ -70,6 +112,8 @@ class AuthProvider with ChangeNotifier {
     );
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', response.token);
+    await prefs.setBool('is_employee', false);
+    _isEmployee = false;
     _user = await AuthService.getMe();
     notifyListeners();
   }
@@ -112,11 +156,13 @@ class AuthProvider with ChangeNotifier {
     try {
       await AuthService.logout();
     } catch (e) {
-      // Ignore logout errors - proceed with local logout
+      debugPrint('Logout failed: $e');
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
+    await prefs.remove('is_employee');
     _user = null;
+    _isEmployee = false;
     notifyListeners();
   }
 
@@ -159,7 +205,7 @@ class AuthProvider with ChangeNotifier {
       _user = mergedUser;
       notifyListeners();
     } catch (e) {
-      // Ignore refresh errors - keep existing user data
+      debugPrint('Refresh user failed: $e');
     }
   }
 }

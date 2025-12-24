@@ -5,10 +5,13 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:io';
+import 'package:metaballs/metaballs.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/screens/location_picker_screen.dart';
 import 'package:siargao_trading_road/services/auth_service.dart';
 import 'package:siargao_trading_road/models/user.dart';
+import 'package:siargao_trading_road/models/employee.dart';
+import 'package:siargao_trading_road/services/employee_service.dart';
 import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -51,6 +54,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   double _detailMapZoom = 16;
   final double _detailMapMinZoom = 15;
   final double _detailMapMaxZoom = 18;
+  List<Employee> _employees = [];
+  bool _employeesLoading = false;
+  String? _employeeError;
 
   @override
   void initState() {
@@ -84,6 +90,10 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.refreshUser();
     _loadUserData();
+    final user = authProvider.user;
+    if (user != null && (user.role == 'store' || user.role == 'supplier') && !authProvider.isEmployee) {
+      await _loadEmployees();
+    }
   }
 
   Set<int> _closedDays = {};
@@ -110,6 +120,273 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
         _closedDays = user.closedDaysOfWeek!.split(',').map((d) => int.parse(d.trim())).toSet();
       } else {
         _closedDays = {};
+      }
+    }
+  }
+
+  Future<void> _loadEmployees() async {
+    setState(() {
+      _employeesLoading = true;
+      _employeeError = null;
+    });
+    try {
+      final data = await EmployeeService.fetchEmployees();
+      setState(() {
+        _employees = data;
+      });
+    } catch (e) {
+      setState(() {
+        _employeeError = e.toString().replaceAll('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _employeesLoading = false;
+        });
+      }
+    }
+  }
+
+  String _permissionSummary(Employee employee) {
+    final parts = <String>[];
+    if (employee.canManageInventory) parts.add('Inventory');
+    if (employee.canManageOrders) parts.add('Orders');
+    if (employee.canChat) parts.add('Chat');
+    if (employee.canChangeStatus) parts.add('Status');
+    return parts.isEmpty ? 'No access' : parts.join(', ');
+  }
+
+  Future<void> _toggleEmployeeStatus(Employee employee) async {
+    try {
+      await EmployeeService.updateEmployee(
+        employee.id,
+        statusActive: !employee.statusActive,
+      );
+      await _loadEmployees();
+      if (mounted) {
+        SnackbarHelper.showSuccess(
+          context,
+          !employee.statusActive ? 'Employee activated' : 'Employee deactivated',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, e.toString().replaceAll('Exception: ', ''));
+      }
+    }
+  }
+
+  Future<void> _openEmployeeDialog({Employee? employee}) async {
+    final formKey = GlobalKey<FormState>();
+    final usernameController = TextEditingController(text: employee?.username ?? '');
+    final passwordController = TextEditingController();
+    final nameController = TextEditingController(text: employee?.name ?? '');
+    final phoneController = TextEditingController(text: employee?.phone ?? '');
+    final roleController = TextEditingController(text: employee?.role ?? '');
+    bool canManageInventory = employee?.canManageInventory ?? true;
+    bool canManageOrders = employee?.canManageOrders ?? true;
+    bool canChat = employee?.canChat ?? true;
+    bool canChangeStatus = employee?.canChangeStatus ?? true;
+    bool statusActive = employee?.statusActive ?? true;
+    bool submitting = false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              title: Text(employee == null ? 'Add Employee' : 'Edit Employee'),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: usernameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Username',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Username is required';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          border: const OutlineInputBorder(),
+                          helperText: employee == null ? null : 'Leave blank to keep current password',
+                        ),
+                        validator: (value) {
+                          if (employee == null && (value == null || value.isEmpty)) {
+                            return 'Password is required';
+                          }
+                          if (value != null && value.isNotEmpty && value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: phoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: roleController,
+                        decoration: const InputDecoration(
+                          labelText: 'Role',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SwitchListTile(
+                        value: canManageInventory,
+                        onChanged: (v) {
+                          setModalState(() {
+                            canManageInventory = v;
+                          });
+                        },
+                        title: const Text('Manage Inventory'),
+                      ),
+                      SwitchListTile(
+                        value: canManageOrders,
+                        onChanged: (v) {
+                          setModalState(() {
+                            canManageOrders = v;
+                          });
+                        },
+                        title: const Text('Manage Orders'),
+                      ),
+                      SwitchListTile(
+                        value: canChat,
+                        onChanged: (v) {
+                          setModalState(() {
+                            canChat = v;
+                          });
+                        },
+                        title: const Text('Chat'),
+                      ),
+                      SwitchListTile(
+                        value: canChangeStatus,
+                        onChanged: (v) {
+                          setModalState(() {
+                            canChangeStatus = v;
+                          });
+                        },
+                        title: const Text('Change Status'),
+                      ),
+                      SwitchListTile(
+                        value: statusActive,
+                        onChanged: (v) {
+                          setModalState(() {
+                            statusActive = v;
+                          });
+                        },
+                        title: const Text('Active'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: submitting ? null : () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: submitting
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) {
+                            return;
+                          }
+                          setModalState(() {
+                            submitting = true;
+                          });
+                          try {
+                            if (employee == null) {
+                              await EmployeeService.createEmployee(
+                                username: usernameController.text.trim(),
+                                password: passwordController.text,
+                                name: nameController.text.trim().isEmpty ? null : nameController.text.trim(),
+                                phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+                                role: roleController.text.trim().isEmpty ? null : roleController.text.trim(),
+                                canManageInventory: canManageInventory,
+                                canManageOrders: canManageOrders,
+                                canChat: canChat,
+                                canChangeStatus: canChangeStatus,
+                                statusActive: statusActive,
+                              );
+                            } else {
+                              await EmployeeService.updateEmployee(
+                                employee.id,
+                                username: usernameController.text.trim(),
+                                password: passwordController.text.isEmpty ? null : passwordController.text,
+                                name: nameController.text.trim().isEmpty ? null : nameController.text.trim(),
+                                phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+                                role: roleController.text.trim().isEmpty ? null : roleController.text.trim(),
+                                canManageInventory: canManageInventory,
+                                canManageOrders: canManageOrders,
+                                canChat: canChat,
+                                canChangeStatus: canChangeStatus,
+                                statusActive: statusActive,
+                              );
+                            }
+                            if (context.mounted) {
+                              Navigator.of(context).pop(true);
+                            }
+                          } catch (e) {
+                            setModalState(() {
+                              submitting = false;
+                            });
+                            if (context.mounted) {
+                              SnackbarHelper.showError(context, e.toString().replaceAll('Exception: ', ''));
+                            }
+                          }
+                        },
+                  child: submitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == true) {
+      await _loadEmployees();
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Employee saved');
       }
     }
   }
@@ -370,34 +647,74 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   }
 
   Widget _buildBody(AuthProvider authProvider, User user) {
-    final body = SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildBanner(user),
-          Transform.translate(
-            offset: const Offset(0, -40),
-            child: _buildProfileCard(user),
+    final body = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildBanner(user),
+              Transform.translate(
+                offset: const Offset(0, -40),
+                child: _buildProfileCard(user),
+              ),
+              if ((user.role == 'store' || user.role == 'supplier') && !_editing)
+                Transform.translate(
+                  offset: const Offset(0, -12),
+                  child: _buildOpenCloseCard(user, authProvider),
+                ),
+              _buildDetailsCard(user),
+              if ((user.role == 'store' || user.role == 'supplier'))
+                _buildHoursCard(user),
+              if (!_editing && (user.role == 'store' || user.role == 'supplier') && !authProvider.isEmployee)
+                _buildEmployeesCard(authProvider),
+              if (!_editing) _buildAnalyticsButton(),
+              if (!_editing) _buildLogoutButton(authProvider),
+              const SizedBox(height: kBottomNavigationBarHeight + 24),
+            ],
           ),
-          if ((user.role == 'store' || user.role == 'supplier') && !_editing)
-            Transform.translate(
-              offset: const Offset(0, -12),
-              child: _buildOpenCloseCard(user, authProvider),
-            ),
-          _buildDetailsCard(user),
-          if ((user.role == 'store' || user.role == 'supplier'))
-            _buildHoursCard(user),
-          if (!_editing) _buildAnalyticsButton(),
-          if (!_editing) _buildLogoutButton(authProvider),
-          const SizedBox(height: kBottomNavigationBarHeight + 24),
-        ],
+        ),
       ),
     );
 
+    final layeredBody = Stack(
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Opacity(
+              opacity: 0.06,
+              child: Metaballs(
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
+                  ],
+                  begin: Alignment.bottomRight,
+                  end: Alignment.topLeft,
+                ),
+                metaballs: 8,
+                animationDuration: const Duration(milliseconds: 240),
+                speedMultiplier: 0.6,
+                bounceStiffness: 2.4,
+                minBallRadius: 12,
+                maxBallRadius: 26,
+                glowRadius: 0,
+                glowIntensity: 0,
+              ),
+            ),
+          ),
+        ),
+        body,
+      ],
+    );
+
+    final content = Platform.isIOS ? body : layeredBody;
+
     if (Platform.isAndroid) {
-      return SafeArea(child: body);
+      return SafeArea(child: content);
     }
-    return body;
+    return content;
   }
 
   @override
@@ -684,6 +1001,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                   await launchUrl(appUri, mode: LaunchMode.externalApplication);
                   return;
                 } catch (e) {
+                  debugPrint('Open $type app link failed: $e');
                 }
               }
               
@@ -1144,6 +1462,110 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmployeesCard(AuthProvider authProvider) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Manage Employees',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: _employeesLoading ? null : _loadEmployees,
+                      icon: const Icon(Icons.refresh),
+                      tooltip: 'Refresh',
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _employeesLoading ? null : () => _openEmployeeDialog(),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const Divider(),
+            if (_employeesLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_employeeError != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  _employeeError!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              )
+            else if (_employees.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('No employees yet. Add your first employee.'),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemBuilder: (context, index) {
+                  final employee = _employees[index];
+                  return ListTile(
+                    title: Text(employee.username),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if ((employee.name ?? '').isNotEmpty || (employee.role ?? '').isNotEmpty)
+                          Text(
+                            [
+                              if ((employee.name ?? '').isNotEmpty) employee.name!,
+                              if ((employee.role ?? '').isNotEmpty) employee.role!
+                            ].join(' • '),
+                          ),
+                        Text(_permissionSummary(employee)),
+                      ],
+                    ),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Switch(
+                          value: employee.statusActive,
+                          onChanged: (_) => _toggleEmployeeStatus(employee),
+                        ),
+                        Text(
+                          employee.statusActive ? 'Active' : 'Inactive',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: employee.statusActive ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                    onTap: () => _openEmployeeDialog(employee: employee),
+                  );
+                },
+                separatorBuilder: (context, index) => const Divider(),
+                itemCount: _employees.length,
+              ),
+          ],
         ),
       ),
     );

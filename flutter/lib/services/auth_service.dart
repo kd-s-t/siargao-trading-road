@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:image/image.dart' as img;
 import 'package:siargao_trading_road/models/user.dart';
+import 'package:siargao_trading_road/models/employee.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
 
 class LoginResponse {
@@ -21,6 +22,26 @@ class LoginResponse {
   }
 }
 
+class EmployeeLoginResponse {
+  final String token;
+  final User user;
+  final Employee employee;
+
+  EmployeeLoginResponse({
+    required this.token,
+    required this.user,
+    required this.employee,
+  });
+
+  factory EmployeeLoginResponse.fromJson(Map<String, dynamic> json) {
+    return EmployeeLoginResponse(
+      token: json['token'] as String,
+      user: User.fromJson(json['user'] as Map<String, dynamic>),
+      employee: Employee.fromJson(json['employee'] as Map<String, dynamic>),
+    );
+  }
+}
+
 class AuthService {
   static Future<LoginResponse> login(String email, String password) async {
     final response = await ApiService.post(
@@ -34,6 +55,51 @@ class AuthService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return LoginResponse.fromJson(data);
+    } else {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Login failed');
+    }
+  }
+
+  static Future<dynamic> unifiedLogin(String emailOrUsername, String password) async {
+    final response = await ApiService.post(
+      '/login',
+      body: {
+        'email_or_username': emailOrUsername,
+        'password': password,
+      },
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (data.containsKey('employee')) {
+        return EmployeeLoginResponse.fromJson(data);
+      } else {
+        return LoginResponse.fromJson(data);
+      }
+    } else {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Login failed');
+    }
+  }
+
+  static Future<EmployeeLoginResponse> employeeLogin({
+    required String ownerEmail,
+    required String username,
+    required String password,
+  }) async {
+    final response = await ApiService.post(
+      '/employee/login',
+      body: {
+        'owner_email': ownerEmail,
+        'username': username,
+        'password': password,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return EmployeeLoginResponse.fromJson(data);
     } else {
       final error = jsonDecode(response.body) as Map<String, dynamic>;
       throw Exception(error['error'] ?? 'Login failed');

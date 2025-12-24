@@ -53,6 +53,27 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		if adminLevel, ok := claims["admin_level"]; ok {
 			c.Set("admin_level", adminLevel)
 		}
+		if isEmployee, ok := claims["is_employee"]; ok {
+			c.Set("is_employee", isEmployee)
+		}
+		if employeeID, ok := claims["employee_id"]; ok {
+			c.Set("employee_id", employeeID)
+		}
+		if val, ok := claims["can_manage_inventory"]; ok {
+			c.Set("can_manage_inventory", val)
+		}
+		if val, ok := claims["can_manage_orders"]; ok {
+			c.Set("can_manage_orders", val)
+		}
+		if val, ok := claims["can_chat"]; ok {
+			c.Set("can_chat", val)
+		}
+		if val, ok := claims["can_change_status"]; ok {
+			c.Set("can_change_status", val)
+		}
+		if val, ok := claims["can_rate"]; ok {
+			c.Set("can_rate", val)
+		}
 
 		c.Next()
 	}

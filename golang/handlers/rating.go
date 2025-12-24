@@ -110,6 +110,12 @@ func CreateRating(c *gin.Context) {
 		return
 	}
 
+	empCtx := getEmployeeContext(c)
+	if empCtx.IsEmployee {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employees are not allowed to rate"})
+		return
+	}
+
 	orderID := c.Param("id")
 	var order models.Order
 	if err := database.DB.Where("id = ?", orderID).First(&order).Error; err != nil {

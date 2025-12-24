@@ -3,6 +3,13 @@ cd "$(dirname "$0")/.."
 export PATH="$(go env GOPATH)/bin:$PATH"
 lsof -ti:3020 | xargs kill -9 2>/dev/null || true
 
+echo "Running database migrations..."
+go run main.go migrate
+if [ $? -ne 0 ]; then
+  echo "Migration failed"
+  exit 1
+fi
+
 if command -v air &> /dev/null; then
   air
 else

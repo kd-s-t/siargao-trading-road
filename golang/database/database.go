@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
 	"siargao-trading-road/config"
 	"siargao-trading-road/models"
@@ -10,6 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
@@ -20,17 +22,26 @@ func Connect(cfg *config.Config) error {
 		sslMode = "disable"
 	}
 
-	dsn := "host=" + cfg.DBHost +
-		" user=" + cfg.DBUser +
-		" password=" + cfg.DBPassword +
-		" dbname=" + cfg.DBName +
-		" port=" + cfg.DBPort +
-		" sslmode=" + sslMode + " TimeZone=Asia/Manila"
+	dsn := buildPostgresDSN(cfg, sslMode)
+	fmt.Printf("Connecting to DB host=%s user=%s db=%s sslmode=%s\n", cfg.DBHost, cfg.DBUser, cfg.DBName, sslMode)
+	fmt.Printf("DSN: %s\n", dsn)
 
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger:                                   logger.Default.LogMode(logger.Info),
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get database instance: %w", err)
+	}
+
+	if err := sqlDB.Ping(); err != nil {
+		fmt.Printf("Warning: ping failed: %v\n", err)
 	}
 
 	err = migrateAuditLogsActionColumn()
@@ -48,9 +59,31 @@ func Connect(cfg *config.Config) error {
 		return fmt.Errorf("failed to migrate feature_flags index: %w", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{})
-	if err != nil {
-		return err
+	if DB == nil {
+		return fmt.Errorf("database connection not initialized before AutoMigrate")
+	}
+
+	migrator := DB.Migrator()
+
+	modelsToMigrate := []interface{}{
+		&models.User{},
+		&models.Employee{},
+		&models.FeatureFlag{},
+		&models.Product{},
+		&models.BusinessDocument{},
+		&models.Order{},
+		&models.OrderItem{},
+		&models.Message{},
+		&models.Rating{},
+		&models.AuditLog{},
+		&models.BugReport{},
+		&models.ScheduleException{},
+	}
+
+	for _, model := range modelsToMigrate {
+		if err := migrator.AutoMigrate(model); err != nil {
+			return fmt.Errorf("failed to migrate model %T: %w", model, err)
+		}
 	}
 
 	if os.Getenv("CI") == "" && os.Getenv("GITHUB_ACTIONS") == "" {
@@ -61,6 +94,18 @@ func Connect(cfg *config.Config) error {
 	}
 
 	return nil
+}
+
+func buildPostgresDSN(cfg *config.Config, sslMode string) string {
+	// Use DSN string format which is more reliable
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		url.QueryEscape(cfg.DBUser),
+		url.QueryEscape(cfg.DBPassword),
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBName,
+		sslMode,
+	)
 }
 
 func Migrate() error {
@@ -83,7 +128,7 @@ func Migrate() error {
 		return fmt.Errorf("failed to migrate feature_flags index: %w", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{})
+	err = DB.AutoMigrate(&models.User{}, &models.Employee{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{})
 	if err != nil {
 		return err
 	}
@@ -96,13 +141,15 @@ func migrateAuditLogsActionColumn() error {
 		return fmt.Errorf("database connection not initialized")
 	}
 
-	var columnType string
-	var maxLength *int
-	err := DB.Raw(`
+	var columnType sql.NullString
+	var maxLength sql.NullInt64
+	row := DB.Raw(`
 		SELECT data_type, character_maximum_length
 		FROM information_schema.columns
 		WHERE table_name = 'audit_logs' AND column_name = 'action'
-	`).Row().Scan(&columnType, &maxLength)
+	`).Row()
+
+	err := row.Scan(&columnType, &maxLength)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -111,7 +158,11 @@ func migrateAuditLogsActionColumn() error {
 		return fmt.Errorf("failed to check column type: %w", err)
 	}
 
-	if columnType == "character varying" && maxLength != nil && *maxLength == 255 {
+	if !columnType.Valid {
+		return nil
+	}
+
+	if columnType.String == "character varying" && maxLength.Valid && maxLength.Int64 == 255 {
 		return nil
 	}
 
@@ -191,6 +242,77 @@ func SeedAdmin() error {
 	}
 
 	return DB.Create(&admin).Error
+}
+
+func ConnectWithoutMigrations(cfg *config.Config) error {
+	sslMode := "require"
+	if cfg.DBHost == "localhost" || cfg.DBHost == "127.0.0.1" {
+		sslMode = "disable"
+	}
+
+	dsn := buildPostgresDSN(cfg, sslMode)
+	fmt.Printf("Connecting to DB host=%s user=%s db=%s sslmode=%s\n", cfg.DBHost, cfg.DBUser, cfg.DBName, sslMode)
+
+	var err error
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger:                                   logger.Default.LogMode(logger.Info),
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get database instance: %w", err)
+	}
+
+	if err := sqlDB.Ping(); err != nil {
+		fmt.Printf("Warning: ping failed: %v\n", err)
+	}
+
+	return nil
+}
+
+func FixDatabaseTables() error {
+	if DB == nil {
+		return fmt.Errorf("database connection not initialized")
+	}
+
+	tableNames := []string{"users", "employees", "products", "orders", "order_items", "business_documents", "messages", "ratings", "audit_logs", "bug_reports", "schedule_exceptions", "feature_flags"}
+
+	fmt.Println("Dropping problematic tables to allow clean recreation...")
+	for _, tableName := range tableNames {
+		if err := DB.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE", tableName)).Error; err != nil {
+			fmt.Printf("Warning: Could not drop %s table: %v\n", tableName, err)
+		} else {
+			fmt.Printf("Dropped %s table\n", tableName)
+		}
+	}
+
+	fmt.Println("Re-running migrations...")
+	err := migrateAuditLogsActionColumn()
+	if err != nil {
+		return fmt.Errorf("failed to migrate audit_logs.action column: %w", err)
+	}
+
+	err = migrateRemoveWorkingDaysColumn()
+	if err != nil {
+		return fmt.Errorf("failed to remove working_days column: %w", err)
+	}
+
+	err = migrateFeatureFlagsIndex()
+	if err != nil {
+		return fmt.Errorf("failed to migrate feature_flags index: %w", err)
+	}
+
+	err = DB.AutoMigrate(&models.User{}, &models.Employee{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{})
+	if err != nil {
+		return fmt.Errorf("failed to migrate models after dropping tables: %w", err)
+	}
+
+	fmt.Println("Database tables fixed and migrated successfully")
+	return nil
 }
 
 func getEnv(key, defaultValue string) string {

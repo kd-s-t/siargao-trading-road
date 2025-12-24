@@ -64,6 +64,43 @@ This document outlines the complete business workflows for each user role in the
 - **API**: `POST /api/upload`
 - **Request**: Multipart form data with image file
 
+#### Manage Employees
+- **Action**: Supplier creates and manages employee accounts scoped to their profile
+- **APIs**:
+  - `GET /api/employees` (list employees for the logged-in owner)
+  - `POST /api/employees` (create)
+  - `PATCH /api/employees/:id` (update fields/permissions, activate/deactivate, reset password)
+- **Create/Update Fields**:
+  ```json
+  {
+    "username": "string",
+    "password": "string",             // required on create, optional on update
+    "name": "string",
+    "phone": "string",
+    "role": "string",
+    "can_manage_inventory": true,
+    "can_manage_orders": true,
+    "can_chat": true,
+    "can_change_status": true,
+    "status_active": true
+  }
+  ```
+- **Permissions**:
+  - Employees can manage inventory and orders, chat, and change status based on flags
+  - Employees cannot rate suppliers or stores (`can_rate` is always false)
+  - Only the owner who created the employee can list or modify them
+- **Notes**:
+  - Username must be unique per owner
+  - Use `status_active` to deactivate instead of deleting
+
+**UI Plan (Profile > Manage Employees - Supplier)**
+- Entry: button/section in Profile labeled “Manage Employees”.
+- List: username, name, role, status, permission chips (inventory/orders/chat/status), created date; row actions Edit, Deactivate/Activate, Reset Password.
+- Empty state: call-to-action to add first employee.
+- Add/Edit modal: fields username, password+confirm (create required, edit optional), name, phone, role, toggles for inventory/orders/chat/status, status toggle. Rating not shown.
+- Validation: enforce unique username per owner, password strength, confirm match, basic phone format.
+- Deactivate flow: confirm dialog; allow re-activate.
+
 ### 1.2 Product Management
 
 #### View Own Products
@@ -266,6 +303,43 @@ This document outlines the complete business workflows for each user role in the
 - **Action**: Upload logo or banner image
 - **API**: `POST /api/upload`
 - **Request**: Multipart form data with image file
+
+#### Manage Employees
+- **Action**: Store creates and manages employee accounts scoped to their profile
+- **APIs**:
+  - `GET /api/employees` (list employees for the logged-in owner)
+  - `POST /api/employees` (create)
+  - `PATCH /api/employees/:id` (update fields/permissions, activate/deactivate, reset password)
+- **Create/Update Fields**:
+  ```json
+  {
+    "username": "string",
+    "password": "string",             // required on create, optional on update
+    "name": "string",
+    "phone": "string",
+    "role": "string",
+    "can_manage_inventory": true,
+    "can_manage_orders": true,
+    "can_chat": true,
+    "can_change_status": true,
+    "status_active": true
+  }
+  ```
+- **Permissions**:
+  - Employees can manage inventory and orders, chat, and change status based on flags
+  - Employees cannot rate suppliers or stores (`can_rate` is always false)
+  - Only the owner who created the employee can list or modify them
+- **Notes**:
+  - Username must be unique per owner
+  - Use `status_active` to deactivate instead of deleting
+
+**UI Plan (Profile > Manage Employees - Store)**
+- Entry: button/section in Profile labeled “Manage Employees”.
+- List: username, name, role, status, permission chips (inventory/orders/chat/status), created date; row actions Edit, Deactivate/Activate, Reset Password.
+- Empty state: call-to-action to add first employee.
+- Add/Edit modal: fields username, password+confirm (create required, edit optional), name, phone, role, toggles for inventory/orders/chat/status, status toggle. Rating not shown.
+- Validation: enforce unique username per owner, password strength, confirm match, basic phone format.
+- Deactivate flow: confirm dialog; allow re-activate.
 
 ### 2.2 Supplier Management
 

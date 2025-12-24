@@ -244,56 +244,66 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget _buildBody() {
     final bottomPadding = MediaQuery.of(context).padding.bottom + 72;
     if (_loading && _products.isEmpty) {
-      return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'Search products',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final maxWidth = constraints.maxWidth > 800 ? 800.0 : constraints.maxWidth;
+          return Center(
+            child: SizedBox(
+              width: maxWidth,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              hintText: 'Search products',
+                              prefixIcon: Icon(Icons.search),
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                            onChanged: (value) {
+                              _searchDebounce?.cancel();
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                              _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                                if (mounted) {
+                                  _loadProducts(force: true);
+                                }
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
+                          icon: _bulkUpdatingStocks
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.restart_alt, size: 18),
+                          label: const Text('Empty stocks'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
+                        ),
+                      ],
                     ),
-                    onChanged: (value) {
-                      _searchDebounce?.cancel();
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                      _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-                        if (mounted) {
-                          _loadProducts(force: true);
-                        }
-                      });
-                    },
                   ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
-                  icon: _bulkUpdatingStocks
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.restart_alt, size: 18),
-                  label: const Text('Empty stocks'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  ),
-                ),
-              ],
+                  const Expanded(child: ShimmerProductList()),
+                ],
+              ),
             ),
-          ),
-          const Expanded(child: ShimmerProductList()),
-        ],
+          );
+        },
       );
     }
 
@@ -341,7 +351,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       );
     } else {
       listChild = ListView.builder(
-        padding: EdgeInsets.only(bottom: bottomPadding),
+        padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
         itemCount: _filteredProducts.length,
         itemBuilder: (context, index) {
           final product = _filteredProducts[index];
@@ -465,62 +475,72 @@ class _ProductsScreenState extends State<ProductsScreen> {
       );
     }
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Search products',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth > 800 ? 800.0 : constraints.maxWidth;
+        return Center(
+          child: SizedBox(
+            width: maxWidth,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            hintText: 'Search products',
+                            prefixIcon: Icon(Icons.search),
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
+                          onChanged: (value) {
+                            _searchDebounce?.cancel();
+                            setState(() {
+                              _searchQuery = value;
+                            });
+                            _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                              if (mounted) {
+                                _loadProducts(force: true);
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
+                        icon: _bulkUpdatingStocks
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.restart_alt, size: 18),
+                        label: const Text('Empty stocks'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                      ),
+                    ],
                   ),
-                  onChanged: (value) {
-                    _searchDebounce?.cancel();
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-                      if (mounted) {
-                        _loadProducts(force: true);
-                      }
-                    });
-                  },
                 ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
-                icon: _bulkUpdatingStocks
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.restart_alt, size: 18),
-                label: const Text('Empty stocks'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                Expanded(
+                  child: RefreshIndicator(
+                    edgeOffset: 60,
+                    onRefresh: () => _loadProducts(force: true),
+                    child: listChild,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            edgeOffset: 60,
-            onRefresh: () => _loadProducts(force: true),
-            child: listChild,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 

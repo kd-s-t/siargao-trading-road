@@ -33,7 +33,7 @@ type User struct {
 	TikTok           string         `json:"tiktok"`
 	Website          string         `json:"website"`
 	Role             UserRole       `gorm:"type:varchar(20);not null" json:"role"`
-	AdminLevel       *int           `gorm:"default:1" json:"admin_level,omitempty"`
+	AdminLevel       *int           `json:"admin_level,omitempty"`
 	OpeningTime      string         `json:"opening_time"`
 	ClosingTime      string         `json:"closing_time"`
 	ClosedDaysOfWeek string         `json:"closed_days_of_week"` // Comma-separated: 0=Sunday, 1=Monday, etc.

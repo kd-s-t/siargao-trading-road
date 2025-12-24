@@ -19,7 +19,8 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 	api := r.Group("/api")
 	{
 		api.POST("/register", handlers.Register)
-		api.POST("/login", handlers.Login)
+		api.POST("/login", handlers.UnifiedLogin)
+		api.POST("/employee/login", handlers.EmployeeLogin)
 		api.GET("/public/metrics", handlers.GetPublicMetrics)
 
 		protected := api.Group("/")
@@ -68,6 +69,10 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 			protected.GET("/users/:id", handlers.GetUser)
 			protected.GET("/users/:id/analytics", handlers.GetUserAnalytics)
 			protected.POST("/users/register", handlers.AdminRegisterUser)
+
+			protected.GET("/employees", handlers.ListEmployees)
+			protected.POST("/employees", handlers.CreateEmployee)
+			protected.PATCH("/employees/:id", handlers.UpdateEmployee)
 
 			protected.GET("/dashboard/analytics", handlers.GetDashboardAnalytics)
 

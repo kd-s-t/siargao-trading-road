@@ -88,6 +88,23 @@ class ApiService {
     }
   }
 
+  static Future<http.Response> patch(String endpoint, {Map<String, dynamic>? body}) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.patch(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: headers,
+        body: body != null ? jsonEncode(body) : null,
+      ).timeout(const Duration(seconds: 30));
+      return response;
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('Network Error')) {
+        throw Exception('Cannot connect to server. Please check your API URL.');
+      }
+      rethrow;
+    }
+  }
+
   static Future<http.Response> delete(String endpoint) async {
     try {
       final headers = await _getHeaders();

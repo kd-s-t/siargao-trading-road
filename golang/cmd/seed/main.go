@@ -13,6 +13,23 @@ func main() {
 		log.Fatal("Failed to load config:", err)
 	}
 
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "fix-tables":
+			log.Println("Fixing database tables (dropping and recreating)...")
+			err = database.ConnectWithoutMigrations(cfg)
+			if err != nil {
+				log.Fatal("Failed to connect to database:", err)
+			}
+			err = database.FixDatabaseTables()
+			if err != nil {
+				log.Fatal("Failed to fix tables:", err)
+			}
+			log.Println("Database tables fixed successfully")
+			return
+		}
+	}
+
 	err = database.Connect(cfg)
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)

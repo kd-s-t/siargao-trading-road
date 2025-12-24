@@ -41,6 +41,11 @@ func GetProducts(c *gin.Context) {
 		return
 	}
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if empCtx.IsEmployee && !empCtx.CanManageInventory {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employee lacks inventory permission"})
+		return
+	}
 	includeDeleted := c.Query("include_deleted") == "true"
 	search := strings.TrimSpace(strings.ToLower(c.Query("search")))
 
@@ -75,6 +80,11 @@ func GetProduct(c *gin.Context) {
 		return
 	}
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if empCtx.IsEmployee && !empCtx.CanManageInventory {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employee lacks inventory permission"})
+		return
+	}
 
 	var product models.Product
 	query := database.DB.Preload("Supplier").Where("id = ?", id)
@@ -98,6 +108,11 @@ func CreateProduct(c *gin.Context) {
 		return
 	}
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if empCtx.IsEmployee && !empCtx.CanManageInventory {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employee lacks inventory permission"})
+		return
+	}
 
 	var req CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -164,6 +179,11 @@ func UpdateProduct(c *gin.Context) {
 		return
 	}
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if empCtx.IsEmployee && !empCtx.CanManageInventory {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employee lacks inventory permission"})
+		return
+	}
 
 	var product models.Product
 	query := database.DB.Where("id = ?", id)
@@ -230,6 +250,11 @@ func DeleteProduct(c *gin.Context) {
 		return
 	}
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if empCtx.IsEmployee && !empCtx.CanManageInventory {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employee lacks inventory permission"})
+		return
+	}
 
 	var product models.Product
 	query := database.DB.Where("id = ?", id)
@@ -259,6 +284,11 @@ func RestoreProduct(c *gin.Context) {
 		return
 	}
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if empCtx.IsEmployee && !empCtx.CanManageInventory {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employee lacks inventory permission"})
+		return
+	}
 
 	var product models.Product
 	query := database.DB.Unscoped().Where("id = ?", id)
@@ -287,6 +317,11 @@ func ResetProductStocks(c *gin.Context) {
 		return
 	}
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if empCtx.IsEmployee && !empCtx.CanManageInventory {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employee lacks inventory permission"})
+		return
+	}
 
 	if role != "supplier" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers can reset stocks"})
@@ -314,6 +349,11 @@ func BulkCreateProducts(c *gin.Context) {
 		return
 	}
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if empCtx.IsEmployee && !empCtx.CanManageInventory {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employee lacks inventory permission"})
+		return
+	}
 
 	var req []CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

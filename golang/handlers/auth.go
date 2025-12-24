@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"siargao-trading-road/config"
@@ -44,9 +45,26 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type EmployeeLoginRequest struct {
+	OwnerEmail string `json:"owner_email" binding:"required,email"`
+	Username   string `json:"username" binding:"required"`
+	Password   string `json:"password" binding:"required"`
+}
+
+type UnifiedLoginRequest struct {
+	EmailOrUsername string `json:"email_or_username" binding:"required"`
+	Password        string `json:"password" binding:"required"`
+}
+
 type AuthResponse struct {
 	Token string      `json:"token"`
 	User  models.User `json:"user"`
+}
+
+type EmployeeAuthResponse struct {
+	Token    string          `json:"token"`
+	User     models.User     `json:"user"`
+	Employee models.Employee `json:"employee"`
 }
 
 func getFeatureFlags(userID uint) []string {
@@ -273,6 +291,114 @@ func Login(c *gin.Context) {
 	})
 }
 
+func UnifiedLogin(c *gin.Context) {
+	var req UnifiedLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	emailOrUsername := req.EmailOrUsername
+	password := req.Password
+
+	if strings.Contains(emailOrUsername, "@") {
+		var user models.User
+		if err := database.DB.Where("email = ?", emailOrUsername).First(&user).Error; err == nil {
+			if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err == nil {
+				now := time.Now()
+				user.LastLogin = &now
+				database.DB.Save(&user)
+
+				token, err := generateToken(user, c.MustGet("config").(*config.Config))
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+					return
+				}
+
+				user.Password = ""
+				c.JSON(http.StatusOK, AuthResponse{
+					Token: token,
+					User:  user,
+				})
+				return
+			}
+		}
+	} else {
+		var employee models.Employee
+		var owner models.User
+		if err := database.DB.Where("username = ?", emailOrUsername).First(&employee).Error; err == nil {
+			if err := database.DB.Where("id = ? AND role IN ?", employee.OwnerUserID, []models.UserRole{models.RoleSupplier, models.RoleStore}).First(&owner).Error; err == nil {
+				if employee.StatusActive {
+					if err := bcrypt.CompareHashAndPassword([]byte(employee.Password), []byte(password)); err == nil {
+						token, err := generateEmployeeToken(owner, employee, c.MustGet("config").(*config.Config))
+						if err != nil {
+							c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+							return
+						}
+
+						employee.Password = ""
+						owner.Password = ""
+
+						c.JSON(http.StatusOK, EmployeeAuthResponse{
+							Token:    token,
+							User:     owner,
+							Employee: employee,
+						})
+						return
+					}
+				}
+			}
+		}
+	}
+
+	c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+}
+
+func EmployeeLogin(c *gin.Context) {
+	var req EmployeeLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var owner models.User
+	if err := database.DB.Where("email = ? AND role IN ?", req.OwnerEmail, []models.UserRole{models.RoleSupplier, models.RoleStore}).First(&owner).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		return
+	}
+
+	var employee models.Employee
+	if err := database.DB.Where("owner_user_id = ? AND username = ?", owner.ID, req.Username).First(&employee).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		return
+	}
+
+	if !employee.StatusActive {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employee account is inactive"})
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(employee.Password), []byte(req.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		return
+	}
+
+	token, err := generateEmployeeToken(owner, employee, c.MustGet("config").(*config.Config))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		return
+	}
+
+	employee.Password = ""
+	owner.Password = ""
+
+	c.JSON(http.StatusOK, EmployeeAuthResponse{
+		Token:    token,
+		User:     owner,
+		Employee: employee,
+	})
+}
+
 func generateToken(user models.User, cfg *config.Config) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": user.ID,
@@ -282,6 +408,25 @@ func generateToken(user models.User, cfg *config.Config) (string, error) {
 	}
 	if user.AdminLevel != nil {
 		claims["admin_level"] = *user.AdminLevel
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(cfg.JWTSecret))
+}
+
+func generateEmployeeToken(owner models.User, employee models.Employee, cfg *config.Config) (string, error) {
+	claims := jwt.MapClaims{
+		"user_id":              owner.ID,
+		"email":                owner.Email,
+		"role":                 owner.Role,
+		"is_employee":          true,
+		"employee_id":          employee.ID,
+		"can_manage_inventory": employee.CanManageInventory,
+		"can_manage_orders":    employee.CanManageOrders,
+		"can_chat":             employee.CanChat,
+		"can_change_status":    employee.CanChangeStatus,
+		"can_rate":             employee.CanRate,
+		"exp":                  time.Now().Add(time.Hour * 24 * 7).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

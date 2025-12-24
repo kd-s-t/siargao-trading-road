@@ -50,6 +50,10 @@ func getUserID(c *gin.Context) (uint, error) {
 func GetOrders(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
 	status := c.Query("status")
 
 	var orders []models.Order
@@ -80,6 +84,10 @@ func GetOrder(c *gin.Context) {
 	id := c.Param("id")
 	userID, _ := c.Get("user_id")
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
 
 	var order models.Order
 	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").Where("id = ?", id)
@@ -133,6 +141,13 @@ func UpdateOrderStatus(c *gin.Context) {
 	id := c.Param("id")
 	userID, _ := c.Get("user_id")
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
+	if !ensureEmployeePermission(c, empCtx.CanChangeStatus, "change_status") {
+		return
+	}
 
 	var order models.Order
 	query := database.DB.Where("id = ?", id)
@@ -200,6 +215,11 @@ func CreateDraftOrder(c *gin.Context) {
 		return
 	}
 
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
+
 	role, _ := c.Get("role")
 
 	if role != "store" {
@@ -260,6 +280,11 @@ func AddOrderItem(c *gin.Context) {
 	userID, err := getUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
 		return
 	}
 
@@ -345,6 +370,10 @@ func UpdateOrderItem(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
 		return
 	}
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
 	role, _ := c.Get("role")
 
 	if role != "store" {
@@ -416,6 +445,11 @@ func RemoveOrderItem(c *gin.Context) {
 		return
 	}
 
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
+
 	role, _ := c.Get("role")
 
 	if role != "store" {
@@ -462,6 +496,11 @@ func SubmitOrder(c *gin.Context) {
 	userID, err := getUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
 		return
 	}
 
@@ -597,6 +636,14 @@ func MarkPaymentAsPaid(c *gin.Context) {
 		return
 	}
 
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
+	if !ensureEmployeePermission(c, empCtx.CanChangeStatus, "change_status") {
+		return
+	}
+
 	role, _ := c.Get("role")
 	if role != "supplier" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers can mark payment as paid"})
@@ -640,6 +687,14 @@ func MarkPaymentAsPending(c *gin.Context) {
 	userID, err := getUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
+	if !ensureEmployeePermission(c, empCtx.CanChangeStatus, "change_status") {
 		return
 	}
 
@@ -688,6 +743,11 @@ func GetDraftOrder(c *gin.Context) {
 		return
 	}
 
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
+
 	role, _ := c.Get("role")
 	supplierID := c.Query("supplier_id")
 
@@ -716,6 +776,10 @@ func SendInvoiceEmail(c *gin.Context) {
 	id := c.Param("id")
 	userID, _ := c.Get("user_id")
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
 
 	var order models.Order
 	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").Where("id = ?", id)
@@ -747,6 +811,10 @@ func DownloadInvoice(c *gin.Context) {
 	id := c.Param("id")
 	userID, _ := c.Get("user_id")
 	role, _ := c.Get("role")
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
 
 	var order models.Order
 	query := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").Where("id = ?", id)
@@ -1023,6 +1091,10 @@ func GetOrderMessages(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
 		return
 	}
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
 	role, _ := c.Get("role")
 
 	var order models.Order
@@ -1063,6 +1135,14 @@ func CreateOrderMessage(c *gin.Context) {
 	userID, err := getUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	empCtx := getEmployeeContext(c)
+	if !ensureEmployeePermission(c, empCtx.CanManageOrders, "orders") {
+		return
+	}
+	if !ensureEmployeePermission(c, empCtx.CanChat, "chat") {
 		return
 	}
 
