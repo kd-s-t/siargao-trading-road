@@ -26,7 +26,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingPage(
       title: 'Welcome to Siargao Trading Road',
       body: 'Connect with local suppliers and stores in Siargao. Buy and sell products with ease.',
-      image: const Icon(Icons.store, size: 120, color: Color(0xFF1976D2)),
+      image: Image.asset(
+        'assets/splash.png',
+        width: 300,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return const Icon(Icons.store, size: 120, color: Color(0xFF1976D2));
+        },
+      ),
     ),
     OnboardingPage(
       title: 'Manage Your Products',
@@ -68,7 +75,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -96,10 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          color: Colors.transparent,
-                          child: page.image,
-                        ),
+                        page.image,
                         const SizedBox(height: 48),
                         Text(
                           page.title,

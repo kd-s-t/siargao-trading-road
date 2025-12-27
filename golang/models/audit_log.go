@@ -10,6 +10,8 @@ type AuditLog struct {
 	ID           uint           `gorm:"primaryKey" json:"id"`
 	UserID       *uint          `gorm:"index" json:"user_id,omitempty"`
 	User         *User          `gorm:"foreignKey:UserID;references:ID" json:"user,omitempty"`
+	EmployeeID   *uint          `gorm:"index" json:"employee_id,omitempty"`
+	Employee     *Employee      `gorm:"foreignKey:EmployeeID;references:ID" json:"employee,omitempty"`
 	Role         string         `gorm:"type:varchar(20);index" json:"role,omitempty"`
 	Action       string         `gorm:"type:varchar(255);not null" json:"action"`
 	Endpoint     string         `gorm:"type:varchar(255);not null" json:"endpoint"`

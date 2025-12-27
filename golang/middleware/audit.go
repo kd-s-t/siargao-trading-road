@@ -27,6 +27,7 @@ func AuditLogMiddleware() gin.HandlerFunc {
 		startTime := time.Now()
 
 		var userID *uint
+		var employeeID *uint
 		var role string
 		if uid, exists := c.Get("user_id"); exists {
 			if id, ok := uid.(uint); ok {
@@ -34,6 +35,17 @@ func AuditLogMiddleware() gin.HandlerFunc {
 			} else if idFloat, ok := uid.(float64); ok {
 				id := uint(idFloat)
 				userID = &id
+			}
+		}
+		if eid, exists := c.Get("employee_id"); exists {
+			if id, ok := eid.(uint); ok {
+				employeeID = &id
+			} else if idFloat, ok := eid.(float64); ok {
+				id := uint(idFloat)
+				employeeID = &id
+			} else if idInt, ok := eid.(int); ok {
+				id := uint(idInt)
+				employeeID = &id
 			}
 		}
 		if r, exists := c.Get("role"); exists {
@@ -101,6 +113,7 @@ func AuditLogMiddleware() gin.HandlerFunc {
 
 		auditLog := models.AuditLog{
 			UserID:       userID,
+			EmployeeID:   employeeID,
 			Role:         role,
 			Action:       c.Request.Method + " " + fullPath,
 			Endpoint:     c.Request.URL.Path,

@@ -19,6 +19,7 @@ func GetAuditLogs(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
 	role := c.Query("role")
 	userID := c.Query("user_id")
+	employeeID := c.Query("employee_id")
 	endpoint := c.Query("endpoint")
 
 	if page < 1 {
@@ -42,6 +43,12 @@ func GetAuditLogs(c *gin.Context) {
 		}
 	}
 
+	if employeeID != "" {
+		if id, err := strconv.ParseUint(employeeID, 10, 32); err == nil {
+			query = query.Where("employee_id = ?", uint(id))
+		}
+	}
+
 	if endpoint != "" {
 		query = query.Where("endpoint LIKE ?", "%"+endpoint+"%")
 	}
@@ -54,6 +61,7 @@ func GetAuditLogs(c *gin.Context) {
 		Limit(limit).
 		Offset(offset).
 		Preload("User").
+		Preload("Employee").
 		Find(&auditLogs)
 
 	c.JSON(http.StatusOK, gin.H{

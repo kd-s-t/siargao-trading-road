@@ -62,10 +62,17 @@ class AuthService {
   }
 
   static Future<dynamic> unifiedLogin(String emailOrUsername, String password) async {
+    if (emailOrUsername.trim().isEmpty) {
+      throw Exception('Email or username is required');
+    }
+    if (password.isEmpty) {
+      throw Exception('Password is required');
+    }
+    
     final response = await ApiService.post(
       '/login',
       body: {
-        'email_or_username': emailOrUsername,
+        'email_or_username': emailOrUsername.trim(),
         'password': password,
       },
     );

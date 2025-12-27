@@ -13,6 +13,8 @@ import 'package:siargao_trading_road/models/user.dart';
 import 'package:siargao_trading_road/models/employee.dart';
 import 'package:siargao_trading_road/services/employee_service.dart';
 import 'package:siargao_trading_road/utils/snackbar_helper.dart';
+import 'package:siargao_trading_road/screens/employee_audit_logs_screen.dart';
+import 'package:siargao_trading_road/screens/employee_detail_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool? useScaffold;
@@ -147,13 +149,29 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     }
   }
 
-  String _permissionSummary(Employee employee) {
-    final parts = <String>[];
-    if (employee.canManageInventory) parts.add('Inventory');
-    if (employee.canManageOrders) parts.add('Orders');
-    if (employee.canChat) parts.add('Chat');
-    if (employee.canChangeStatus) parts.add('Status');
-    return parts.isEmpty ? 'No access' : parts.join(', ');
+  Widget _buildPermissionChip(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _toggleEmployeeStatus(Employee employee) async {
@@ -647,6 +665,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   }
 
   Widget _buildBody(AuthProvider authProvider, User user) {
+    final isTablet = MediaQuery.of(context).size.width >= 600;
     final body = SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -664,9 +683,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
           _buildDetailsCard(user),
           if ((user.role == 'store' || user.role == 'supplier'))
             _buildHoursCard(user),
-          if (!_editing && (user.role == 'store' || user.role == 'supplier') && !authProvider.isEmployee)
+          if (!_editing && (user.role == 'store' || user.role == 'supplier') && !authProvider.isEmployee && !isTablet)
             _buildEmployeesCard(authProvider),
-          if (!_editing) _buildAnalyticsButton(),
+          if (!_editing && !isTablet) _buildAnalyticsButton(),
           if (!_editing) _buildLogoutButton(authProvider),
           const SizedBox(height: kBottomNavigationBarHeight + 24),
         ],
@@ -1523,41 +1542,142 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                 physics: const NeverScrollableScrollPhysics(),
                 itemBuilder: (context, index) {
                   final employee = _employees[index];
-                  return ListTile(
-                    title: Text(employee.username),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if ((employee.name ?? '').isNotEmpty || (employee.role ?? '').isNotEmpty)
-                          Text(
-                            [
-                              if ((employee.name ?? '').isNotEmpty) employee.name!,
-                              if ((employee.role ?? '').isNotEmpty) employee.role!
-                            ].join(' • '),
-                          ),
-                        Text(_permissionSummary(employee)),
-                      ],
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Switch(
-                          value: employee.statusActive,
-                          onChanged: (_) => _toggleEmployeeStatus(employee),
-                        ),
-                        Text(
-                          employee.statusActive ? 'Active' : 'Inactive',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: employee.statusActive ? Colors.green : Colors.red,
+                  return InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EmployeeDetailScreen(
+                            employee: employee,
                           ),
                         ),
-                      ],
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        employee.username,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: employee.statusActive
+                                            ? Colors.green.withOpacity(0.1)
+                                            : Colors.grey.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        employee.statusActive ? 'Active' : 'Inactive',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: employee.statusActive
+                                              ? Colors.green.shade700
+                                              : Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if ((employee.name ?? '').isNotEmpty || (employee.role ?? '').isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      [
+                                        if ((employee.name ?? '').isNotEmpty) employee.name!,
+                                        if ((employee.role ?? '').isNotEmpty) employee.role!
+                                      ].join(' • '),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: [
+                                      if (employee.canManageInventory)
+                                        _buildPermissionChip('Inventory', Icons.inventory_2_outlined),
+                                      if (employee.canManageOrders)
+                                        _buildPermissionChip('Orders', Icons.shopping_cart_outlined),
+                                      if (employee.canChat)
+                                        _buildPermissionChip('Chat', Icons.chat_outlined),
+                                      if (employee.canChangeStatus)
+                                        _buildPermissionChip('Status', Icons.toggle_on_outlined),
+                                      if (!employee.canManageInventory &&
+                                          !employee.canManageOrders &&
+                                          !employee.canChat &&
+                                          !employee.canChangeStatus)
+                                        _buildPermissionChip('No access', Icons.block_outlined),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Switch(
+                                value: employee.statusActive,
+                                onChanged: (_) => _toggleEmployeeStatus(employee),
+                              ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.history, size: 20),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => EmployeeAuditLogsScreen(
+                                            employee: employee,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    tooltip: 'View audit logs',
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined, size: 20),
+                                    onPressed: () => _openEmployeeDialog(employee: employee),
+                                    tooltip: 'Edit employee',
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                    onTap: () => _openEmployeeDialog(employee: employee),
                   );
                 },
-                separatorBuilder: (context, index) => const Divider(),
+                separatorBuilder: (context, index) => const SizedBox(height: 4),
                 itemCount: _employees.length,
               ),
           ],

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:siargao_trading_road/models/employee.dart';
 import 'package:siargao_trading_road/services/employee_service.dart';
 import 'package:siargao_trading_road/utils/snackbar_helper.dart';
+import 'package:siargao_trading_road/screens/employee_audit_logs_screen.dart';
+import 'package:siargao_trading_road/screens/employee_detail_screen.dart';
 
 class EmployeesScreen extends StatefulWidget {
   final bool? useScaffold;
@@ -320,12 +322,18 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               ],
             ),
           SliverPadding(
-            padding: EdgeInsets.all(useScaffold ? 16 : 0),
+            padding: EdgeInsets.symmetric(
+              horizontal: isTablet ? 24 : (useScaffold ? 16 : 0),
+              vertical: useScaffold ? 16 : 0,
+            ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 if (!useScaffold)
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 24 : 16,
+                      vertical: 16,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -409,16 +417,22 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                 else
                   ..._employees.map((employee) {
                     return Card(
-                      margin: EdgeInsets.only(bottom: isTablet ? 16 : 8),
+                      margin: EdgeInsets.only(
+                        bottom: isTablet ? 16 : 8,
+                        left: isTablet ? 0 : 0,
+                        right: isTablet ? 0 : 0,
+                      ),
                       elevation: isTablet ? 1 : 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(isTablet ? 12 : 0),
                       ),
                       child: ListTile(
                         contentPadding: EdgeInsets.symmetric(
-                          horizontal: isTablet ? 16 : 16,
-                          vertical: isTablet ? 8 : 8,
+                          horizontal: isTablet ? 20 : 16,
+                          vertical: isTablet ? 16 : 8,
                         ),
+                        isThreeLine: true,
+                        dense: !isTablet,
                         title: Text(
                           employee.username,
                           style: isTablet
@@ -431,6 +445,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                           padding: const EdgeInsets.only(top: 4),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               if ((employee.name ?? '').isNotEmpty || (employee.role ?? '').isNotEmpty)
                                 Text(
@@ -450,31 +465,77 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                             ],
                           ),
                         ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EmployeeDetailScreen(
+                                employee: employee,
+                              ),
+                            ),
+                          );
+                        },
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Switch(
-                                  value: employee.statusActive,
-                                  onChanged: (_) => _toggleEmployeeStatus(employee),
-                                ),
-                                Text(
-                                  employee.statusActive ? 'Active' : 'Inactive',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: employee.statusActive 
-                                        ? Colors.green 
-                                        : Theme.of(context).colorScheme.error,
+                            SizedBox(
+                              width: isTablet ? 80 : 70,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Switch(
+                                    value: employee.statusActive,
+                                    onChanged: (_) => _toggleEmployeeStatus(employee),
+                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    employee.statusActive ? 'Active' : 'Inactive',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      height: 1.0,
+                                      color: employee.statusActive 
+                                          ? Colors.green 
+                                          : Theme.of(context).colorScheme.error,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: const Icon(Icons.history),
+                              tooltip: 'View audit logs',
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EmployeeAuditLogsScreen(
+                                      employee: employee,
+                                    ),
+                                  ),
+                                );
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
                             ),
                             IconButton(
                               icon: const Icon(Icons.edit_outlined),
                               tooltip: 'Edit employee',
                               onPressed: () => _openEmployeeDialog(employee: employee),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
                             ),
                           ],
                         ),

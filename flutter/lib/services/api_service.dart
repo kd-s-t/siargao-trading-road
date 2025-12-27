@@ -20,7 +20,7 @@ class ApiService {
       }
     }
     
-    return 'https://siargaotradingroad.com/api';
+    return 'http://ec2-44-192-83-29.compute-1.amazonaws.com/api';
   }
 
   static Future<Map<String, String>> _getHeaders() async {

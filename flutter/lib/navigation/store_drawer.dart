@@ -67,6 +67,9 @@ class _StoreDrawerState extends State<StoreDrawer> {
 
   AppBar? _buildAppBar(BuildContext context) {
     final isEditing = _profileEditKey.currentState?.isEditing ?? false;
+    final isTablet = _isTablet(context);
+    final isPhone = !isTablet;
+    
     switch (_currentIndex) {
       case 0:
         return AppBar(
@@ -77,9 +80,48 @@ class _StoreDrawerState extends State<StoreDrawer> {
           title: const Text('Orders'),
         );
       case 2:
-        return AppBar(
-          title: const Text('Analytics'),
-        );
+        if (isPhone) {
+          return AppBar(
+            title: const Text('Profile'),
+            automaticallyImplyLeading: false,
+            actions: [
+              if (isEditing)
+                TextButton(
+                  onPressed: () {
+                    final state = _profileEditKey.currentState;
+                    if (state != null) {
+                      state.toggleEdit();
+                    }
+                  },
+                  child: const Text('Cancel'),
+                ),
+              if (!isEditing)
+                TextButton(
+                  onPressed: () {
+                    final state = _profileEditKey.currentState;
+                    if (state != null) {
+                      state.toggleEdit();
+                    }
+                  },
+                  child: const Text('Edit'),
+                ),
+              if (isEditing)
+                TextButton(
+                  onPressed: () {
+                    final state = _profileEditKey.currentState;
+                    if (state != null) {
+                      state.handleSave();
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+            ],
+          );
+        } else {
+          return AppBar(
+            title: const Text('Analytics'),
+          );
+        }
       case 3:
         return AppBar(
           title: const Text('Manage Employees'),
@@ -133,13 +175,18 @@ class _StoreDrawerState extends State<StoreDrawer> {
 
   void _onNavigationTap(int index) {
     if (!mounted || !_pageController.hasClients) return;
+    final isTablet = _isTablet(context);
     _safeSetState(() {
       _currentIndex = index;
     });
     _pageController.animateToPage(
       index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+      duration: isTablet 
+        ? const Duration(milliseconds: 400)
+        : const Duration(milliseconds: 300),
+      curve: isTablet 
+        ? Curves.easeOutCubic
+        : Curves.easeInOut,
     ).catchError((_) {});
   }
 
@@ -196,6 +243,26 @@ class _StoreDrawerState extends State<StoreDrawer> {
           label: Text('Profile'),
         ),
       ],
+      trailing: Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: IconButton(
+                icon: const Icon(Icons.logout, color: Colors.red),
+                tooltip: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -263,7 +330,7 @@ class _StoreDrawerState extends State<StoreDrawer> {
                   items: [
                     _buildAssetIcon('assets/suppliers.png', _currentIndex == 0, context),
                     _buildAssetIcon('assets/orders.png', _currentIndex == 1, context),
-                    _buildProfileIcon(authProvider, _currentIndex == 4, context),
+                    _buildProfileIcon(authProvider, _currentIndex == 2, context),
                   ],
                 ),
               ),

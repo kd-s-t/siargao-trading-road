@@ -97,13 +97,18 @@ class _AdminDrawerState extends State<AdminDrawer> {
 
   void _onNavigationTap(int index) {
     if (mounted) {
+      final isTablet = _isTablet(context);
       setState(() {
         _currentIndex = index;
       });
       _pageController.animateToPage(
         index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: isTablet 
+          ? const Duration(milliseconds: 400)
+          : const Duration(milliseconds: 300),
+        curve: isTablet 
+          ? Curves.easeOutCubic
+          : Curves.easeInOut,
       );
     }
   }
@@ -146,6 +151,26 @@ class _AdminDrawerState extends State<AdminDrawer> {
           label: Text('Profile'),
         ),
       ],
+      trailing: Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: IconButton(
+                icon: const Icon(Icons.logout, color: Colors.red),
+                tooltip: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
