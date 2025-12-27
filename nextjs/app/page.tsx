@@ -255,6 +255,32 @@ export default function Home() {
         </div>
       </div>
 
+      <div className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">See It In Action</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">Experience the app with these screenshots</p>
+          </div>
+          <motion.div
+            className="grid md:grid-cols-3 gap-8"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={stagger}
+          >
+            <motion.div variants={fadeIn} className="flex justify-center">
+              <img src="/s1.png" alt="App screenshot 1" className="rounded-2xl shadow-2xl max-w-full h-auto" />
+            </motion.div>
+            <motion.div variants={fadeIn} className="flex justify-center">
+              <img src="/s2.png" alt="App screenshot 2" className="rounded-2xl shadow-2xl max-w-full h-auto" />
+            </motion.div>
+            <motion.div variants={fadeIn} className="flex justify-center">
+              <img src="/s3.png" alt="App screenshot 3" className="rounded-2xl shadow-2xl max-w-full h-auto" />
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
+
       <div id="download" className="py-24 bg-gradient-to-br from-cyan-500 via-blue-600 to-blue-800 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6TTAgNDRjMC02LjYyNyA1LjM3My0xMiAxMi0xMnMxMiA1LjM3MyAxMiAxMi01LjM3MyAxMi0xMiAxMi0xMi01LjM3My0xMi0xMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40" />
         <motion.div
