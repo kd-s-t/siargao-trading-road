@@ -244,66 +244,88 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget _buildBody() {
     final bottomPadding = MediaQuery.of(context).padding.bottom + 72;
     if (_loading && _products.isEmpty) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final maxWidth = constraints.maxWidth > 800 ? 800.0 : constraints.maxWidth;
-          return Center(
-            child: SizedBox(
-              width: maxWidth,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            decoration: const InputDecoration(
-                              hintText: 'Search products',
-                              prefixIcon: Icon(Icons.search),
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            ),
-                            onChanged: (value) {
-                              _searchDebounce?.cancel();
-                              setState(() {
-                                _searchQuery = value;
-                              });
-                              _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-                                if (mounted) {
-                                  _loadProducts(force: true);
-                                }
-                              });
-                            },
-                          ),
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 5),
+            child: Builder(
+              builder: (context) {
+                final isTablet = MediaQuery.of(context).size.width >= 600;
+                final colorScheme = Theme.of(context).colorScheme;
+                return Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search products',
+                          prefixIcon: const Icon(Icons.search),
+                          border: const OutlineInputBorder(),
+                          filled: true,
+                          fillColor: isTablet 
+                              ? colorScheme.surfaceContainerHighest
+                              : Colors.white,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         ),
-                        const SizedBox(width: 8),
-                        OutlinedButton.icon(
-                          onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
-                          icon: _bulkUpdatingStocks
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.restart_alt, size: 18),
-                          label: const Text('Empty stocks'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          ),
-                        ),
-                      ],
+                        onChanged: (value) {
+                          _searchDebounce?.cancel();
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                          _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                            if (mounted) {
+                              _loadProducts(force: true);
+                            }
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                  const Expanded(child: ShimmerProductList()),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    isTablet
+                        ? FilledButton.tonal(
+                            onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                            child: _bulkUpdatingStocks
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.restart_alt, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Empty stocks'),
+                                    ],
+                                  ),
+                          )
+                        : OutlinedButton.icon(
+                            onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
+                            icon: _bulkUpdatingStocks
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.restart_alt, size: 18),
+                            label: const Text('Empty stocks'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.black87,
+                              backgroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.grey),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                          ),
+                  ],
+                );
+              },
             ),
-          );
-        },
+          ),
+          const Expanded(child: ShimmerProductList()),
+        ],
       );
     }
 
@@ -357,6 +379,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           final product = _filteredProducts[index];
           final isDeleted = product.deletedAt != null;
           final visible = index < _itemVisible.length ? _itemVisible[index] : true;
+          final isTablet = MediaQuery.of(context).size.width >= 600;
           return AnimatedOpacity(
             duration: const Duration(milliseconds: 360),
             curve: Curves.easeOut,
@@ -366,38 +389,114 @@ class _ProductsScreenState extends State<ProductsScreen> {
               curve: Curves.easeOut,
               offset: visible ? Offset.zero : const Offset(0, 0.12),
               child: Card(
-                margin: const EdgeInsets.only(bottom: 16),
+                margin: EdgeInsets.only(bottom: isTablet ? 16 : 8),
+                elevation: isTablet ? 1 : 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(isTablet ? 12 : 0),
+                ),
+                color: isTablet 
+                    ? Theme.of(context).colorScheme.surface
+                    : null,
                 child: ListTile(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 16 : 16,
+                    vertical: isTablet ? 8 : 8,
+                  ),
                   leading: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                      ? Image.network(
-                          product.imageUrl!,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                        )
+                      ? isTablet
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                product.imageUrl!,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surfaceVariant,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(
+                                      Icons.image_outlined,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  );
+                                },
+                              ),
+                            )
+                          : Image.network(
+                              product.imageUrl!,
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                            )
                       : Container(
                           width: 60,
                           height: 60,
-                          color: Colors.grey.shade300,
-                          child: const Icon(Icons.image),
+                          decoration: BoxDecoration(
+                            color: isTablet 
+                                ? Theme.of(context).colorScheme.surfaceVariant
+                                : Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(isTablet ? 8 : 0),
+                          ),
+                          child: Icon(
+                            Icons.image_outlined,
+                            color: isTablet 
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
+                                : Colors.grey,
+                          ),
                         ),
-                  title: Text(product.name),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('₱${NumberFormat('#,##0.00').format(product.price)}'),
-                      Text(
-                        'Stock: ${product.stockQuantity}',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                    ],
+                  title: Text(
+                    product.name,
+                    style: isTablet
+                        ? Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          )
+                        : null,
                   ),
+                  subtitle: isTablet
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '₱${NumberFormat('#,##0.00').format(product.price)}',
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Stock: ${product.stockQuantity}',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('₱${NumberFormat('#,##0.00').format(product.price)}'),
+                            Text(
+                              'Stock: ${product.stockQuantity}',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (isDeleted)
                         IconButton(
-                          icon: const Icon(Icons.restore),
+                          icon: const Icon(Icons.restore_outlined),
+                          tooltip: 'Restore product',
                           onPressed: () async {
                             try {
                               await ProductService.restoreProduct(product.id);
@@ -413,11 +512,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         )
                       else ...[
                         IconButton(
-                          icon: const Icon(Icons.inventory_2),
+                          icon: const Icon(Icons.inventory_2_outlined),
+                          tooltip: 'Update stock',
                           onPressed: _updatingStock ? null : () => _handleUpdateStock(product),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.edit),
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Edit product',
                           onPressed: () async {
                             final result = await Navigator.pushNamed(
                               context,
@@ -432,7 +533,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ],
                       if (!isDeleted)
                         IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
+                          icon: const Icon(Icons.delete_outline),
+                          tooltip: 'Delete product',
+                          color: Theme.of(context).colorScheme.error,
                           onPressed: () async {
                             final confirmed = await showDialog<bool>(
                               context: context,
@@ -446,7 +549,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   ),
                                   TextButton(
                                     onPressed: () => Navigator.pop(context, true),
-                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Theme.of(context).colorScheme.error,
+                                    ),
+                                    child: const Text('Delete'),
                                   ),
                                 ],
                               ),
@@ -475,72 +581,94 @@ class _ProductsScreenState extends State<ProductsScreen> {
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth > 800 ? 800.0 : constraints.maxWidth;
-        return Center(
-          child: SizedBox(
-            width: maxWidth,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          decoration: const InputDecoration(
-                            hintText: 'Search products',
-                            prefixIcon: Icon(Icons.search),
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 5),
+          child: Builder(
+            builder: (context) {
+              final isTablet = MediaQuery.of(context).size.width >= 600;
+              final colorScheme = Theme.of(context).colorScheme;
+              return Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search products',
+                        prefixIcon: const Icon(Icons.search),
+                        border: const OutlineInputBorder(),
+                        filled: true,
+                        fillColor: isTablet 
+                            ? colorScheme.surfaceContainerHighest
+                            : Colors.white,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                      onChanged: (value) {
+                        _searchDebounce?.cancel();
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                        _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                          if (mounted) {
+                            _loadProducts(force: true);
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  isTablet
+                      ? FilledButton.tonal(
+                          onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
-                          onChanged: (value) {
-                            _searchDebounce?.cancel();
-                            setState(() {
-                              _searchQuery = value;
-                            });
-                            _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-                              if (mounted) {
-                                _loadProducts(force: true);
-                              }
-                            });
-                          },
+                          child: _bulkUpdatingStocks
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.restart_alt, size: 18),
+                                    SizedBox(width: 8),
+                                    Text('Empty stocks'),
+                                  ],
+                                ),
+                        )
+                      : OutlinedButton.icon(
+                          onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
+                          icon: _bulkUpdatingStocks
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.restart_alt, size: 18),
+                          label: const Text('Empty stocks'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.black87,
+                            backgroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.grey),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton.icon(
-                        onPressed: _bulkUpdatingStocks ? null : _handleResetAllStocks,
-                        icon: _bulkUpdatingStocks
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.restart_alt, size: 18),
-                        label: const Text('Empty stocks'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: RefreshIndicator(
-                    edgeOffset: 60,
-                    onRefresh: () => _loadProducts(force: true),
-                    child: listChild,
-                  ),
-                ),
-              ],
-            ),
+                ],
+              );
+            },
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            edgeOffset: 60,
+            onRefresh: () => _loadProducts(force: true),
+            child: listChild,
+          ),
+        ),
+      ],
     );
   }
 
@@ -585,12 +713,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             _startItemAnimations();
           }
         },
-        child: Image.asset(
-          'assets/add-product.png',
-          width: 28,
-          height: 28,
-          fit: BoxFit.contain,
-        ),
+        child: const Icon(Icons.add),
       ),
     );
   }

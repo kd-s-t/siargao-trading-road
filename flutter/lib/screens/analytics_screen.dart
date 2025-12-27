@@ -7,7 +7,9 @@ import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
 import 'package:intl/intl.dart';
 
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({super.key});
+  final bool? useScaffold;
+  
+  const AnalyticsScreen({super.key, this.useScaffold});
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -120,31 +122,39 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final useScaffold = widget.useScaffold ?? true;
+    
+    final content = _loading
+        ? const ShimmerAnalytics()
+        : RefreshIndicator(
+            onRefresh: _loadAnalytics,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildRevenueCard(),
+                  const SizedBox(height: 16),
+                  _buildRevenueChart(),
+                  const SizedBox(height: 16),
+                  _buildOrdersCard(),
+                  const SizedBox(height: 16),
+                  _buildStatusPieChart(),
+                ],
+              ),
+            ),
+          );
+
+    if (!useScaffold) {
+      return content;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics'),
       ),
       body: SafeArea(
-        child: _loading
-            ? const ShimmerAnalytics()
-            : RefreshIndicator(
-                onRefresh: _loadAnalytics,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildRevenueCard(),
-                      const SizedBox(height: 16),
-                      _buildRevenueChart(),
-                      const SizedBox(height: 16),
-                      _buildOrdersCard(),
-                      const SizedBox(height: 16),
-                      _buildStatusPieChart(),
-                    ],
-                  ),
-                ),
-              ),
+        child: content,
       ),
     );
   }

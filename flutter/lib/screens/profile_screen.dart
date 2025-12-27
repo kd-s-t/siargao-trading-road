@@ -647,34 +647,29 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   }
 
   Widget _buildBody(AuthProvider authProvider, User user) {
-    final body = Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 800),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildBanner(user),
-              Transform.translate(
-                offset: const Offset(0, -40),
-                child: _buildProfileCard(user),
-              ),
-              if ((user.role == 'store' || user.role == 'supplier') && !_editing)
-                Transform.translate(
-                  offset: const Offset(0, -12),
-                  child: _buildOpenCloseCard(user, authProvider),
-                ),
-              _buildDetailsCard(user),
-              if ((user.role == 'store' || user.role == 'supplier'))
-                _buildHoursCard(user),
-              if (!_editing && (user.role == 'store' || user.role == 'supplier') && !authProvider.isEmployee)
-                _buildEmployeesCard(authProvider),
-              if (!_editing) _buildAnalyticsButton(),
-              if (!_editing) _buildLogoutButton(authProvider),
-              const SizedBox(height: kBottomNavigationBarHeight + 24),
-            ],
+    final body = SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildBanner(user),
+          Transform.translate(
+            offset: const Offset(0, -40),
+            child: _buildProfileCard(user),
           ),
-        ),
+          if ((user.role == 'store' || user.role == 'supplier') && !_editing)
+            Transform.translate(
+              offset: const Offset(0, -12),
+              child: _buildOpenCloseCard(user, authProvider),
+            ),
+          _buildDetailsCard(user),
+          if ((user.role == 'store' || user.role == 'supplier'))
+            _buildHoursCard(user),
+          if (!_editing && (user.role == 'store' || user.role == 'supplier') && !authProvider.isEmployee)
+            _buildEmployeesCard(authProvider),
+          if (!_editing) _buildAnalyticsButton(),
+          if (!_editing) _buildLogoutButton(authProvider),
+          const SizedBox(height: kBottomNavigationBarHeight + 24),
+        ],
       ),
     );
 

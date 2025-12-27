@@ -15,6 +15,38 @@ import 'package:siargao_trading_road/screens/truck_screen.dart';
 import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/ratings_screen.dart';
 
+ThemeData _buildMaterial3Theme() {
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFF1976D2),
+      primary: const Color(0xFF1976D2),
+      secondary: const Color(0xFF38B2AC),
+      brightness: Brightness.light,
+    ),
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: Colors.white,
+      selectedIconTheme: IconThemeData(
+        color: ColorScheme.fromSeed(seedColor: const Color(0xFF1976D2)).primary,
+        size: 28,
+      ),
+      unselectedIconTheme: IconThemeData(
+        color: ColorScheme.fromSeed(seedColor: const Color(0xFF1976D2)).onSurfaceVariant,
+        size: 28,
+      ),
+      selectedLabelTextStyle: TextStyle(
+        color: ColorScheme.fromSeed(seedColor: const Color(0xFF1976D2)).primary,
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+      unselectedLabelTextStyle: TextStyle(
+        color: ColorScheme.fromSeed(seedColor: const Color(0xFF1976D2)).onSurfaceVariant,
+        fontSize: 12,
+      ),
+    ),
+  );
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   ErrorHandler.setupErrorHandling();
@@ -39,17 +71,7 @@ class MyApp extends StatelessWidget {
         title: 'Siargao Trading Road',
         debugShowCheckedModeBanner: false,
         navigatorKey: NotificationHandler.navigatorKey,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          primaryColor: const Color(0xFF1976D2),
-          scaffoldBackgroundColor: Colors.white,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF1976D2),
-            primary: const Color(0xFF1976D2),
-            secondary: const Color(0xFF38B2AC),
-          ),
-          useMaterial3: true,
-        ),
+        theme: _buildMaterial3Theme(),
         home: const AppNavigator(),
         onGenerateRoute: (settings) {
           switch (settings.name) {

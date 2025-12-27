@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'package:animate_gradient/animate_gradient.dart';
 import 'package:siargao_trading_road/screens/dashboard_screen.dart';
 import 'package:siargao_trading_road/screens/order_detail_screen.dart';
 import 'package:siargao_trading_road/screens/profile_screen.dart' show ProfileScreen, ProfileScreenState;
@@ -90,54 +91,135 @@ class _AdminDrawerState extends State<AdminDrawer> {
     }
   }
 
+  bool _isTablet(BuildContext context) {
+    return MediaQuery.of(context).size.width >= 600;
+  }
+
+  void _onNavigationTap(int index) {
+    if (mounted) {
+      setState(() {
+        _currentIndex = index;
+      });
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  Widget _buildNavigationRail(AuthProvider authProvider, BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final iconSize = (28 * devicePixelRatio).round() / devicePixelRatio;
+    return NavigationRail(
+      selectedIndex: _currentIndex,
+      onDestinationSelected: _onNavigationTap,
+      labelType: NavigationRailLabelType.all,
+      backgroundColor: Colors.white,
+      selectedIconTheme: IconThemeData(
+        color: colorScheme.primary,
+        size: iconSize,
+      ),
+      unselectedIconTheme: IconThemeData(
+        color: colorScheme.onSurfaceVariant,
+        size: iconSize,
+      ),
+      selectedLabelTextStyle: TextStyle(
+        color: colorScheme.primary,
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+      unselectedLabelTextStyle: TextStyle(
+        color: colorScheme.onSurfaceVariant,
+        fontSize: 12,
+      ),
+      destinations: const [
+        NavigationRailDestination(
+          icon: Icon(Icons.dashboard_outlined),
+          selectedIcon: Icon(Icons.dashboard),
+          label: Text('Dashboard'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.person_outline),
+          selectedIcon: Icon(Icons.person),
+          label: Text('Profile'),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final isTablet = _isTablet(context);
+    
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: AdminDrawer.navigatorKey,
       home: Scaffold(
-        extendBody: true,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        extendBody: !isTablet,
+        backgroundColor: _isTablet(context) ? Colors.transparent : Theme.of(context).scaffoldBackgroundColor,
         appBar: _buildAppBar(context),
-        body: PageView(
-          controller: _pageController,
-          onPageChanged: (index) {
-            if (mounted) {
-              setState(() {
-                _currentIndex = index;
-              });
-            }
-          },
-          children: _screens,
-        ),
-        bottomNavigationBar: SafeArea(
-          bottom: !Platform.isIOS,
-          child: CurvedNavigationBar(
-            index: _currentIndex,
-            onTap: (index) {
-              if (mounted) {
-                setState(() {
-                  _currentIndex = index;
-                });
-                _pageController.animateToPage(
-                  index,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              }
-            },
-            backgroundColor: Colors.transparent,
-            color: Theme.of(context).colorScheme.primary,
-            buttonBackgroundColor: Colors.white.withValues(alpha: 0.9),
-            animationCurve: Curves.easeInOut,
-            animationDuration: const Duration(milliseconds: 300),
-            items: [
-              _buildAssetIcon('assets/products.png', _currentIndex == 0, context),
-              _buildProfileIcon(authProvider, _currentIndex == 1, context),
-            ],
-          ),
-        ),
+        body: isTablet
+            ? AnimateGradient(
+                primaryColors: const [
+                  Color(0xFF1A3A5F),
+                  Color(0xFF38B2AC),
+                ],
+                secondaryColors: const [
+                  Color(0xFF38B2AC),
+                  Color(0xFF1A3A5F),
+                ],
+                child: Row(
+                  children: [
+                    _buildNavigationRail(authProvider, context),
+                    const VerticalDivider(width: 1, thickness: 1),
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          if (mounted) {
+                            setState(() {
+                              _currentIndex = index;
+                            });
+                          }
+                        },
+                        children: _screens,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  if (mounted) {
+                    setState(() {
+                      _currentIndex = index;
+                    });
+                  }
+                },
+                children: _screens,
+              ),
+        bottomNavigationBar: isTablet
+            ? null
+            : SafeArea(
+                bottom: !Platform.isIOS,
+                child: CurvedNavigationBar(
+                  index: _currentIndex,
+                  onTap: _onNavigationTap,
+                  backgroundColor: Colors.transparent,
+                  color: Theme.of(context).colorScheme.primary,
+                  buttonBackgroundColor: Colors.white.withValues(alpha: 0.9),
+                  animationCurve: Curves.easeInOut,
+                  animationDuration: const Duration(milliseconds: 300),
+                  items: [
+                    _buildAssetIcon('assets/products.png', _currentIndex == 0, context),
+                    _buildProfileIcon(authProvider, _currentIndex == 1, context),
+                  ],
+                ),
+              ),
       ),
       onGenerateRoute: (settings) {
         Widget screen;
@@ -167,6 +249,8 @@ class _AdminDrawerState extends State<AdminDrawer> {
 
   Widget _buildProfileIcon(AuthProvider authProvider, bool isActive, BuildContext context) {
     final logo = authProvider.user?.logoUrl;
+    final iconColor = isActive ? Theme.of(context).colorScheme.secondary : Colors.white;
+    
     if (logo != null && logo.isNotEmpty) {
       return Container(
         width: 32,
@@ -183,11 +267,47 @@ class _AdminDrawerState extends State<AdminDrawer> {
           child: Image.network(
             logo,
             fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Colors.white,
+                child: Icon(
+                  Icons.account_circle,
+                  size: 30,
+                  color: iconColor,
+                ),
+              );
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                color: Colors.white,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              );
+            },
           ),
         ),
       );
     }
-    return Icon(Icons.account_circle, size: 30, color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white);
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(
+          color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+          width: 2,
+        ),
+      ),
+      child: Icon(Icons.account_circle, size: 30, color: iconColor),
+    );
   }
 
   Widget _buildAssetIcon(String assetPath, bool isActive, BuildContext context) {
