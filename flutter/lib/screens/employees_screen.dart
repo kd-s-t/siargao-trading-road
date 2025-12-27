@@ -480,7 +480,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                         ),
                       ),
                     );
-                  }).toList(),
+                  }),
               ]),
             ),
           ),

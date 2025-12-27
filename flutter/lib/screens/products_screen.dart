@@ -416,7 +416,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     width: 60,
                                     height: 60,
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.surfaceVariant,
+                                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(
@@ -438,7 +438,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           height: 60,
                           decoration: BoxDecoration(
                             color: isTablet 
-                                ? Theme.of(context).colorScheme.surfaceVariant
+                                ? Theme.of(context).colorScheme.surfaceContainerHighest
                                 : Colors.grey.shade300,
                             borderRadius: BorderRadius.circular(isTablet ? 8 : 0),
                           ),
