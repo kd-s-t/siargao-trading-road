@@ -11,9 +11,20 @@ import (
 )
 
 func GetAuditLogs(c *gin.Context) {
-	if !requireAdminLevel(c, 1) {
+	userRole, _ := c.Get("role")
+	currentUserID, err := getUserID(c)
+	
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		c.Abort()
 		return
 	}
+
+	adminLevel := getAdminLevel(c)
+	if adminLevel == 0 {
+		adminLevel = 1
+	}
+	isAdmin := userRole == "admin" && adminLevel <= 1
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
@@ -27,6 +38,34 @@ func GetAuditLogs(c *gin.Context) {
 	}
 	if limit < 1 || limit > 100 {
 		limit = 50
+	}
+
+	if !isAdmin {
+		if userRole != string(models.RoleSupplier) && userRole != string(models.RoleStore) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "only admin, suppliers, or stores can access this resource"})
+			c.Abort()
+			return
+		}
+
+		if employeeID == "" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "employee_id is required for non-admin users"})
+			c.Abort()
+			return
+		}
+
+		empID, err := strconv.ParseUint(employeeID, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid employee_id"})
+			c.Abort()
+			return
+		}
+
+		var employee models.Employee
+		if err := database.DB.Where("id = ? AND owner_user_id = ?", uint(empID), currentUserID).First(&employee).Error; err != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "employee not found or access denied"})
+			c.Abort()
+			return
+		}
 	}
 
 	offset := (page - 1) * limit

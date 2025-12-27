@@ -91,13 +91,6 @@ func Connect(cfg *config.Config) error {
 		}
 	}
 
-	if os.Getenv("CI") == "" && os.Getenv("GITHUB_ACTIONS") == "" {
-		err = SeedAll()
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 

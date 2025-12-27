@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -41,6 +42,9 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  final _employeeNameController = TextEditingController();
+  final _employeePhoneController = TextEditingController();
+  final _employeeRoleController = TextEditingController();
   final _facebookController = TextEditingController();
   final _instagramController = TextEditingController();
   final _twitterController = TextEditingController();
@@ -66,6 +70,26 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshUserData();
     });
+  }
+
+  Future<void> _loadEmployeeData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.isEmployee) {
+      if (authProvider.employee == null) {
+        try {
+          final employee = await EmployeeService.getMyEmployee();
+          authProvider.updateEmployee(employee);
+        } catch (e) {
+          debugPrint('Failed to load employee data: $e');
+        }
+      }
+      if (authProvider.employee != null) {
+        final employee = authProvider.employee!;
+        _employeeNameController.text = employee.name ?? '';
+        _employeePhoneController.text = employee.phone ?? '';
+        _employeeRoleController.text = employee.role ?? '';
+      }
+    }
   }
 
   @override
@@ -664,8 +688,433 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     return months[month - 1];
   }
 
+  Widget _buildEmployeeProfile(AuthProvider authProvider) {
+    if (authProvider.employee == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadEmployeeData();
+      });
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    final employee = authProvider.employee!;
+    final formKey = GlobalKey<FormState>();
+    
+    if (_employeeNameController.text.isEmpty && employee.name != null) {
+      _loadEmployeeData();
+    }
+    
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200, width: 2),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.badge, color: Colors.blue.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'You are logged in as an Employee',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                            child: Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        employee.name != null && employee.name!.isNotEmpty
+                                            ? employee.name!
+                                            : employee.username,
+                                        style: const TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.shade100,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: Colors.blue.shade300, width: 1.5),
+                                      ),
+                                      child: Text(
+                                        'EMPLOYEE',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue.shade800,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                if (employee.name != null && employee.name!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.alternate_email, size: 14, color: Colors.grey.shade600),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          employee.username,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade600,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (employee.role != null && employee.role!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.work_outline, size: 14, color: Colors.grey.shade500),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          employee.role!,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade600,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _employeeNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _employeePhoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _employeeRoleController,
+                        decoration: const InputDecoration(
+                          labelText: 'Role',
+                          border: OutlineInputBorder(),
+                          helperText: 'e.g., Order Manager, Inventory Staff',
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _loading ? null : () async {
+                            if (formKey.currentState!.validate()) {
+                              await _handleEmployeeSave(authProvider);
+                            }
+                          },
+                          child: _loading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Text('Save Changes'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildEmployerInfoCard(authProvider),
+              const SizedBox(height: 24),
+              if (!authProvider.isEmployee) _buildLogoutButton(authProvider),
+              const SizedBox(height: kBottomNavigationBarHeight + 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmployerInfoCard(AuthProvider authProvider) {
+    final user = authProvider.user;
+    if (user == null) return const SizedBox.shrink();
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.business,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Your Employer',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Text(
+                    user.role.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (user.name != null && user.name!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.store, size: 20, color: Colors.grey.shade600),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Business Name',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            user.name!,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (user.phone != null && user.phone!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.phone, size: 20, color: Colors.grey.shade600),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Phone',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            user.phone!,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (user.address != null && user.address!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.location_on, size: 20, color: Colors.grey.shade600),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Address',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            user.address!,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (user.email != null && user.email!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.email, size: 20, color: Colors.grey.shade600),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Email',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            user.email!,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleEmployeeSave(AuthProvider authProvider) async {
+    if (authProvider.employee == null) return;
+    
+    setState(() {
+      _loading = true;
+    });
+
+    try {
+      await EmployeeService.updateEmployee(
+        authProvider.employee!.id,
+        name: _employeeNameController.text.trim().isEmpty ? null : _employeeNameController.text.trim(),
+        phone: _employeePhoneController.text.trim().isEmpty ? null : _employeePhoneController.text.trim(),
+        role: _employeeRoleController.text.trim().isEmpty ? null : _employeeRoleController.text.trim(),
+      );
+      
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Profile updated successfully');
+        final updatedEmployee = await EmployeeService.fetchEmployees();
+        final currentEmployee = updatedEmployee.firstWhere((e) => e.id == authProvider.employee!.id);
+        authProvider.updateEmployee(currentEmployee);
+        _loadEmployeeData();
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
   Widget _buildBody(AuthProvider authProvider, User user) {
     final isTablet = MediaQuery.of(context).size.width >= 600;
+    
+    if (authProvider.isEmployee && authProvider.employee != null) {
+      return _buildEmployeeProfile(authProvider);
+    }
+    
     final body = SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -686,7 +1135,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
           if (!_editing && (user.role == 'store' || user.role == 'supplier') && !authProvider.isEmployee && !isTablet)
             _buildEmployeesCard(authProvider),
           if (!_editing && !isTablet) _buildAnalyticsButton(),
-          if (!_editing) _buildLogoutButton(authProvider),
+          if (!_editing && !authProvider.isEmployee) _buildLogoutButton(authProvider),
           const SizedBox(height: kBottomNavigationBarHeight + 24),
         ],
       ),
@@ -756,36 +1205,38 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
         return Scaffold(
           appBar: AppBar(
             actions: [
-              if (_editing)
-                TextButton(
-                  onPressed: _loading ? null : () {
-                    setState(() {
-                      _editing = false;
-                    });
-                    _loadUserData();
-                  },
-                  child: const Text('Cancel'),
-                )
-              else
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _editing = true;
-                    });
-                  },
-                  child: const Text('Edit'),
-                ),
-              if (_editing)
-                TextButton(
-                  onPressed: _loading ? null : _handleSave,
-                  child: _loading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Save'),
-                ),
+              if (!authProvider.isEmployee) ...[
+                if (_editing)
+                  TextButton(
+                    onPressed: _loading ? null : () {
+                      setState(() {
+                        _editing = false;
+                      });
+                      _loadUserData();
+                    },
+                    child: const Text('Cancel'),
+                  )
+                else
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _editing = true;
+                      });
+                    },
+                    child: const Text('Edit'),
+                  ),
+                if (_editing)
+                  TextButton(
+                    onPressed: _loading ? null : _handleSave,
+                    child: _loading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Save'),
+                  ),
+              ],
             ],
           ),
           body: body,
@@ -870,10 +1321,53 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
               child: Stack(
                 children: [
                   user.logoUrl != null && user.logoUrl!.isNotEmpty
-                        ? CircleAvatar(
-                            radius: 40,
-                            backgroundImage: NetworkImage(user.logoUrl!),
-                            onBackgroundImageError: (exception, stackTrace) {},
+                        ? Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              border: Border.all(
+                                color: Colors.grey.shade300,
+                                width: 1,
+                              ),
+                            ),
+                            child: ClipOval(
+                              clipBehavior: Clip.antiAliasWithSaveLayer,
+                              child: OverflowBox(
+                                minWidth: 80,
+                                minHeight: 80,
+                                maxWidth: 640,
+                                maxHeight: 640,
+                                alignment: Alignment.center,
+                                child: Transform.scale(
+                                  scale: 8.0,
+                                  alignment: Alignment.center,
+                                  child: Image.network(
+                                    user.logoUrl!,
+                                    width: 80,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                    alignment: Alignment.center,
+                                    filterQuality: FilterQuality.high,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return CircleAvatar(
+                                        radius: 40,
+                                        backgroundColor: Theme.of(context).primaryColor,
+                                        child: Text(
+                                          user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                                          style: const TextStyle(
+                                            fontSize: 32,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
                           )
                         : CircleAvatar(
                             radius: 40,

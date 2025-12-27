@@ -203,35 +203,46 @@ func UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	if req.SKU != "" && req.SKU != product.SKU {
-		var existingProduct models.Product
-		if err := database.DB.Where("sku = ? AND id != ?", req.SKU, id).First(&existingProduct).Error; err == nil {
-			c.JSON(http.StatusConflict, gin.H{"error": "SKU already exists"})
+	// Employees can only update stock quantity
+	if empCtx.IsEmployee {
+		if req.StockQuantity != nil {
+			product.StockQuantity = *req.StockQuantity
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "employees can only update stock quantity"})
 			return
 		}
-		product.SKU = req.SKU
-	}
+	} else {
+		// Owners can update all fields
+		if req.SKU != "" && req.SKU != product.SKU {
+			var existingProduct models.Product
+			if err := database.DB.Where("sku = ? AND id != ?", req.SKU, id).First(&existingProduct).Error; err == nil {
+				c.JSON(http.StatusConflict, gin.H{"error": "SKU already exists"})
+				return
+			}
+			product.SKU = req.SKU
+		}
 
-	if req.Name != "" {
-		product.Name = req.Name
-	}
-	if req.Description != "" {
-		product.Description = req.Description
-	}
-	if req.Price > 0 {
-		product.Price = req.Price
-	}
-	if req.StockQuantity != nil {
-		product.StockQuantity = *req.StockQuantity
-	}
-	if req.Unit != "" {
-		product.Unit = req.Unit
-	}
-	if req.Category != "" {
-		product.Category = req.Category
-	}
-	if req.ImageURL != "" {
-		product.ImageURL = req.ImageURL
+		if req.Name != "" {
+			product.Name = req.Name
+		}
+		if req.Description != "" {
+			product.Description = req.Description
+		}
+		if req.Price > 0 {
+			product.Price = req.Price
+		}
+		if req.StockQuantity != nil {
+			product.StockQuantity = *req.StockQuantity
+		}
+		if req.Unit != "" {
+			product.Unit = req.Unit
+		}
+		if req.Category != "" {
+			product.Category = req.Category
+		}
+		if req.ImageURL != "" {
+			product.ImageURL = req.ImageURL
+		}
 	}
 
 	if err := database.DB.Save(&product).Error; err != nil {
@@ -251,8 +262,8 @@ func DeleteProduct(c *gin.Context) {
 	}
 	role, _ := c.Get("role")
 	empCtx := getEmployeeContext(c)
-	if empCtx.IsEmployee && !empCtx.CanManageInventory {
-		c.JSON(http.StatusForbidden, gin.H{"error": "employee lacks inventory permission"})
+	if empCtx.IsEmployee {
+		c.JSON(http.StatusForbidden, gin.H{"error": "employees cannot delete products"})
 		return
 	}
 

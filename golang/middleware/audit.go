@@ -26,6 +26,34 @@ func AuditLogMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
 
+		var requestBody string
+		if c.Request.Body != nil {
+			contentType := c.ContentType()
+			if strings.Contains(contentType, "multipart/form-data") {
+				// Avoid logging binary multipart bodies (e.g., file uploads)
+				requestBody = "(multipart/form-data omitted)"
+			} else {
+				bodyBytes, err := io.ReadAll(c.Request.Body)
+				if err == nil && len(bodyBytes) > 0 {
+					if len(bodyBytes) <= 10000 {
+						requestBody = string(bodyBytes)
+					} else {
+						requestBody = string(bodyBytes[:10000]) + "... (truncated)"
+					}
+					c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+				}
+			}
+		}
+
+		writer := &responseBodyWriter{
+			ResponseWriter: c.Writer,
+			body:           &bytes.Buffer{},
+		}
+		c.Writer = writer
+
+		c.Next()
+
+		// Capture context values AFTER handler runs (so login handlers can set employee_id)
 		var userID *uint
 		var employeeID *uint
 		var role string
@@ -53,33 +81,6 @@ func AuditLogMiddleware() gin.HandlerFunc {
 				role = roleStr
 			}
 		}
-
-		var requestBody string
-		if c.Request.Body != nil {
-			contentType := c.ContentType()
-			if strings.Contains(contentType, "multipart/form-data") {
-				// Avoid logging binary multipart bodies (e.g., file uploads)
-				requestBody = "(multipart/form-data omitted)"
-			} else {
-				bodyBytes, err := io.ReadAll(c.Request.Body)
-				if err == nil && len(bodyBytes) > 0 {
-					if len(bodyBytes) <= 10000 {
-						requestBody = string(bodyBytes)
-					} else {
-						requestBody = string(bodyBytes[:10000]) + "... (truncated)"
-					}
-					c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-				}
-			}
-		}
-
-		writer := &responseBodyWriter{
-			ResponseWriter: c.Writer,
-			body:           &bytes.Buffer{},
-		}
-		c.Writer = writer
-
-		c.Next()
 
 		duration := time.Since(startTime)
 		statusCode := c.Writer.Status()

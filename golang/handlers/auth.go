@@ -330,6 +330,11 @@ func UnifiedLogin(c *gin.Context) {
 			if err := database.DB.Where("id = ? AND role IN ?", employee.OwnerUserID, []models.UserRole{models.RoleSupplier, models.RoleStore}).First(&owner).Error; err == nil {
 				if employee.StatusActive {
 					if err := bcrypt.CompareHashAndPassword([]byte(employee.Password), []byte(password)); err == nil {
+						// Set employee_id and user_id in context for audit logging
+						c.Set("employee_id", employee.ID)
+						c.Set("user_id", owner.ID)
+						c.Set("role", string(owner.Role))
+
 						token, err := generateEmployeeToken(owner, employee, c.MustGet("config").(*config.Config))
 						if err != nil {
 							c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
@@ -382,6 +387,11 @@ func EmployeeLogin(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
+
+	// Set employee_id and user_id in context for audit logging
+	c.Set("employee_id", employee.ID)
+	c.Set("user_id", owner.ID)
+	c.Set("role", string(owner.Role))
 
 	token, err := generateEmployeeToken(owner, employee, c.MustGet("config").(*config.Config))
 	if err != nil {

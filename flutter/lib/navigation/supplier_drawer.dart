@@ -31,29 +31,45 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
   final _profileEditKey = GlobalKey<ProfileScreenState>();
   final _productsScreenKey = GlobalKey();
 
-  late final List<Widget> _tabletScreens = [
-    ProductsScreen(key: _productsScreenKey, useScaffold: false),
-    const OrdersScreen(useScaffold: false),
-    const AnalyticsScreen(useScaffold: false),
-    const EmployeesScreen(useScaffold: false),
-    ProfileScreen(
-      key: _profileEditKey,
-      useScaffold: false,
-      editKey: _profileEditKey,
-      onEditStateChanged: () => setState(() {}),
-    ),
-  ];
+  List<Widget> _getTabletScreens(bool isEmployee) {
+    if (isEmployee) {
+      return [
+        ProductsScreen(key: _productsScreenKey, useScaffold: false),
+        const OrdersScreen(useScaffold: false),
+        ProfileScreen(
+          key: _profileEditKey,
+          useScaffold: false,
+          editKey: _profileEditKey,
+          onEditStateChanged: () => setState(() {}),
+        ),
+      ];
+    }
+    return [
+      ProductsScreen(key: _productsScreenKey, useScaffold: false),
+      const OrdersScreen(useScaffold: false),
+      const AnalyticsScreen(useScaffold: false),
+      const EmployeesScreen(useScaffold: false),
+      ProfileScreen(
+        key: _profileEditKey,
+        useScaffold: false,
+        editKey: _profileEditKey,
+        onEditStateChanged: () => setState(() {}),
+      ),
+    ];
+  }
 
-  late final List<Widget> _phoneScreens = [
-    ProductsScreen(key: _productsScreenKey, useScaffold: false),
-    const OrdersScreen(useScaffold: false),
-    ProfileScreen(
-      key: _profileEditKey,
-      useScaffold: false,
-      editKey: _profileEditKey,
-      onEditStateChanged: () => setState(() {}),
-    ),
-  ];
+  List<Widget> _getPhoneScreens() {
+    return [
+      ProductsScreen(key: _productsScreenKey, useScaffold: false),
+      const OrdersScreen(useScaffold: false),
+      ProfileScreen(
+        key: _profileEditKey,
+        useScaffold: false,
+        editKey: _profileEditKey,
+        onEditStateChanged: () => setState(() {}),
+      ),
+    ];
+  }
 
   @override
   void dispose() {
@@ -61,10 +77,31 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
     super.dispose();
   }
 
-  AppBar? _buildAppBar(BuildContext context) {
+  AppBar? _buildAppBar(BuildContext context, AuthProvider authProvider) {
     final isEditing = _profileEditKey.currentState?.isEditing ?? false;
     final isTablet = _isTablet(context);
     final isPhone = !isTablet;
+    final isEmployee = authProvider.isEmployee;
+    
+    if (isEmployee) {
+      switch (_currentIndex) {
+        case 0:
+          return AppBar(
+            title: const Text('My Products'),
+          );
+        case 1:
+          return AppBar(
+            title: const Text('Orders'),
+          );
+        case 2:
+          return AppBar(
+            title: const Text('Profile'),
+            automaticallyImplyLeading: false,
+          );
+        default:
+          return null;
+      }
+    }
     
     switch (_currentIndex) {
       case 0:
@@ -209,6 +246,54 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
     final colorScheme = Theme.of(context).colorScheme;
     final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
     final iconSize = (28 * devicePixelRatio).round() / devicePixelRatio;
+    final isEmployee = authProvider.isEmployee;
+    
+    final destinations = isEmployee
+        ? const [
+            NavigationRailDestination(
+              icon: Icon(Icons.inventory_2_outlined),
+              selectedIcon: Icon(Icons.inventory_2),
+              label: Text('Products'),
+            ),
+            NavigationRailDestination(
+              icon: Icon(Icons.shopping_cart_outlined),
+              selectedIcon: Icon(Icons.shopping_cart),
+              label: Text('Orders'),
+            ),
+            NavigationRailDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: Text('Profile'),
+            ),
+          ]
+        : const [
+            NavigationRailDestination(
+              icon: Icon(Icons.inventory_2_outlined),
+              selectedIcon: Icon(Icons.inventory_2),
+              label: Text('Products'),
+            ),
+            NavigationRailDestination(
+              icon: Icon(Icons.shopping_cart_outlined),
+              selectedIcon: Icon(Icons.shopping_cart),
+              label: Text('Orders'),
+            ),
+            NavigationRailDestination(
+              icon: Icon(Icons.analytics_outlined),
+              selectedIcon: Icon(Icons.analytics),
+              label: Text('Analytics'),
+            ),
+            NavigationRailDestination(
+              icon: Icon(Icons.people_outline),
+              selectedIcon: Icon(Icons.people),
+              label: Text('Employees'),
+            ),
+            NavigationRailDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: Text('Profile'),
+            ),
+          ];
+    
     return NavigationRail(
       selectedIndex: _currentIndex,
       onDestinationSelected: _onNavigationTap,
@@ -231,53 +316,29 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
         color: colorScheme.onSurfaceVariant,
         fontSize: 12,
       ),
-      destinations: const [
-        NavigationRailDestination(
-          icon: Icon(Icons.inventory_2_outlined),
-          selectedIcon: Icon(Icons.inventory_2),
-          label: Text('Products'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.shopping_cart_outlined),
-          selectedIcon: Icon(Icons.shopping_cart),
-          label: Text('Orders'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.analytics_outlined),
-          selectedIcon: Icon(Icons.analytics),
-          label: Text('Analytics'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.people_outline),
-          selectedIcon: Icon(Icons.people),
-          label: Text('Employees'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
-          label: Text('Profile'),
-        ),
-      ],
-      trailing: Expanded(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: IconButton(
-                icon: const Icon(Icons.logout, color: Colors.red),
-                tooltip: 'Logout',
-                onPressed: () async {
-                  await authProvider.logout();
-                  if (context.mounted) {
-                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-                  }
-                },
+      destinations: destinations,
+      trailing: !authProvider.isEmployee
+          ? Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: IconButton(
+                      icon: const Icon(Icons.logout, color: Colors.red),
+                      tooltip: 'Logout',
+                      onPressed: () async {
+                        await authProvider.logout();
+                        if (context.mounted) {
+                          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-      ),
+            )
+          : null,
     );
   }
 
@@ -292,7 +353,7 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
       home: Scaffold(
         extendBody: !isTablet,
         backgroundColor: isTablet ? Colors.transparent : Theme.of(context).scaffoldBackgroundColor,
-        appBar: _buildAppBar(context),
+        appBar: _buildAppBar(context, authProvider),
         body: isTablet
             ? AnimateGradient(
                 primaryColors: const [
@@ -317,7 +378,7 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
                             });
                           }
                         },
-                        children: _tabletScreens,
+                        children: _getTabletScreens(authProvider.isEmployee),
                       ),
                     ),
                   ],
@@ -332,7 +393,7 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
                     });
                   }
                 },
-                children: _phoneScreens,
+                children: _getPhoneScreens(),
               ),
         floatingActionButton: _buildFloatingActionButton(),
         bottomNavigationBar: isTablet

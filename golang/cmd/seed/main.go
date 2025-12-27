@@ -58,13 +58,27 @@ func main() {
 				log.Fatal("Failed to update locations:", err)
 			}
 			log.Println("User locations updated successfully")
-		case "seed-orders":
-			log.Println("Seeding orders...")
-			err = database.SeedOrders()
+		case "seed-admin":
+			log.Println("Seeding admin...")
+			err = database.SeedAdmin()
 			if err != nil {
-				log.Fatal("Failed to seed orders:", err)
+				log.Fatal("Failed to seed admin:", err)
 			}
-			log.Println("Orders seeded successfully")
+			log.Println("Admin seeded successfully")
+		case "seed-suppliers":
+			log.Println("Seeding suppliers...")
+			err = database.SeedSuppliers()
+			if err != nil {
+				log.Fatal("Failed to seed suppliers:", err)
+			}
+			log.Println("Suppliers seeded successfully")
+		case "seed-stores":
+			log.Println("Seeding stores...")
+			err = database.SeedStores()
+			if err != nil {
+				log.Fatal("Failed to seed stores:", err)
+			}
+			log.Println("Stores seeded successfully")
 		case "seed-products":
 			log.Println("Seeding products...")
 			err = database.SeedProducts()
@@ -72,8 +86,31 @@ func main() {
 				log.Fatal("Failed to seed products:", err)
 			}
 			log.Println("Products seeded successfully")
+		case "seed-orders":
+			log.Println("Seeding orders...")
+			err = database.SeedOrders()
+			if err != nil {
+				log.Fatal("Failed to seed orders:", err)
+			}
+			log.Println("Orders seeded successfully")
+		case "seed-ratings":
+			log.Println("Seeding ratings...")
+			err = database.SeedRatings()
+			if err != nil {
+				log.Fatal("Failed to seed ratings:", err)
+			}
+			log.Println("Ratings seeded successfully")
 		default:
-			log.Println("Seeders completed successfully")
+			log.Println("Available commands:")
+			log.Println("  reset          - Reset database and seed all")
+			log.Println("  migrate        - Run database migrations")
+			log.Println("  seed-admin     - Seed admin user only")
+			log.Println("  seed-suppliers - Seed suppliers only")
+			log.Println("  seed-stores    - Seed stores only")
+			log.Println("  seed-products  - Seed products only")
+			log.Println("  seed-orders    - Seed orders only")
+			log.Println("  seed-ratings   - Seed ratings only")
+			log.Println("  update-locations - Update user locations")
 		}
 	} else {
 		log.Println("Seeders completed successfully")

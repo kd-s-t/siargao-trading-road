@@ -1,14 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:siargao_trading_road/models/user.dart';
+import 'package:siargao_trading_road/models/employee.dart';
 import 'package:siargao_trading_road/services/auth_service.dart';
+import 'package:siargao_trading_road/services/employee_service.dart';
 
 class AuthProvider with ChangeNotifier {
   User? _user;
+  Employee? _employee;
   bool _loading = true;
   bool _isEmployee = false;
 
   User? get user => _user;
+  Employee? get employee => _employee;
   bool get loading => _loading;
   bool get isAuthenticated => _user != null;
   bool get isEmployee => _isEmployee;
@@ -32,6 +36,20 @@ class AuthProvider with ChangeNotifier {
             },
           );
           _user = userData;
+          
+          if (_isEmployee) {
+            try {
+              final employeeData = await EmployeeService.getMyEmployee().timeout(
+                const Duration(seconds: 2),
+                onTimeout: () {
+                  throw Exception('Employee fetch timeout');
+                },
+              );
+              _employee = employeeData;
+            } catch (e) {
+              debugPrint('Failed to fetch employee data: $e');
+            }
+          }
         } catch (e) {
           await prefs.remove('token');
         }
@@ -64,11 +82,13 @@ class AuthProvider with ChangeNotifier {
       await prefs.setBool('is_employee', true);
       _isEmployee = true;
       _user = response.user;
+      _employee = response.employee;
     } else if (response is LoginResponse) {
       await prefs.setString('token', response.token);
       await prefs.setBool('is_employee', false);
       _isEmployee = false;
       _user = response.user;
+      _employee = null;
     }
     
     notifyListeners();
@@ -88,7 +108,8 @@ class AuthProvider with ChangeNotifier {
     await prefs.setString('token', response.token);
     await prefs.setBool('is_employee', true);
     _isEmployee = true;
-    _user = await AuthService.getMe();
+    _user = response.user;
+    _employee = response.employee;
     notifyListeners();
   }
 
@@ -162,6 +183,7 @@ class AuthProvider with ChangeNotifier {
     await prefs.remove('token');
     await prefs.remove('is_employee');
     _user = null;
+    _employee = null;
     _isEmployee = false;
     notifyListeners();
   }
@@ -207,5 +229,10 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('Refresh user failed: $e');
     }
+  }
+
+  void updateEmployee(Employee employee) {
+    _employee = employee;
+    notifyListeners();
   }
 }

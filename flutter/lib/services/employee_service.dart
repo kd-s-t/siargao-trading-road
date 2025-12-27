@@ -78,5 +78,15 @@ class EmployeeService {
     final error = jsonDecode(response.body) as Map<String, dynamic>;
     throw Exception(error['error'] ?? 'Failed to update employee');
   }
+
+  static Future<Employee> getMyEmployee() async {
+    final response = await ApiService.get('/me/employee');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return Employee.fromJson(data);
+    }
+    final error = jsonDecode(response.body) as Map<String, dynamic>;
+    throw Exception(error['error'] ?? 'Failed to get employee info');
+  }
 }
 

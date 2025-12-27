@@ -27,6 +27,7 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
 			protected.GET("/me", handlers.GetMe)
+			protected.GET("/me/employee", handlers.GetMyEmployee)
 			protected.PUT("/me", handlers.UpdateMe)
 			protected.POST("/me/open", handlers.OpenStore)
 			protected.POST("/me/close", handlers.CloseStore)

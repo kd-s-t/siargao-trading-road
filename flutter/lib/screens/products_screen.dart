@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:siargao_trading_road/services/product_service.dart';
 import 'package:siargao_trading_road/models/product.dart';
 import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
 import 'package:siargao_trading_road/utils/snackbar_helper.dart';
+import 'package:siargao_trading_road/providers/auth_provider.dart';
 
 class ProductsScreen extends StatefulWidget {
   final bool? useScaffold;
@@ -490,53 +492,59 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ),
                           ],
                         ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isDeleted)
-                        IconButton(
-                          icon: const Icon(Icons.restore_outlined),
-                          tooltip: 'Restore product',
-                          onPressed: () async {
-                            try {
-                              await ProductService.restoreProduct(product.id);
-                              if (!mounted) return;
-                              _loadProducts(force: true);
-                            } catch (e) {
-                              if (!mounted) return;
-                              if (context.mounted) {
-                                SnackbarHelper.showError(context, 'Failed to restore: ${e.toString()}');
-                              }
-                            }
-                          },
-                        )
-                      else ...[
-                        IconButton(
-                          icon: const Icon(Icons.inventory_2_outlined),
-                          tooltip: 'Update stock',
-                          onPressed: _updatingStock ? null : () => _handleUpdateStock(product),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined),
-                          tooltip: 'Edit product',
-                          onPressed: () async {
-                            final result = await Navigator.pushNamed(
-                              context,
-                              '/edit-product',
-                              arguments: {'product': product},
-                            );
-                            if (result == true) {
-                              _loadProducts(force: true);
-                            }
-                          },
-                        ),
-                      ],
-                      if (!isDeleted)
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          tooltip: 'Delete product',
-                          color: Theme.of(context).colorScheme.error,
-                          onPressed: () async {
+                  trailing: Builder(
+                    builder: (context) {
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      final isEmployee = authProvider.isEmployee;
+                      
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isDeleted)
+                            IconButton(
+                              icon: const Icon(Icons.restore_outlined),
+                              tooltip: 'Restore product',
+                              onPressed: () async {
+                                try {
+                                  await ProductService.restoreProduct(product.id);
+                                  if (!mounted) return;
+                                  _loadProducts(force: true);
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  if (context.mounted) {
+                                    SnackbarHelper.showError(context, 'Failed to restore: ${e.toString()}');
+                                  }
+                                }
+                              },
+                            )
+                          else ...[
+                            IconButton(
+                              icon: const Icon(Icons.inventory_2_outlined),
+                              tooltip: 'Update stock',
+                              onPressed: _updatingStock ? null : () => _handleUpdateStock(product),
+                            ),
+                            if (!isEmployee)
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined),
+                                tooltip: 'Edit product',
+                                onPressed: () async {
+                                  final result = await Navigator.pushNamed(
+                                    context,
+                                    '/edit-product',
+                                    arguments: {'product': product},
+                                  );
+                                  if (result == true) {
+                                    _loadProducts(force: true);
+                                  }
+                                },
+                              ),
+                          ],
+                          if (!isDeleted && !isEmployee)
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              tooltip: 'Delete product',
+                              color: Theme.of(context).colorScheme.error,
+                              onPressed: () async {
                             final confirmed = await showDialog<bool>(
                               context: context,
                               builder: (context) => AlertDialog(
@@ -571,7 +579,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             }
                           },
                         ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),

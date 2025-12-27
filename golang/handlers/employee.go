@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
@@ -149,21 +150,38 @@ func UpdateEmployee(c *gin.Context) {
 	}
 	role, _ := c.Get("role")
 	empCtx := getEmployeeContext(c)
-	if empCtx.IsEmployee {
-		c.JSON(http.StatusForbidden, gin.H{"error": "employees cannot manage employees"})
-		return
-	}
-	if role != string(models.RoleSupplier) && role != string(models.RoleStore) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers or stores can update employees"})
-		return
-	}
 
-	id := c.Param("id")
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid employee id"})
+		return
+	}
 
 	var employee models.Employee
-	if err := database.DB.Where("id = ? AND owner_user_id = ?", id, userID).First(&employee).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
-		return
+
+	if empCtx.IsEmployee {
+		if empCtx.EmployeeID == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "employee context not found"})
+			return
+		}
+		if empCtx.EmployeeID != uint(id) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "employees can only update their own profile"})
+			return
+		}
+		if err := database.DB.Where("id = ? AND owner_user_id = ?", empCtx.EmployeeID, userID).First(&employee).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
+			return
+		}
+	} else {
+		if role != string(models.RoleSupplier) && role != string(models.RoleStore) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers or stores can update employees"})
+			return
+		}
+		if err := database.DB.Where("id = ? AND owner_user_id = ?", id, userID).First(&employee).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
+			return
+		}
 	}
 
 	var req EmployeeUpdateRequest
@@ -199,24 +217,49 @@ func UpdateEmployee(c *gin.Context) {
 	if req.Role != nil {
 		employee.Role = *req.Role
 	}
-	if req.CanManageInventory != nil {
-		employee.CanManageInventory = *req.CanManageInventory
-	}
-	if req.CanManageOrders != nil {
-		employee.CanManageOrders = *req.CanManageOrders
-	}
-	if req.CanChat != nil {
-		employee.CanChat = *req.CanChat
-	}
-	if req.CanChangeStatus != nil {
-		employee.CanChangeStatus = *req.CanChangeStatus
-	}
-	if req.StatusActive != nil {
-		employee.StatusActive = *req.StatusActive
+	if !empCtx.IsEmployee {
+		if req.CanManageInventory != nil {
+			employee.CanManageInventory = *req.CanManageInventory
+		}
+		if req.CanManageOrders != nil {
+			employee.CanManageOrders = *req.CanManageOrders
+		}
+		if req.CanChat != nil {
+			employee.CanChat = *req.CanChat
+		}
+		if req.CanChangeStatus != nil {
+			employee.CanChangeStatus = *req.CanChangeStatus
+		}
+		if req.StatusActive != nil {
+			employee.StatusActive = *req.StatusActive
+		}
 	}
 
 	if err := database.DB.Save(&employee).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update employee"})
+		return
+	}
+
+	employee.Password = ""
+	c.JSON(http.StatusOK, employee)
+}
+
+func GetMyEmployee(c *gin.Context) {
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	empCtx := getEmployeeContext(c)
+	if !empCtx.IsEmployee || empCtx.EmployeeID == 0 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not an employee"})
+		return
+	}
+
+	var employee models.Employee
+	if err := database.DB.Where("id = ? AND owner_user_id = ?", empCtx.EmployeeID, userID).First(&employee).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
 		return
 	}
 

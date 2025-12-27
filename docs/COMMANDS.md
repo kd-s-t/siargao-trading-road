@@ -16,7 +16,6 @@ xcrun simctl list devices
 open -a Simulator
 flutter run -d "51048D9B-F1F7-4519-9AD3-E07EC84A4739"
 flutter run -d "51048D9B-F1F7-4519-9AD3-E07EC84A4739" --dart-define=API_URL=http://ec2-44-192-83-29.compute-1.amazonaws.com/api
-
 ```
 
 ```bash

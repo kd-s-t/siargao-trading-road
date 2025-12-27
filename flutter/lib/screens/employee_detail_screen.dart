@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/models/audit_log.dart';
 import 'package:siargao_trading_road/models/employee.dart';
 import 'package:siargao_trading_road/services/audit_log_service.dart';
+import 'package:siargao_trading_road/services/employee_service.dart';
+import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 
 class EmployeeDetailScreen extends StatefulWidget {
   final Employee employee;
@@ -26,10 +28,12 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   int _totalPages = 1;
   int _total = 0;
   final int _limit = 50;
+  late Employee _currentEmployee;
 
   @override
   void initState() {
     super.initState();
+    _currentEmployee = widget.employee;
     _loadLogs();
   }
 
@@ -45,7 +49,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
     try {
       final result = await AuditLogService.fetchAuditLogs(
-        employeeId: widget.employee.id,
+        employeeId: _currentEmployee.id,
         page: _currentPage,
         limit: _limit,
       );
@@ -93,19 +97,23 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.employee.username,
+                        _currentEmployee.username,
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (widget.employee.name != null || widget.employee.role != null)
+                      if (_currentEmployee.role != null || 
+                          (_currentEmployee.name != null && 
+                           _currentEmployee.name!.trim().toLowerCase() != _currentEmployee.username.trim().toLowerCase()))
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             [
-                              if (widget.employee.name != null) widget.employee.name!,
-                              if (widget.employee.role != null) widget.employee.role!
+                              if (_currentEmployee.name != null && 
+                                  _currentEmployee.name!.trim().toLowerCase() != _currentEmployee.username.trim().toLowerCase())
+                                _currentEmployee.name!,
+                              if (_currentEmployee.role != null) _currentEmployee.role!
                             ].join(' • '),
                             style: TextStyle(
                               fontSize: 16,
@@ -119,17 +127,17 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: widget.employee.statusActive
+                    color: _currentEmployee.statusActive
                         ? Colors.green.withOpacity(0.1)
                         : Colors.grey.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    widget.employee.statusActive ? 'Active' : 'Inactive',
+                    _currentEmployee.statusActive ? 'Active' : 'Inactive',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: widget.employee.statusActive
+                      color: _currentEmployee.statusActive
                           ? Colors.green.shade700
                           : Colors.grey.shade700,
                     ),
@@ -137,9 +145,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 ),
               ],
             ),
-            if (widget.employee.phone != null) ...[
+            if (_currentEmployee.phone != null && _currentEmployee.phone!.trim().isNotEmpty) ...[
               const SizedBox(height: 16),
-              _buildInfoRow(Icons.phone, 'Phone', widget.employee.phone!),
+              _buildInfoRow(Icons.phone, 'Phone', _currentEmployee.phone!),
             ],
             const SizedBox(height: 16),
             const Divider(),
@@ -157,53 +165,105 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
               runSpacing: 8,
               children: [
                 _buildPermissionChip(
-                  'Inventory',
+                  _currentEmployee.canManageInventory ? 'can do inventory' : 'cant do inventory',
                   Icons.inventory_2_outlined,
-                  widget.employee.canManageInventory,
+                  _currentEmployee.canManageInventory,
                 ),
                 _buildPermissionChip(
-                  'Orders',
+                  _currentEmployee.canManageOrders ? 'can create order' : 'cant create order',
                   Icons.shopping_cart_outlined,
-                  widget.employee.canManageOrders,
+                  _currentEmployee.canManageOrders,
                 ),
                 _buildPermissionChip(
-                  'Chat',
+                  _currentEmployee.canChat ? 'can chat in order' : 'cant chat in order',
                   Icons.chat_outlined,
-                  widget.employee.canChat,
+                  _currentEmployee.canChat,
                 ),
                 _buildPermissionChip(
-                  'Status',
+                  _currentEmployee.canChangeStatus ? 'can update order status' : 'cant update order status',
                   Icons.toggle_on_outlined,
-                  widget.employee.canChangeStatus,
+                  _currentEmployee.canChangeStatus,
                 ),
                 _buildPermissionChip(
-                  'Rate',
+                  _currentEmployee.canRate ? 'can rate' : 'cant rate',
                   Icons.star_outline,
-                  widget.employee.canRate,
+                  _currentEmployee.canRate,
                 ),
               ],
             ),
             const SizedBox(height: 16),
             const Divider(),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoRow(
-                    Icons.calendar_today,
-                    'Created',
-                    DateFormat('MMM dd, yyyy').format(widget.employee.createdAt),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Created',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
+                            const SizedBox(width: 6),
+                            Text(
+                              DateFormat('MMM dd, yyyy').format(_currentEmployee.createdAt),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildInfoRow(
-                    Icons.update,
-                    'Updated',
-                    DateFormat('MMM dd, yyyy').format(widget.employee.updatedAt),
+                  Container(width: 1, height: 40, color: Colors.grey.shade300),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Updated',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.update, size: 16, color: Colors.grey.shade600),
+                            const SizedBox(width: 6),
+                            Text(
+                              DateFormat('MMM dd, yyyy').format(_currentEmployee.updatedAt),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -271,17 +331,41 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                   : Colors.grey.shade600,
             ),
           ),
-          if (!enabled) ...[
-            const SizedBox(width: 4),
-            Icon(
-              Icons.close,
-              size: 14,
-              color: Colors.grey.shade600,
-            ),
-          ],
+          const SizedBox(width: 4),
+          Icon(
+            enabled ? Icons.check : Icons.close,
+            size: 14,
+            color: enabled ? Colors.green : Colors.red,
+          ),
         ],
       ),
     );
+  }
+
+  String _getHumanReadableEndpoint(String endpoint) {
+    if (endpoint.isEmpty) return 'Unknown';
+    
+    final cleanEndpoint = endpoint.replaceAll('/api/', '').replaceAll('/', ' ');
+    final parts = cleanEndpoint.split(' ').where((p) => p.isNotEmpty).toList();
+    
+    if (parts.isEmpty) return 'API Request';
+    
+    final resource = parts[0];
+    String readable = resource.split('_').map((word) {
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + word.substring(1);
+    }).join(' ');
+    
+    if (parts.length > 1) {
+      final action = parts[1];
+      if (action.contains('id') || RegExp(r'\d+').hasMatch(action)) {
+        readable += ' Details';
+      } else {
+        readable += ' - ${action.split('_').map((w) => w[0].toUpperCase() + w.substring(1)).join(' ')}';
+      }
+    }
+    
+    return readable.isEmpty ? 'API Request' : readable;
   }
 
   Widget _buildAuditLogsTable() {
@@ -343,132 +427,44 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Activity Logs (${_total})',
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               if (_total > _logs.length)
-                TextButton(
+                TextButton.icon(
                   onPressed: _loadMore,
-                  child: const Text('Load More'),
+                  icon: const Icon(Icons.expand_more, size: 18),
+                  label: const Text('Load More'),
                 ),
             ],
           ),
         ),
-        Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowColor: MaterialStateProperty.all(Colors.grey.shade100),
-              columns: const [
-                DataColumn(label: Text('Timestamp')),
-                DataColumn(label: Text('Method')),
-                DataColumn(label: Text('Endpoint')),
-                DataColumn(label: Text('Status')),
-                DataColumn(label: Text('Duration')),
-                DataColumn(label: Text('IP Address')),
-              ],
-              rows: _logs.map((log) {
-                final dateFormat = DateFormat('MMM dd, HH:mm:ss');
-                final isError = log.statusCode >= 400;
-                
-                return DataRow(
-                  cells: [
-                    DataCell(Text(
-                      dateFormat.format(log.createdAt),
-                      style: const TextStyle(fontSize: 12),
-                    )),
-                    DataCell(Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _getMethodColor(log.method),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        log.method,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    )),
-                    DataCell(SizedBox(
-                      width: 200,
-                      child: Text(
-                        log.endpoint,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isError ? Colors.red : null,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )),
-                    DataCell(Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          log.statusEmoji,
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isError ? Colors.red.shade50 : Colors.green.shade50,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            '${log.statusCode}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isError ? Colors.red.shade700 : Colors.green.shade700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )),
-                    DataCell(Text(
-                      '${log.durationMs}ms',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    )),
-                    DataCell(Text(
-                      log.ipAddress,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    )),
-                  ],
-                  onSelectChanged: (selected) {
-                    if (selected == true) {
-                      _showLogDetails(log);
-                    }
-                  },
-                );
-              }).toList(),
-            ),
-          ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: _logs.length,
+          itemBuilder: (context, index) {
+            final log = _logs[index];
+            return _buildLogCard(log);
+          },
         ),
         if (_currentPage < _totalPages)
           Center(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: ElevatedButton(
+              child: OutlinedButton.icon(
                 onPressed: _loadMore,
-                child: const Text('Load More'),
+                icon: const Icon(Icons.expand_more),
+                label: const Text('Load More'),
               ),
             ),
           ),
@@ -476,118 +472,256 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     );
   }
 
-  void _showLogDetails(AuditLog log) {
-    showDialog(
+  String _formatReadableTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute;
+    final period = hour >= 12 ? 'pm' : 'am';
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    
+    if (minute == 0) {
+      return '$displayHour$period';
+    } else {
+      return '$displayHour:${minute.toString().padLeft(2, '0')}$period';
+    }
+  }
+
+  String _formatReadableDate(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final logDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    
+    if (logDate == today) {
+      return 'today';
+    } else if (logDate == yesterday) {
+      return 'yesterday';
+    } else {
+      return 'on ${DateFormat('MMM dd, yyyy').format(dateTime)}';
+    }
+  }
+
+  Future<void> _openEditDialog() async {
+    final formKey = GlobalKey<FormState>();
+    final usernameController = TextEditingController(text: _currentEmployee.username);
+    final passwordController = TextEditingController();
+    final nameController = TextEditingController(text: _currentEmployee.name ?? '');
+    final phoneController = TextEditingController(text: _currentEmployee.phone ?? '');
+    final roleController = TextEditingController(text: _currentEmployee.role ?? '');
+    bool canManageInventory = _currentEmployee.canManageInventory;
+    bool canManageOrders = _currentEmployee.canManageOrders;
+    bool canChat = _currentEmployee.canChat;
+    bool canChangeStatus = _currentEmployee.canChangeStatus;
+    bool statusActive = _currentEmployee.statusActive;
+    bool submitting = false;
+
+    await showDialog<bool>(
       context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppBar(
-                title: const Text('Log Details'),
-                automaticallyImplyLeading: false,
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              title: const Text('Edit Employee'),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildDetailRow('Action', log.action),
-                      const Divider(),
-                      _buildDetailRow('Method', log.method),
-                      const Divider(),
-                      _buildDetailRow('Endpoint', log.endpoint),
-                      const Divider(),
-                      _buildDetailRow('Status Code', '${log.statusCode}'),
-                      const Divider(),
-                      _buildDetailRow('Duration', '${log.durationMs}ms'),
-                      const Divider(),
-                      _buildDetailRow('IP Address', log.ipAddress),
-                      const Divider(),
-                      _buildDetailRow('User Agent', log.userAgent),
-                      if (log.requestBody != null && log.requestBody!.isNotEmpty) ...[
-                        const Divider(),
-                        _buildDetailRow('Request Body', log.requestBody!),
-                      ],
-                      if (log.responseBody != null && log.responseBody!.isNotEmpty) ...[
-                        const Divider(),
-                        _buildDetailRow('Response Body', log.responseBody!),
-                      ],
-                      if (log.errorMessage != null && log.errorMessage!.isNotEmpty) ...[
-                        const Divider(),
-                        _buildDetailRow('Error', log.errorMessage!, isError: true),
-                      ],
+                      TextFormField(
+                        controller: usernameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Username',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Username is required';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Password',
+                          border: OutlineInputBorder(),
+                          helperText: 'Leave blank to keep current password',
+                        ),
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty && value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: phoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: roleController,
+                        decoration: const InputDecoration(
+                          labelText: 'Role',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SwitchListTile(
+                        value: canManageInventory,
+                        onChanged: (v) {
+                          setModalState(() {
+                            canManageInventory = v;
+                          });
+                        },
+                        title: const Text('Manage Inventory'),
+                      ),
+                      SwitchListTile(
+                        value: canManageOrders,
+                        onChanged: (v) {
+                          setModalState(() {
+                            canManageOrders = v;
+                          });
+                        },
+                        title: const Text('Manage Orders'),
+                      ),
+                      SwitchListTile(
+                        value: canChat,
+                        onChanged: (v) {
+                          setModalState(() {
+                            canChat = v;
+                          });
+                        },
+                        title: const Text('Chat'),
+                      ),
+                      SwitchListTile(
+                        value: canChangeStatus,
+                        onChanged: (v) {
+                          setModalState(() {
+                            canChangeStatus = v;
+                          });
+                        },
+                        title: const Text('Change Status'),
+                      ),
+                      SwitchListTile(
+                        value: statusActive,
+                        onChanged: (v) {
+                          setModalState(() {
+                            statusActive = v;
+                          });
+                        },
+                        title: const Text('Active'),
+                      ),
                     ],
                   ),
                 ),
               ),
-            ],
+              actions: [
+                TextButton(
+                  onPressed: submitting ? null : () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: submitting
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) {
+                            return;
+                          }
+                          setModalState(() {
+                            submitting = true;
+                          });
+                          try {
+                            final updated = await EmployeeService.updateEmployee(
+                              _currentEmployee.id,
+                              username: usernameController.text.trim(),
+                              password: passwordController.text.isEmpty ? null : passwordController.text,
+                              name: nameController.text.trim().isEmpty ? null : nameController.text.trim(),
+                              phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+                              role: roleController.text.trim().isEmpty ? null : roleController.text.trim(),
+                              canManageInventory: canManageInventory,
+                              canManageOrders: canManageOrders,
+                              canChat: canChat,
+                              canChangeStatus: canChangeStatus,
+                              statusActive: statusActive,
+                            );
+                            if (context.mounted) {
+                              setState(() {
+                                _currentEmployee = updated;
+                              });
+                              Navigator.of(context).pop(true);
+                              SnackbarHelper.showSuccess(context, 'Employee updated successfully');
+                            }
+                          } catch (e) {
+                            setModalState(() {
+                              submitting = false;
+                            });
+                            if (context.mounted) {
+                              SnackbarHelper.showError(context, e.toString().replaceAll('Exception: ', ''));
+                            }
+                          }
+                        },
+                  child: submitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLogCard(AuditLog log) {
+    final actionName = _getHumanReadableEndpoint(log.endpoint);
+    final readableTime = _formatReadableTime(log.createdAt);
+    final readableDate = _formatReadableDate(log.createdAt);
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          '$actionName at $readableTime $readableDate.',
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isError = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey.shade700,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isError ? Colors.red.shade50 : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: SelectableText(
-            value,
-            style: TextStyle(
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: isError ? Colors.red.shade900 : Colors.black87,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getMethodColor(String method) {
-    switch (method.toUpperCase()) {
-      case 'GET':
-        return Colors.blue;
-      case 'POST':
-        return Colors.green;
-      case 'PUT':
-      case 'PATCH':
-        return Colors.orange;
-      case 'DELETE':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -607,7 +741,14 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.employee.username),
+        title: Text(_currentEmployee.username),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit employee',
+            onPressed: () => _openEditDialog(),
+          ),
+        ],
       ),
       body: body,
     );

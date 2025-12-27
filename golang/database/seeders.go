@@ -91,8 +91,12 @@ func SeedSuppliers() error {
 		if err := DB.Where("email = ?", s.email).First(&existing).Error; err == nil {
 			existing.Name = s.name
 			existing.Phone = s.phone
-			existing.LogoURL = s.logoURL
-			existing.BannerURL = s.bannerURL
+			if s.logoURL != "" {
+				existing.LogoURL = s.logoURL
+			}
+			if s.bannerURL != "" {
+				existing.BannerURL = s.bannerURL
+			}
 			existing.Address = s.address
 			existing.Latitude = s.latitude
 			existing.Longitude = s.longitude
@@ -174,8 +178,12 @@ func SeedStores() error {
 		if err := DB.Where("email = ?", s.email).First(&existing).Error; err == nil {
 			existing.Name = s.name
 			existing.Phone = s.phone
-			existing.LogoURL = s.logoURL
-			existing.BannerURL = s.bannerURL
+			if s.logoURL != "" {
+				existing.LogoURL = s.logoURL
+			}
+			if s.bannerURL != "" {
+				existing.BannerURL = s.bannerURL
+			}
 			existing.Address = s.address
 			existing.Latitude = s.latitude
 			existing.Longitude = s.longitude
