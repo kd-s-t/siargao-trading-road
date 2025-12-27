@@ -61,10 +61,13 @@ Siargao Trading Road is a comprehensive B2B marketplace platform designed to str
 
 ## Features
 
-- **Supplier Management**: Register, add products via Excel/JSON/manual entry
+- **Supplier Management**: Register, add products via CSV/Excel bulk upload or manual entry
 - **Store Management**: Register, browse suppliers, purchase products
 - **Product Management**: Full CRUD operations with soft delete and restore
-- **Authentication**: JWT-based secure authentication system
+- **Bulk Product Upload**: Upload multiple products at once via CSV or Excel files with validation
+- **Employee Management**: Create and manage employees with granular permissions
+- **Order Management**: Complete order lifecycle from draft to delivery
+- **Authentication**: JWT-based secure authentication system with employee login support
 - **Multi-Platform**: 
   - React Native mobile app (suppliers & stores)
   - Flutter mobile app (suppliers & stores) - *New*
