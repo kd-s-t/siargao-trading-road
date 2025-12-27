@@ -118,10 +118,13 @@ export default function Home() {
     if (!showLanding) return;
     const fetchMetrics = async () => {
       try {
-        const response = await api.get('/public/metrics');
-        setMetrics(response.data);
-      } catch {
-        return;
+        const response = await fetch('/api/public/metrics');
+        if (response.ok) {
+          const data = await response.json();
+          setMetrics(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch metrics:', error);
       }
     };
     fetchMetrics();
