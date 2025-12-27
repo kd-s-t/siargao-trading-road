@@ -19,7 +19,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/marketing/Header';
 import Footer from '@/components/marketing/Footer';
 import { getDownloadUrls } from '@/components/marketing/downloads';
-import api from '@/lib/api';
 
 const features = [
   {
