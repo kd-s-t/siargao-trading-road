@@ -13,7 +13,7 @@ import (
 func GetAuditLogs(c *gin.Context) {
 	userRole, _ := c.Get("role")
 	currentUserID, err := getUserID(c)
-	
+
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
 		c.Abort()
