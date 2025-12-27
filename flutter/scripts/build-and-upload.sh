@@ -5,6 +5,9 @@
 
 set -e
 
+# Change to the flutter directory (script is in flutter/scripts/)
+cd "$(dirname "$0")/.."
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'

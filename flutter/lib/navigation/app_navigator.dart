@@ -10,6 +10,18 @@ import 'package:siargao_trading_road/navigation/supplier_drawer.dart';
 import 'package:siargao_trading_road/navigation/admin_drawer.dart';
 import 'package:siargao_trading_road/services/feature_flag_service.dart';
 
+ThemeData _buildMaterial3Theme() {
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFF1976D2),
+      primary: const Color(0xFF1976D2),
+      secondary: const Color(0xFF38B2AC),
+      brightness: Brightness.light,
+    ),
+  );
+}
+
 class AppNavigator extends StatelessWidget {
   const AppNavigator({super.key});
 
@@ -42,10 +54,7 @@ class _MainAppState extends State<_MainApp> {
         if (authProvider.user == null) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-              primaryColor: const Color(0xFF1976D2),
-            ),
+            theme: _buildMaterial3Theme(),
             initialRoute: '/login',
             routes: {
               '/login': (context) => const LoginScreen(),
@@ -62,10 +71,7 @@ class _MainAppState extends State<_MainApp> {
         if (!hasOnboardingFlag) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-              primaryColor: const Color(0xFF1976D2),
-            ),
+            theme: _buildMaterial3Theme(),
             home: OnboardingScreen(
               onComplete: () {
                 if (!mounted) return;
@@ -80,10 +86,7 @@ class _MainAppState extends State<_MainApp> {
         if (needsAddress) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-              primaryColor: const Color(0xFF1976D2),
-            ),
+            theme: _buildMaterial3Theme(),
             home: const ProfileScreen(),
           );
         }

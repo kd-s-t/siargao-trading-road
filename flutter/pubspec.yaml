@@ -42,7 +42,6 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   image: ^4.1.7
   add_to_cart_animation: ^2.0.4
-  introduction_screen: ^4.0.0
 
 dev_dependencies:
   flutter_test:

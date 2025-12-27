@@ -249,64 +249,34 @@ class _AdminDrawerState extends State<AdminDrawer> {
 
   Widget _buildProfileIcon(AuthProvider authProvider, bool isActive, BuildContext context) {
     final logo = authProvider.user?.logoUrl;
-    final iconColor = isActive ? Theme.of(context).colorScheme.secondary : Colors.white;
     
     if (logo != null && logo.isNotEmpty) {
-      return Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
+      return Image.network(
+        logo,
+        width: 30,
+        height: 30,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(
+            Icons.account_circle,
+            size: 30,
             color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
-            width: 2,
-          ),
-          color: Colors.white,
-        ),
-        child: ClipOval(
-          child: Image.network(
-            logo,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: Colors.white,
-                child: Icon(
-                  Icons.account_circle,
-                  size: 30,
-                  color: iconColor,
-                ),
-              );
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
-                color: Colors.white,
-                child: Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                        : null,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Icon(
+            Icons.account_circle,
+            size: 30,
+            color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+          );
+        },
       );
     }
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(
-          color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
-          width: 2,
-        ),
-      ),
-      child: Icon(Icons.account_circle, size: 30, color: iconColor),
+    return Icon(
+      Icons.account_circle,
+      size: 30,
+      color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
     );
   }
 

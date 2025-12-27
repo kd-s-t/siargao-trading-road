@@ -4,6 +4,7 @@
 ```bash
 emulator -list-avds
 emulator -avd Medium_Phone_API_35
+emulator -avd Pixel_Tablet_API_35
 flutter run -d "emulator-5554"
 flutter run -d "emulator-5554" --dart-define=API_URL=http://10.0.2.2:3020/api
 ```
