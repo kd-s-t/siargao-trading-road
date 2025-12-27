@@ -49,6 +49,11 @@ func Connect(cfg *config.Config) error {
 		return fmt.Errorf("failed to migrate audit_logs.action column: %w", err)
 	}
 
+	err = migrateAuditLogsEmployeeIDColumn()
+	if err != nil {
+		return fmt.Errorf("failed to migrate audit_logs.employee_id column: %w", err)
+	}
+
 	err = migrateRemoveWorkingDaysColumn()
 	if err != nil {
 		return fmt.Errorf("failed to remove working_days column: %w", err)
@@ -118,6 +123,11 @@ func Migrate() error {
 		return fmt.Errorf("failed to migrate audit_logs.action column: %w", err)
 	}
 
+	err = migrateAuditLogsEmployeeIDColumn()
+	if err != nil {
+		return fmt.Errorf("failed to migrate audit_logs.employee_id column: %w", err)
+	}
+
 	err = migrateRemoveWorkingDaysColumn()
 	if err != nil {
 		return fmt.Errorf("failed to remove working_days column: %w", err)
@@ -169,6 +179,43 @@ func migrateAuditLogsActionColumn() error {
 	err = DB.Exec("ALTER TABLE audit_logs ALTER COLUMN action TYPE VARCHAR(255)").Error
 	if err != nil {
 		return fmt.Errorf("failed to alter column: %w", err)
+	}
+
+	return nil
+}
+
+func migrateAuditLogsEmployeeIDColumn() error {
+	if DB == nil {
+		return fmt.Errorf("database connection not initialized")
+	}
+
+	var exists bool
+	err := DB.Raw(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_name = 'audit_logs' AND column_name = 'employee_id'
+		)
+	`).Row().Scan(&exists)
+
+	if err != nil {
+		return fmt.Errorf("failed to check column existence: %w", err)
+	}
+
+	if exists {
+		return nil
+	}
+
+	// Add the employee_id column as nullable (safe, won't delete data)
+	err = DB.Exec("ALTER TABLE audit_logs ADD COLUMN employee_id INTEGER").Error
+	if err != nil {
+		return fmt.Errorf("failed to add employee_id column: %w", err)
+	}
+
+	// Add index for better query performance
+	err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_audit_logs_employee_id ON audit_logs(employee_id)").Error
+	if err != nil {
+		return fmt.Errorf("failed to create employee_id index: %w", err)
 	}
 
 	return nil
@@ -294,6 +341,11 @@ func FixDatabaseTables() error {
 	err := migrateAuditLogsActionColumn()
 	if err != nil {
 		return fmt.Errorf("failed to migrate audit_logs.action column: %w", err)
+	}
+
+	err = migrateAuditLogsEmployeeIDColumn()
+	if err != nil {
+		return fmt.Errorf("failed to migrate audit_logs.employee_id column: %w", err)
 	}
 
 	err = migrateRemoveWorkingDaysColumn()
