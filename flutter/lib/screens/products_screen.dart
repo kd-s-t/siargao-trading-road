@@ -7,6 +7,7 @@ import 'package:siargao_trading_road/models/product.dart';
 import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
 import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
+import 'package:siargao_trading_road/navigation/supplier_drawer.dart';
 
 class ProductsScreen extends StatefulWidget {
   final bool? useScaffold;
@@ -77,6 +78,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
       });
       _animationTimers.add(timer);
     }
+  }
+
+  void refreshProducts() {
+    _loadProducts(force: true);
   }
 
   Future<void> _loadProducts({bool force = false}) async {
@@ -496,6 +501,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     builder: (context) {
                       final authProvider = Provider.of<AuthProvider>(context, listen: false);
                       final isEmployee = authProvider.isEmployee;
+                      final canManageInventory = authProvider.employee?.canManageInventory ?? false;
                       
                       return Row(
                         mainAxisSize: MainAxisSize.min,
@@ -518,12 +524,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               },
                             )
                           else ...[
-                            IconButton(
-                              icon: const Icon(Icons.inventory_2_outlined),
-                              tooltip: 'Update stock',
-                              onPressed: _updatingStock ? null : () => _handleUpdateStock(product),
-                            ),
-                            if (!isEmployee)
+                            if (!isEmployee || canManageInventory)
+                              IconButton(
+                                icon: const Icon(Icons.inventory_2_outlined),
+                                tooltip: 'Update stock',
+                                onPressed: _updatingStock ? null : () => _handleUpdateStock(product),
+                              ),
+                            if (!isEmployee || canManageInventory)
                               IconButton(
                                 icon: const Icon(Icons.edit_outlined),
                                 tooltip: 'Edit product',
@@ -713,17 +720,86 @@ class _ProductsScreenState extends State<ProductsScreen> {
       body: SafeArea(
         child: body,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.pushNamed(context, '/add-product');
-          if (result is Product && mounted) {
-            setState(() {
-              _products.insert(0, result);
-            });
-            _startItemAnimations();
+      floatingActionButton: Builder(
+        builder: (context) {
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final isEmployee = authProvider.isEmployee;
+          final canManageInventory = authProvider.employee?.canManageInventory ?? false;
+          
+          if (isEmployee) {
+            if (!canManageInventory) {
+              return const SizedBox.shrink();
+            }
+            return FloatingActionButton(
+              onPressed: () async {
+                final result = await Navigator.pushNamed(context, '/add-product');
+                if (result is Product && mounted) {
+                  setState(() {
+                    _products.insert(0, result);
+                  });
+                  _startItemAnimations();
+                }
+              },
+              child: const Icon(Icons.add),
+            );
           }
+          
+          return FloatingActionButton(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (context) => SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.add),
+                        title: const Text('Add 1 Product'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, '/add-product').then((result) {
+                            if (result is Product && mounted) {
+                              setState(() {
+                                _products.insert(0, result);
+                              });
+                              _startItemAnimations();
+                            }
+                          });
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.upload_file),
+                        title: const Text('Upload CSV'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          final navigator = SupplierDrawer.navigatorKey.currentState;
+                          if (navigator != null) {
+                            navigator.pushNamed('/bulk-upload-products').then((result) {
+                              if (result == true && mounted) {
+                                _loadProducts(force: true);
+                              }
+                            });
+                          } else {
+                            Navigator.pushNamed(context, '/bulk-upload-products').then((result) {
+                              if (result == true && mounted) {
+                                _loadProducts(force: true);
+                              }
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              );
+            },
+            child: const Icon(Icons.add),
+          );
         },
-        child: const Icon(Icons.add),
       ),
     );
   }

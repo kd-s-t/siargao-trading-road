@@ -47,8 +47,14 @@ Siargao Trading Road is a comprehensive B2B marketplace platform designed to str
   <h3>Landing Page</h3>
   <img src="./landingpage.png" alt="Siargao Trading Road Landing Page" width="100%" style="border: 1px solid;" />
   
-  <h3>Mobile App - Login Screen</h3>
-  <img src="./login.png" alt="Mobile App Login Screen" width="30%" style="border: 1px solid;" />
+  <h3>iPhone</h3>
+  <img src="./s1.png" alt="Login" width="30%" style="border: 1px solid;" />
+  <img src="./s2.png" alt="On Boarding" width="30%" style="border: 1px solid;" />
+  <img src="./s3.png" alt="Order" width="30%" style="border: 1px solid;" />
+  
+  <h3>Android Tablet</h3>
+  <img src="./a2.png" alt="Login" width="100%" style="border: 1px solid;" />
+  <img src="./a1.png" alt="On Boarding" width="100%" style="border: 1px solid;" />
 </div>
 
 ---

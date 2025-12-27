@@ -13,6 +13,7 @@ import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/employees_screen.dart';
 import 'package:siargao_trading_road/screens/schedule_editor_screen.dart';
 import 'package:siargao_trading_road/screens/ratings_screen.dart';
+import 'package:siargao_trading_road/screens/bulk_upload_products_screen.dart';
 import 'package:siargao_trading_road/navigation/smooth_page_route.dart';
 import 'package:siargao_trading_road/models/product.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
@@ -77,6 +78,17 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
     super.dispose();
   }
 
+  Widget _buildAppBarTitle(bool isTablet, String? title) {
+    if (isTablet) {
+      return Image.asset(
+        'assets/splash.png',
+        height: 32,
+        fit: BoxFit.contain,
+      );
+    }
+    return title != null ? Text(title) : const SizedBox.shrink();
+  }
+
   AppBar? _buildAppBar(BuildContext context, AuthProvider authProvider) {
     final isEditing = _profileEditKey.currentState?.isEditing ?? false;
     final isTablet = _isTablet(context);
@@ -87,16 +99,55 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
       switch (_currentIndex) {
         case 0:
           return AppBar(
-            title: const Text('My Products'),
+            title: _buildAppBarTitle(isTablet, 'My Products'),
+            centerTitle: isTablet,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.red),
+                tooltip: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
+              ),
+            ],
           );
         case 1:
           return AppBar(
-            title: const Text('Orders'),
+            title: _buildAppBarTitle(isTablet, 'Orders'),
+            centerTitle: isTablet,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.red),
+                tooltip: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
+              ),
+            ],
           );
         case 2:
           return AppBar(
-            title: const Text('Profile'),
+            title: _buildAppBarTitle(isTablet, 'Profile'),
+            centerTitle: isTablet,
             automaticallyImplyLeading: false,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.red),
+                tooltip: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
+              ),
+            ],
           );
         default:
           return null;
@@ -106,16 +157,19 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
     switch (_currentIndex) {
       case 0:
         return AppBar(
-          title: const Text('My Products'),
+          title: _buildAppBarTitle(isTablet, 'My Products'),
+          centerTitle: isTablet,
         );
       case 1:
         return AppBar(
-          title: const Text('Orders'),
+          title: _buildAppBarTitle(isTablet, 'Orders'),
+          centerTitle: isTablet,
         );
       case 2:
         if (isPhone) {
           return AppBar(
-            title: const Text('Profile'),
+            title: _buildAppBarTitle(isTablet, 'Profile'),
+            centerTitle: isTablet,
             automaticallyImplyLeading: false,
             actions: [
               if (isEditing)
@@ -152,16 +206,19 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
           );
         } else {
           return AppBar(
-            title: const Text('Analytics'),
+            title: _buildAppBarTitle(isTablet, 'Analytics'),
+            centerTitle: isTablet,
           );
         }
       case 3:
         return AppBar(
-          title: const Text('Manage Employees'),
+          title: _buildAppBarTitle(isTablet, 'Manage Employees'),
+          centerTitle: isTablet,
         );
       case 4:
         return AppBar(
-          title: const Text('Profile'),
+          title: _buildAppBarTitle(isTablet, 'Profile'),
+          centerTitle: isTablet,
           actions: [
             if (isEditing)
               TextButton(
@@ -197,22 +254,89 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
         );
       default:
         return AppBar(
-          title: const Text('Siargao Trading Road'),
+          title: _buildAppBarTitle(isTablet, 'Siargao Trading Road'),
+          centerTitle: isTablet,
         );
     }
   }
 
   Widget? _buildFloatingActionButton() {
     if (_currentIndex == 0) {
-      return FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.pushNamed(context, '/add-product');
-          if (result is Product) {
-            final state = _productsScreenKey.currentState;
-            if (state != null) {
-              (state as dynamic).addProduct(result);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final isEmployee = authProvider.isEmployee;
+      
+      if (isEmployee) {
+        return FloatingActionButton(
+          onPressed: () async {
+            final result = await Navigator.pushNamed(context, '/add-product');
+            if (result is Product) {
+              final state = _productsScreenKey.currentState;
+              if (state != null) {
+                (state as dynamic).addProduct(result);
+              }
             }
-          }
+          },
+          child: const Icon(Icons.add),
+        );
+      }
+      
+      return FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (context) => SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.add),
+                    title: const Text('Add 1 Product'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/add-product').then((result) {
+                        if (result is Product && mounted) {
+                          final state = _productsScreenKey.currentState;
+                          if (state != null) {
+                            (state as dynamic).addProduct(result);
+                          }
+                        }
+                      });
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.upload_file),
+                    title: const Text('Upload CSV'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (SupplierDrawer.navigatorKey.currentState != null) {
+                        SupplierDrawer.navigatorKey.currentState!.pushNamed('/bulk-upload-products').then((result) {
+                          if (result == true && mounted) {
+                            final state = _productsScreenKey.currentState;
+                            if (state != null) {
+                              (state as dynamic).refreshProducts();
+                            }
+                          }
+                        });
+                      } else {
+                        Navigator.pushNamed(context, '/bulk-upload-products').then((result) {
+                          if (result == true && mounted) {
+                            final state = _productsScreenKey.currentState;
+                            if (state != null) {
+                              (state as dynamic).refreshProducts();
+                            }
+                          }
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          );
         },
         child: const Icon(Icons.add),
       );
@@ -249,48 +373,48 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
     final isEmployee = authProvider.isEmployee;
     
     final destinations = isEmployee
-        ? const [
-            NavigationRailDestination(
+        ? [
+            const NavigationRailDestination(
               icon: Icon(Icons.inventory_2_outlined),
               selectedIcon: Icon(Icons.inventory_2),
               label: Text('Products'),
             ),
-            NavigationRailDestination(
+            const NavigationRailDestination(
               icon: Icon(Icons.shopping_cart_outlined),
               selectedIcon: Icon(Icons.shopping_cart),
               label: Text('Orders'),
             ),
             NavigationRailDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: Text('Profile'),
+              icon: _buildProfileIconForRail(authProvider, false, context, iconSize),
+              selectedIcon: _buildProfileIconForRail(authProvider, true, context, iconSize),
+              label: const Text('Profile'),
             ),
           ]
-        : const [
-            NavigationRailDestination(
+        : [
+            const NavigationRailDestination(
               icon: Icon(Icons.inventory_2_outlined),
               selectedIcon: Icon(Icons.inventory_2),
               label: Text('Products'),
             ),
-            NavigationRailDestination(
+            const NavigationRailDestination(
               icon: Icon(Icons.shopping_cart_outlined),
               selectedIcon: Icon(Icons.shopping_cart),
               label: Text('Orders'),
             ),
-            NavigationRailDestination(
+            const NavigationRailDestination(
               icon: Icon(Icons.analytics_outlined),
               selectedIcon: Icon(Icons.analytics),
               label: Text('Analytics'),
             ),
-            NavigationRailDestination(
+            const NavigationRailDestination(
               icon: Icon(Icons.people_outline),
               selectedIcon: Icon(Icons.people),
               label: Text('Employees'),
             ),
             NavigationRailDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: Text('Profile'),
+              icon: _buildProfileIconForRail(authProvider, false, context, iconSize),
+              selectedIcon: _buildProfileIconForRail(authProvider, true, context, iconSize),
+              label: const Text('Profile'),
             ),
           ];
     
@@ -317,28 +441,26 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
         fontSize: 12,
       ),
       destinations: destinations,
-      trailing: !authProvider.isEmployee
-          ? Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: IconButton(
-                      icon: const Icon(Icons.logout, color: Colors.red),
-                      tooltip: 'Logout',
-                      onPressed: () async {
-                        await authProvider.logout();
-                        if (context.mounted) {
-                          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-                        }
-                      },
-                    ),
-                  ),
-                ],
+      trailing: Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: IconButton(
+                icon: const Icon(Icons.logout, color: Colors.red),
+                tooltip: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
               ),
-            )
-          : null,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -439,6 +561,9 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
           case '/ratings':
             screen = const RatingsScreen();
             break;
+          case '/bulk-upload-products':
+            screen = const BulkUploadProductsScreen();
+            break;
           default:
             return null;
         }
@@ -480,6 +605,42 @@ class _SupplierDrawerState extends State<SupplierDrawer> {
       Icons.account_circle,
       size: 30,
       color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+    );
+  }
+
+  Widget _buildProfileIconForRail(AuthProvider authProvider, bool isSelected, BuildContext context, double iconSize) {
+    final logo = authProvider.user?.logoUrl;
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    if (logo != null && logo.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          logo,
+          width: iconSize,
+          height: iconSize,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(
+              Icons.person_outline,
+              size: iconSize,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Icon(
+              Icons.person_outline,
+              size: iconSize,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            );
+          },
+        ),
+      );
+    }
+    return Icon(
+      isSelected ? Icons.person : Icons.person_outline,
+      size: iconSize,
+      color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
     );
   }
 

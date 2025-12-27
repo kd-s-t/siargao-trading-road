@@ -41,16 +41,30 @@ class _AdminDrawerState extends State<AdminDrawer> {
     super.dispose();
   }
 
+  Widget _buildAppBarTitle(bool isTablet, String? title) {
+    if (isTablet) {
+      return Image.asset(
+        'assets/splash.png',
+        height: 32,
+        fit: BoxFit.contain,
+      );
+    }
+    return title != null ? Text(title) : const SizedBox.shrink();
+  }
+
   AppBar? _buildAppBar(BuildContext context) {
     final isEditing = _profileEditKey.currentState?.isEditing ?? false;
+    final isTablet = _isTablet(context);
     switch (_currentIndex) {
       case 0:
         return AppBar(
-          title: const Text('Dashboard'),
+          title: _buildAppBarTitle(isTablet, 'Dashboard'),
+          centerTitle: isTablet,
         );
       case 1:
         return AppBar(
-          title: const Text('Profile'),
+          title: _buildAppBarTitle(isTablet, 'Profile'),
+          centerTitle: isTablet,
           actions: [
             if (isEditing)
               TextButton(
@@ -86,7 +100,8 @@ class _AdminDrawerState extends State<AdminDrawer> {
         );
       default:
         return AppBar(
-          title: const Text('Siargao Trading Road'),
+          title: _buildAppBarTitle(isTablet, 'Siargao Trading Road'),
+          centerTitle: isTablet,
         );
     }
   }
@@ -139,16 +154,16 @@ class _AdminDrawerState extends State<AdminDrawer> {
         color: colorScheme.onSurfaceVariant,
         fontSize: 12,
       ),
-      destinations: const [
-        NavigationRailDestination(
+      destinations: [
+        const NavigationRailDestination(
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard),
           label: Text('Dashboard'),
         ),
         NavigationRailDestination(
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
-          label: Text('Profile'),
+          icon: _buildProfileIconForRail(authProvider, false, context, iconSize),
+          selectedIcon: _buildProfileIconForRail(authProvider, true, context, iconSize),
+          label: const Text('Profile'),
         ),
       ],
       trailing: Expanded(
@@ -302,6 +317,42 @@ class _AdminDrawerState extends State<AdminDrawer> {
       Icons.account_circle,
       size: 30,
       color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+    );
+  }
+
+  Widget _buildProfileIconForRail(AuthProvider authProvider, bool isSelected, BuildContext context, double iconSize) {
+    final logo = authProvider.user?.logoUrl;
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    if (logo != null && logo.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          logo,
+          width: iconSize,
+          height: iconSize,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(
+              Icons.person_outline,
+              size: iconSize,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Icon(
+              Icons.person_outline,
+              size: iconSize,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            );
+          },
+        ),
+      );
+    }
+    return Icon(
+      isSelected ? Icons.person : Icons.person_outline,
+      size: iconSize,
+      color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
     );
   }
 

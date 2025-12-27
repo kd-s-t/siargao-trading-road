@@ -14,6 +14,7 @@ import 'package:siargao_trading_road/screens/supplier_products_screen.dart';
 import 'package:siargao_trading_road/screens/truck_screen.dart';
 import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/ratings_screen.dart';
+import 'package:siargao_trading_road/screens/bulk_upload_products_screen.dart';
 
 ThemeData _buildMaterial3Theme() {
   return ThemeData(
@@ -110,6 +111,8 @@ class MyApp extends StatelessWidget {
               return MaterialPageRoute(builder: (_) => const AnalyticsScreen());
             case '/ratings':
               return MaterialPageRoute(builder: (_) => const RatingsScreen());
+            case '/bulk-upload-products':
+              return MaterialPageRoute(builder: (_) => const BulkUploadProductsScreen());
             default:
               return null;
           }

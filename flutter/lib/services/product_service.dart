@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:siargao_trading_road/models/product.dart';
 import 'package:siargao_trading_road/services/api_service.dart';
 
@@ -132,6 +134,33 @@ class ProductService {
     } else {
       final error = jsonDecode(response.body) as Map<String, dynamic>;
       throw Exception(error['error'] ?? 'Failed to reset stocks');
+    }
+  }
+
+  static Future<Map<String, dynamic>> bulkCreateProducts(List<Map<String, dynamic>> products) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
+    
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    
+    final response = await http.post(
+      Uri.parse('${ApiService.baseUrl}/products/bulk'),
+      headers: headers,
+      body: jsonEncode(products),
+    ).timeout(const Duration(seconds: 60));
+
+    if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 206) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data;
+    } else {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Failed to create products');
     }
   }
 }

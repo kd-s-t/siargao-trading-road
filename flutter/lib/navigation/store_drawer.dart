@@ -81,6 +81,17 @@ class _StoreDrawerState extends State<StoreDrawer> {
     }
   }
 
+  Widget _buildAppBarTitle(bool isTablet, String? title) {
+    if (isTablet) {
+      return Image.asset(
+        'assets/splash.png',
+        height: 32,
+        fit: BoxFit.contain,
+      );
+    }
+    return title != null ? Text(title) : const SizedBox.shrink();
+  }
+
   AppBar? _buildAppBar(BuildContext context, AuthProvider authProvider) {
     final isEditing = _profileEditKey.currentState?.isEditing ?? false;
     final isTablet = _isTablet(context);
@@ -91,16 +102,55 @@ class _StoreDrawerState extends State<StoreDrawer> {
       switch (_currentIndex) {
         case 0:
           return AppBar(
-            title: const Text('Suppliers'),
+            title: _buildAppBarTitle(isTablet, 'Suppliers'),
+            centerTitle: isTablet,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.red),
+                tooltip: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
+              ),
+            ],
           );
         case 1:
           return AppBar(
-            title: const Text('Orders'),
+            title: _buildAppBarTitle(isTablet, 'Orders'),
+            centerTitle: isTablet,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.red),
+                tooltip: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
+              ),
+            ],
           );
         case 2:
           return AppBar(
-            title: const Text('Profile'),
+            title: _buildAppBarTitle(isTablet, 'Profile'),
+            centerTitle: isTablet,
             automaticallyImplyLeading: false,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.red),
+                tooltip: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
+              ),
+            ],
           );
         default:
           return null;
@@ -110,16 +160,19 @@ class _StoreDrawerState extends State<StoreDrawer> {
     switch (_currentIndex) {
       case 0:
         return AppBar(
-          title: const Text('Suppliers'),
+          title: _buildAppBarTitle(isTablet, 'Suppliers'),
+          centerTitle: isTablet,
         );
       case 1:
         return AppBar(
-          title: const Text('Orders'),
+          title: _buildAppBarTitle(isTablet, 'Orders'),
+          centerTitle: isTablet,
         );
       case 2:
         if (isPhone) {
           return AppBar(
-            title: const Text('Profile'),
+            title: _buildAppBarTitle(isTablet, 'Profile'),
+            centerTitle: isTablet,
             automaticallyImplyLeading: false,
             actions: [
               if (isEditing)
@@ -156,16 +209,19 @@ class _StoreDrawerState extends State<StoreDrawer> {
           );
         } else {
           return AppBar(
-            title: const Text('Analytics'),
+            title: _buildAppBarTitle(isTablet, 'Analytics'),
+            centerTitle: isTablet,
           );
         }
       case 3:
         return AppBar(
-          title: const Text('Manage Employees'),
+          title: _buildAppBarTitle(isTablet, 'Manage Employees'),
+          centerTitle: isTablet,
         );
       case 4:
         return AppBar(
-          title: const Text('Profile'),
+          title: _buildAppBarTitle(isTablet, 'Profile'),
+          centerTitle: isTablet,
           actions: [
             if (isEditing)
               TextButton(
@@ -201,7 +257,8 @@ class _StoreDrawerState extends State<StoreDrawer> {
         );
       default:
         return AppBar(
-          title: const Text('Siargao Trading Road'),
+          title: _buildAppBarTitle(isTablet, 'Siargao Trading Road'),
+          centerTitle: isTablet,
         );
     }
   }
@@ -234,48 +291,48 @@ class _StoreDrawerState extends State<StoreDrawer> {
     final isEmployee = authProvider.isEmployee;
     
     final destinations = isEmployee
-        ? const [
-            NavigationRailDestination(
+        ? [
+            const NavigationRailDestination(
               icon: Icon(Icons.store_outlined),
               selectedIcon: Icon(Icons.store),
               label: Text('Suppliers'),
             ),
-            NavigationRailDestination(
+            const NavigationRailDestination(
               icon: Icon(Icons.shopping_cart_outlined),
               selectedIcon: Icon(Icons.shopping_cart),
               label: Text('Orders'),
             ),
             NavigationRailDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: Text('Profile'),
+              icon: _buildProfileIconForRail(authProvider, false, context, iconSize),
+              selectedIcon: _buildProfileIconForRail(authProvider, true, context, iconSize),
+              label: const Text('Profile'),
             ),
           ]
-        : const [
-            NavigationRailDestination(
+        : [
+            const NavigationRailDestination(
               icon: Icon(Icons.store_outlined),
               selectedIcon: Icon(Icons.store),
               label: Text('Suppliers'),
             ),
-            NavigationRailDestination(
+            const NavigationRailDestination(
               icon: Icon(Icons.shopping_cart_outlined),
               selectedIcon: Icon(Icons.shopping_cart),
               label: Text('Orders'),
             ),
-            NavigationRailDestination(
+            const NavigationRailDestination(
               icon: Icon(Icons.analytics_outlined),
               selectedIcon: Icon(Icons.analytics),
               label: Text('Analytics'),
             ),
-            NavigationRailDestination(
+            const NavigationRailDestination(
               icon: Icon(Icons.people_outline),
               selectedIcon: Icon(Icons.people),
               label: Text('Employees'),
             ),
             NavigationRailDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: Text('Profile'),
+              icon: _buildProfileIconForRail(authProvider, false, context, iconSize),
+              selectedIcon: _buildProfileIconForRail(authProvider, true, context, iconSize),
+              label: const Text('Profile'),
             ),
           ];
     
@@ -302,28 +359,26 @@ class _StoreDrawerState extends State<StoreDrawer> {
         fontSize: 12,
       ),
       destinations: destinations,
-      trailing: !authProvider.isEmployee
-          ? Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: IconButton(
-                      icon: const Icon(Icons.logout, color: Colors.red),
-                      tooltip: 'Logout',
-                      onPressed: () async {
-                        await authProvider.logout();
-                        if (context.mounted) {
-                          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-                        }
-                      },
-                    ),
-                  ),
-                ],
+      trailing: Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: IconButton(
+                icon: const Icon(Icons.logout, color: Colors.red),
+                tooltip: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                },
               ),
-            )
-          : null,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -468,6 +523,42 @@ class _StoreDrawerState extends State<StoreDrawer> {
       Icons.account_circle,
       size: 30,
       color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+    );
+  }
+
+  Widget _buildProfileIconForRail(AuthProvider authProvider, bool isSelected, BuildContext context, double iconSize) {
+    final logo = authProvider.user?.logoUrl;
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    if (logo != null && logo.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          logo,
+          width: iconSize,
+          height: iconSize,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(
+              Icons.person_outline,
+              size: iconSize,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Icon(
+              Icons.person_outline,
+              size: iconSize,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            );
+          },
+        ),
+      );
+    }
+    return Icon(
+      isSelected ? Icons.person : Icons.person_outline,
+      size: iconSize,
+      color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
     );
   }
 
