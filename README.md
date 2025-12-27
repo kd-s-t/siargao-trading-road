@@ -22,13 +22,10 @@ Siargao Trading Road is a comprehensive B2B marketplace platform designed to str
 <img src="https://img.shields.io/badge/REST%20API-FF6F00?style=for-the-badge&logo=fastapi&logoColor=white" />
 <img src="https://img.shields.io/badge/Postman-FF6C37?style=for-the-badge&logo=postman&logoColor=white" />  <br/>
 
-<img src="https://img.shields.io/badge/Expo-1C1E24?style=for-the-badge&logo=expo&logoColor=white" />
-<img src="https://img.shields.io/badge/React%20Native-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
-<img src="https://img.shields.io/badge/React%20Navigation-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
-<img src="https://img.shields.io/badge/React%20Native%20Paper-6366F1?style=for-the-badge&logo=react&logoColor=white" />  <br/>
 
 <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" />
 <img src="https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white" />
+<img src="https://img.shields.io/badge/Material%20Design%203-757575?style=for-the-badge&logo=material-design&logoColor=white" />
 <img src="https://img.shields.io/badge/iOS-000000?style=for-the-badge&logo=apple&logoColor=white" />
 <img src="https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" />  <br/>
 
@@ -69,8 +66,7 @@ Siargao Trading Road is a comprehensive B2B marketplace platform designed to str
 - **Order Management**: Complete order lifecycle from draft to delivery
 - **Authentication**: JWT-based secure authentication system with employee login support
 - **Multi-Platform**: 
-  - React Native mobile app (suppliers & stores)
-  - Flutter mobile app (suppliers & stores) - *New*
+  - Flutter mobile app (suppliers & stores)
   - Next.js web admin panel (admin only)
 
 ## Quick Start
@@ -103,36 +99,7 @@ Admin panel runs on port **3021** at `http://localhost:3021`.
 - Email: `admin@example.com`
 - Password: `admin123`
 
-**Storybook (Component Development):**
-```bash
-cd nextjs
-npm run storybook
-```
-
-Storybook runs on port **2022** at `http://localhost:2022`.
-
 For detailed setup, environment variables, and more information, see [nextjs/README.md](./nextjs/README.md).
-
-### Mobile App (React Native)
-
-**Prerequisites:**
-- Node.js 18+
-- Expo CLI (installed globally or via npx)
-- Backend API running on `http://localhost:3020`
-- iOS Simulator (for macOS) or Android Emulator / physical device
-
-**Setup and Run:**
-```bash
-cd reactnative
-npm install
-npm start
-```
-
-For Android, use `npx expo run:android`. These commands build and run a development build on the simulator/emulator.
-
-Alternatively, you can use `npm start` or `npx expo start` to launch the Expo dev server, then press `i` for iOS or `a` for Android, or scan the QR code with Expo Go app on your physical device.
-
-For detailed setup, environment variables, building, and deployment, see [reactnative/README.md](./reactnative/README.md).
 
 ### Mobile App (Flutter)
 
@@ -149,67 +116,14 @@ flutter pub get
 flutter run
 ```
 
-The Flutter app provides the same functionality as the React Native app, with a native Flutter implementation. Features include:
-- Authentication (Login/Register)
-- Role-based navigation (Supplier, Store, Admin)
-- Product management with CRUD operations
-- Order management with status tracking
-- Maps integration with route visualization
-- Cart functionality
-- Profile management
-
 For detailed setup, architecture, and features, see [flutter/README.md](./flutter/README.md).
-
-### Mobile App Release
-
-**Prerequisites:**
-- EAS CLI installed: `npm install -g eas-cli`
-- AWS CLI installed and configured
-- Expo account and EAS project initialized
-- Android credentials set up (one-time setup)
-
-**Quick Release:**
-```bash
-cd reactnative
-npm run release -- --platform android --profile preview
-```
-
-**Options:**
-- `--platform`: `android`, `ios`, or `all` (default: `all`)
-- `--profile`: `development`, `preview`, or `production` (default: `preview`)
-- `--environment`: `development`, `staging`, or `production` (default: `development`)
-
-The release script will:
-1. Build the app using EAS Build
-2. Download the build artifact
-3. Upload to S3 (versioned and latest)
-4. Provide download URLs
-
-Builds are automatically uploaded to:
-- **Versioned**: `{platform}/siargao-trading-road-{version}-{commit}-{timestamp}.{ext}`
-- **Latest**: `{platform}/latest.{ext}` (used by landing page)
-
-For detailed release instructions, troubleshooting, and setup, see [docs/RELEASE.md](./docs/RELEASE.md).
-
-## Project Structure
-
-```
-siargaotradingroad/
-├── reactnative/    # React Native mobile app
-├── flutter/         # Flutter mobile app (Dart)
-├── golang/          # Golang REST API
-├── nextjs/          # Next.js admin panel
-│   └── .storybook/  # Storybook configuration
-├── postman/         # Postman API collection
-├── infrastructure/  # Infrastructure as Code
-└── docs/            # Documentation
-```
 
 ## User Types
 
-- **Supplier**: Register, add items (Excel/JSON/manual)
-- **Store**: Register, select supplier, buy products
-- **Admin**: Manage users, products, orders via web panel
+- **Supplier**: Register, add items via CSV/Excel bulk upload or manual entry, manage products and orders
+- **Store**: Register, select supplier, buy products, manage orders
+- **Employee**: Login with owner credentials, manage inventory and orders based on assigned permissions
+- **Admin**: Manage users, products, orders via web panel, create and manage employees
 
 ## Storybook
 
@@ -239,11 +153,18 @@ Access at `http://localhost:2022`
 
 ## Documentation
 
+### Setup & Development
 - [Backend API](./golang/README.md) - Golang API setup and testing
 - [Admin Panel](./nextjs/README.md) - Next.js admin panel setup
-- [React Native Mobile App](./reactnative/README.md) - React Native mobile app setup and deployment
 - [Flutter Mobile App](./flutter/README.md) - Flutter mobile app setup and architecture
-- [Mobile App Release](./docs/RELEASE.md) - Build and release mobile app to S3
+
+### Architecture & Infrastructure
 - [Tech Stack](./docs/TECH_STACK.md) - Technology stack details
 - [Database Schema](./docs/DATABASE_SCHEMA.md) - Database structure and relationships
 - [EC2 Setup](./docs/EC2_SETUP.md) - Server setup instructions
+
+### Business & Development Guides
+- [Business E2E Flow](./docs/BUSINESS_E2E_FLOW.md) - End-to-end business process flows
+- [Development Commands](./docs/COMMANDS.md) - Common development commands and shortcuts
+- [Development API Testing](./docs/DEVELOPMENT_API_TEST.md) - API testing guide
+- [Database Migration](./docs/DEVELOPMENT_DB_MIGRATION.md) - Database migration procedures
