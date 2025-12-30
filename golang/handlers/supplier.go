@@ -58,6 +58,8 @@ func GetSuppliers(c *gin.Context) {
 		OpeningTime   string   `json:"opening_time"`
 		ClosingTime   string   `json:"closing_time"`
 		IsOpen        bool     `json:"is_open"`
+		Latitude      *float64 `json:"latitude,omitempty"`
+		Longitude     *float64 `json:"longitude,omitempty"`
 	}
 
 	supplierInfos := make([]SupplierInfo, 0, len(suppliers))
@@ -106,6 +108,8 @@ func GetSuppliers(c *gin.Context) {
 			OpeningTime:   supplier.OpeningTime,
 			ClosingTime:   supplier.ClosingTime,
 			IsOpen:        openNow,
+			Latitude:      supplier.Latitude,
+			Longitude:     supplier.Longitude,
 		})
 	}
 

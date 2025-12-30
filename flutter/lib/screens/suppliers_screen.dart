@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/services/supplier_service.dart';
 import 'package:siargao_trading_road/models/supplier.dart';
 import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class SuppliersScreen extends StatefulWidget {
   final bool? useScaffold;
@@ -24,6 +26,9 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   String _searchQuery = '';
   String _statusFilter = 'all';
   Timer? _searchDebounce;
+  bool _showMapView = false;
+  final MapController _mapController = MapController();
+  static const LatLng _siargaoCenter = LatLng(9.8563, 126.0483);
 
   @override
   void initState() {
@@ -32,6 +37,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       if (mounted && !_hasLoaded) {
         _loadSuppliers();
       }
+      _mapController.move(_siargaoCenter, 11.0);
     });
   }
 
@@ -181,7 +187,6 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       child: Row(
         children: [
           Expanded(
-            flex: 3,
             child: TextField(
               decoration: const InputDecoration(
                 hintText: 'Search suppliers',
@@ -203,16 +208,16 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
               },
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 90,
             child: DropdownButtonFormField<String>(
               initialValue: _statusFilter,
               isExpanded: true,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               ),
               items: const [
                 DropdownMenuItem(value: 'all', child: Text('All')),
@@ -227,6 +232,23 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 _loadSuppliers(force: true);
               },
             ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: Icon(_showMapView ? Icons.list : Icons.map),
+            onPressed: () {
+              setState(() {
+                _showMapView = !_showMapView;
+              });
+              if (_showMapView) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _mapController.move(_siargaoCenter, 11.0);
+                  }
+                });
+              }
+            },
+            tooltip: _showMapView ? 'Show List' : 'Show Map',
           ),
         ],
       ),
@@ -594,6 +616,20 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       listChild = _buildSupplierList();
     }
 
+    if (_showMapView) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: _buildFilters(),
+          ),
+          Expanded(
+            child: _buildMapView(),
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         Padding(
@@ -606,6 +642,136 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
             onRefresh: _handleRefresh,
             child: listChild,
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMapView() {
+    final suppliersWithLocation = _suppliers.where((s) => 
+      s.latitude != null && s.longitude != null
+    ).toList();
+
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: _siargaoCenter,
+        initialZoom: 11.0,
+        minZoom: 9.0,
+        maxZoom: 18.0,
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.example.siargaoTradingRoad',
+        ),
+        MarkerLayer(
+          markers: suppliersWithLocation.map((supplier) {
+            final isOpen = _isSupplierOpenNow(supplier) ?? false;
+            return Marker(
+              point: LatLng(supplier.latitude!, supplier.longitude!),
+              width: 80,
+              height: 80,
+              child: GestureDetector(
+                onTap: () => _handleSupplierPress(supplier),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: isOpen ? Colors.green : Colors.grey,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: supplier.logoUrl != null && supplier.logoUrl!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                supplier.logoUrl!,
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 40,
+                                    height: 40,
+                                    color: Colors.blue,
+                                    child: Center(
+                                      child: Text(
+                                        supplier.name.isNotEmpty
+                                            ? supplier.name[0].toUpperCase()
+                                            : '?',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            )
+                          : Container(
+                              width: 40,
+                              height: 40,
+                              color: Colors.blue,
+                              child: Center(
+                                child: Text(
+                                  supplier.name.isNotEmpty
+                                      ? supplier.name[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 4),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 70),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          supplier.name,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );

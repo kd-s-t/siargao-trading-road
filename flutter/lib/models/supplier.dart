@@ -10,6 +10,8 @@ class Supplier {
   final bool? isOpen;
   final String? openingTime;
   final String? closingTime;
+  final double? latitude;
+  final double? longitude;
 
   Supplier({
     required this.id,
@@ -23,6 +25,8 @@ class Supplier {
     this.isOpen,
     this.openingTime,
     this.closingTime,
+    this.latitude,
+    this.longitude,
   });
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
@@ -52,6 +56,8 @@ class Supplier {
       isOpen: parseIsOpen(),
       openingTime: json['opening_time'] as String?,
       closingTime: json['closing_time'] as String?,
+      latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
+      longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
     );
   }
 }
