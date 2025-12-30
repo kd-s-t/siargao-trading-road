@@ -652,126 +652,195 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       s.latitude != null && s.longitude != null
     ).toList();
 
-    return FlutterMap(
-      mapController: _mapController,
-      options: MapOptions(
-        initialCenter: _siargaoCenter,
-        initialZoom: 11.0,
-        minZoom: 9.0,
-        maxZoom: 18.0,
-      ),
+    return Stack(
       children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.siargaoTradingRoad',
-        ),
-        MarkerLayer(
-          markers: suppliersWithLocation.map((supplier) {
-            final isOpen = _isSupplierOpenNow(supplier) ?? false;
-            return Marker(
-              point: LatLng(supplier.latitude!, supplier.longitude!),
-              width: 80,
-              height: 80,
-              child: GestureDetector(
-                onTap: () => _handleSupplierPress(supplier),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: isOpen ? Colors.green : Colors.grey,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: _siargaoCenter,
+            initialZoom: 11.0,
+            minZoom: 9.0,
+            maxZoom: 18.0,
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.example.siargaoTradingRoad',
+            ),
+            MarkerLayer(
+              markers: suppliersWithLocation.map((supplier) {
+                final isOpen = _isSupplierOpenNow(supplier) ?? false;
+                return Marker(
+                  point: LatLng(supplier.latitude!, supplier.longitude!),
+                  width: 80,
+                  height: 80,
+                  child: GestureDetector(
+                    onTap: () => _handleSupplierPress(supplier),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isOpen ? Colors.green : Colors.grey,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: supplier.logoUrl != null && supplier.logoUrl!.isNotEmpty
-                          ? ClipOval(
-                              child: Image.network(
-                                supplier.logoUrl!,
-                                width: 40,
-                                height: 40,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
+                          child: supplier.logoUrl != null && supplier.logoUrl!.isNotEmpty
+                              ? ClipOval(
+                                  child: Image.network(
+                                    supplier.logoUrl!,
                                     width: 40,
                                     height: 40,
-                                    color: Colors.blue,
-                                    child: Center(
-                                      child: Text(
-                                        supplier.name.isNotEmpty
-                                            ? supplier.name[0].toUpperCase()
-                                            : '?',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 40,
+                                        height: 40,
+                                        color: Colors.blue,
+                                        child: Center(
+                                          child: Text(
+                                            supplier.name.isNotEmpty
+                                                ? supplier.name[0].toUpperCase()
+                                                : '?',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                         ),
+                                      );
+                                    },
+                                  ),
+                                )
+                              : Container(
+                                  width: 40,
+                                  height: 40,
+                                  color: Colors.blue,
+                                  child: Center(
+                                    child: Text(
+                                      supplier.name.isNotEmpty
+                                          ? supplier.name[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
-                            )
-                          : Container(
-                              width: 40,
-                              height: 40,
-                              color: Colors.blue,
-                              child: Center(
-                                child: Text(
-                                  supplier.name.isNotEmpty
-                                      ? supplier.name[0].toUpperCase()
-                                      : '?',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                        ),
+                        const SizedBox(height: 4),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 70),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              supplier.name,
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
                             ),
-                    ),
-                    const SizedBox(height: 4),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 70),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 2,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          supplier.name,
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+        Positioned(
+          right: 16,
+          bottom: 80,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                elevation: 4,
+                child: InkWell(
+                  onTap: () {
+                    final currentZoom = _mapController.camera.zoom;
+                    if (currentZoom < 18) {
+                      _mapController.move(_mapController.camera.center, currentZoom + 1);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(Icons.add, color: Colors.black87),
+                  ),
                 ),
               ),
-            );
-          }).toList(),
+              const SizedBox(height: 2),
+              Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                elevation: 4,
+                child: InkWell(
+                  onTap: () {
+                    final currentZoom = _mapController.camera.zoom;
+                    if (currentZoom > 9) {
+                      _mapController.move(_mapController.camera.center, currentZoom - 1);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(Icons.remove, color: Colors.black87),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                elevation: 4,
+                child: InkWell(
+                  onTap: () {
+                    _mapController.move(_siargaoCenter, 11.0);
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(Icons.my_location, color: Colors.blue),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
