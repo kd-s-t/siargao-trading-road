@@ -37,7 +37,7 @@ func main() {
 
 	fmt.Printf("\nHard deleting products...\n")
 	fmt.Printf("WARNING: This will permanently remove these products from the database!\n")
-	
+
 	// First, delete products without order_items (56, 57)
 	result := database.DB.Exec("DELETE FROM products WHERE id IN (56, 57) AND id NOT IN (SELECT DISTINCT product_id FROM order_items WHERE product_id IN (56, 57))")
 	if result.Error != nil {
@@ -45,11 +45,11 @@ func main() {
 	} else {
 		fmt.Printf("Successfully hard deleted %d products without order_items\n", result.RowsAffected)
 	}
-	
+
 	// For products with order_items, we need to delete order_items first
 	productsWithOrders := []uint{51, 52, 53}
 	fmt.Printf("\nProducts 51, 52, 53 have order_items. Deleting order_items first...\n")
-	
+
 	for _, id := range productsWithOrders {
 		orderItemsResult := database.DB.Exec("DELETE FROM order_items WHERE product_id = ?", id)
 		if orderItemsResult.Error != nil {
@@ -58,7 +58,7 @@ func main() {
 			fmt.Printf("Deleted %d order_items for product %d\n", orderItemsResult.RowsAffected, id)
 		}
 	}
-	
+
 	// Now delete the products
 	result = database.DB.Exec("DELETE FROM products WHERE id IN (51, 52, 53)")
 	if result.Error != nil {
@@ -77,4 +77,3 @@ func main() {
 		}
 	}
 }
-

@@ -37,4 +37,3 @@ func main() {
 
 	log.Printf("Successfully deleted products 55 and 59 (%d rows affected)", result.RowsAffected)
 }
-

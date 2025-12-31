@@ -68,4 +68,3 @@ func main() {
 		fmt.Printf("  ID: %d, Name: %s, Supplier ID: %d\n", p.ID, p.Name, p.SupplierID)
 	}
 }
-

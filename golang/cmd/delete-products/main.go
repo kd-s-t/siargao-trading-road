@@ -30,7 +30,7 @@ func main() {
 
 	fmt.Printf("\nDeleting products: %v\n", productIDs)
 	result := database.DB.Exec("UPDATE products SET deleted_at = NOW() WHERE id IN (51, 52, 53, 56) AND deleted_at IS NULL")
-	
+
 	if result.Error != nil {
 		log.Fatal("Failed to delete products:", result.Error)
 	}
@@ -48,4 +48,3 @@ func main() {
 		}
 	}
 }
-
