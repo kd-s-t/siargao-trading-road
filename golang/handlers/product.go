@@ -41,6 +41,11 @@ func logStockChange(productID uint, previousStock int, newStock int, changeType 
 		return
 	}
 
+	if database.DB == nil {
+		log.Printf("ERROR: Database connection is nil when trying to create stock history")
+		return
+	}
+
 	stockHistory := models.StockHistory{
 		ProductID:     productID,
 		PreviousStock: previousStock,
@@ -53,13 +58,17 @@ func logStockChange(productID uint, previousStock int, newStock int, changeType 
 		Notes:         notes,
 	}
 
-	if err := database.DB.Create(&stockHistory).Error; err != nil {
-		log.Printf("Failed to create stock history: %v", err)
-		log.Printf("Stock history details: ProductID=%d, PreviousStock=%d, NewStock=%d, ChangeType=%s, UserID=%v, EmployeeID=%v",
-			productID, previousStock, newStock, changeType, userID, employeeID)
+	result := database.DB.Omit("Product", "User", "Employee", "Order").Create(&stockHistory)
+	if result.Error != nil {
+		log.Printf("ERROR: Failed to create stock history: %v", result.Error)
+		log.Printf("ERROR: Stock history details: ProductID=%d, PreviousStock=%d, NewStock=%d, ChangeType=%s, UserID=%v, EmployeeID=%v, OrderID=%v",
+			productID, previousStock, newStock, changeType, userID, employeeID, orderID)
+		log.Printf("ERROR: SQL Error: %s", result.Error.Error())
+		fmt.Printf("STOCK_HISTORY_ERROR: %v\n", result.Error)
 	} else {
-		log.Printf("Stock history created: ID=%d, ProductID=%d, ChangeType=%s, ChangeAmount=%d",
-			stockHistory.ID, productID, changeType, changeAmount)
+		log.Printf("SUCCESS: Stock history created: ID=%d, ProductID=%d, ChangeType=%s, ChangeAmount=%d, RowsAffected=%d",
+			stockHistory.ID, productID, changeType, changeAmount, result.RowsAffected)
+		fmt.Printf("STOCK_HISTORY_SUCCESS: ID=%d, ProductID=%d\n", stockHistory.ID, productID)
 	}
 }
 
