@@ -12,7 +12,7 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-//go:embed assets/splash.png
+//go:embed services/assets/splash.png
 var logoBytes []byte
 
 type EmailService struct {

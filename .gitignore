@@ -86,3 +86,5 @@ golang/migrate_production.sh
 assets/
 !golang/handlers/assets/
 !golang/handlers/assets/splash.png
+!golang/services/assets/
+!golang/services/assets/splash.png
