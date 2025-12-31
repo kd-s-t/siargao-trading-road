@@ -124,13 +124,19 @@ class ApiService {
   static Future<http.Response> postMultipart(
     String endpoint,
     String filePath,
-    String fieldName,
-  ) async {
+    String fieldName, {
+    Map<String, String>? queryParameters,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
       
-      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$endpoint'));
+      final uri = Uri.parse('$baseUrl$endpoint');
+      final uriWithQuery = queryParameters != null && queryParameters.isNotEmpty
+          ? uri.replace(queryParameters: queryParameters)
+          : uri;
+      
+      final request = http.MultipartRequest('POST', uriWithQuery);
       
       if (token != null) {
         request.headers['Authorization'] = 'Bearer $token';

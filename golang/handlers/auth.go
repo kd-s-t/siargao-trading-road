@@ -8,6 +8,7 @@ import (
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
+	"siargao-trading-road/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -137,6 +138,12 @@ func Register(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
 		return
+	}
+
+	cfg := c.MustGet("config").(*config.Config)
+	emailService := services.NewEmailService(cfg)
+	if emailService != nil {
+		go emailService.SendThankYouEmail(user)
 	}
 
 	user.Password = ""

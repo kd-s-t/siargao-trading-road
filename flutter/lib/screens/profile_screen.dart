@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -177,7 +176,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -231,6 +230,8 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
     bool canChangeStatus = employee?.canChangeStatus ?? true;
     bool statusActive = employee?.statusActive ?? true;
     bool submitting = false;
+    bool uploadingImage = false;
+    String? profilePicUrl = employee?.profilePicUrl;
 
     final result = await showDialog<bool>(
       context: context,
@@ -245,6 +246,86 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Center(
+                        child: GestureDetector(
+                          onTap: uploadingImage ? null : () async {
+                            final ImagePicker picker = ImagePicker();
+                            final XFile? image = await picker.pickImage(
+                              source: ImageSource.gallery,
+                              imageQuality: 80,
+                            );
+                            if (image != null) {
+                              setModalState(() {
+                                uploadingImage = true;
+                              });
+                              try {
+                                final result = await AuthService.uploadImage(
+                                  image.path,
+                                  imageType: 'employee',
+                                  employeeId: employee?.id.toString(),
+                                );
+                                setModalState(() {
+                                  profilePicUrl = result['url'];
+                                  uploadingImage = false;
+                                });
+                              } catch (e) {
+                                setModalState(() {
+                                  uploadingImage = false;
+                                });
+                                if (context.mounted) {
+                                  SnackbarHelper.showError(
+                                    context,
+                                    'Failed to upload image: ${e.toString().replaceAll('Exception: ', '')}',
+                                  );
+                                }
+                              }
+                            }
+                          },
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Colors.grey.shade300,
+                                backgroundImage: profilePicUrl != null && profilePicUrl!.isNotEmpty
+                                    ? NetworkImage(profilePicUrl!)
+                                    : null,
+                                child: profilePicUrl == null || profilePicUrl!.isEmpty
+                                    ? Icon(Icons.person, size: 40, color: Colors.grey.shade600)
+                                    : null,
+                              ),
+                              if (uploadingImage)
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 2),
+                                    ),
+                                    child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: usernameController,
                         decoration: const InputDecoration(
@@ -338,15 +419,6 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                         },
                         title: const Text('Change Status'),
                       ),
-                      SwitchListTile(
-                        value: statusActive,
-                        onChanged: (v) {
-                          setModalState(() {
-                            statusActive = v;
-                          });
-                        },
-                        title: const Text('Active'),
-                      ),
                     ],
                   ),
                 ),
@@ -374,6 +446,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                                 name: nameController.text.trim().isEmpty ? null : nameController.text.trim(),
                                 phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
                                 role: roleController.text.trim().isEmpty ? null : roleController.text.trim(),
+                                profilePicUrl: profilePicUrl,
                                 canManageInventory: canManageInventory,
                                 canManageOrders: canManageOrders,
                                 canChat: canChat,
@@ -388,6 +461,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                                 name: nameController.text.trim().isEmpty ? null : nameController.text.trim(),
                                 phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
                                 role: roleController.text.trim().isEmpty ? null : roleController.text.trim(),
+                                profilePicUrl: profilePicUrl,
                                 canManageInventory: canManageInventory,
                                 canManageOrders: canManageOrders,
                                 canChat: canChat,
@@ -942,7 +1016,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
               ],
             ),
             const SizedBox(height: 16),
-            if (user.name != null && user.name!.isNotEmpty)
+            if (user.name.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
@@ -961,7 +1035,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                             ),
                           ),
                           Text(
-                            user.name!,
+                            user.name,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -1036,7 +1110,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                   ],
                 ),
               ),
-            if (user.email != null && user.email!.isNotEmpty)
+            if (user.email.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
@@ -1055,7 +1129,7 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                             ),
                           ),
                           Text(
-                            user.email!,
+                            user.email,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -2072,8 +2146,8 @@ class _ProfileScreenState extends ProfileScreenState with SingleTickerProviderSt
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: employee.statusActive
-                                            ? Colors.green.withOpacity(0.1)
-                                            : Colors.grey.withOpacity(0.1),
+                                            ? Colors.green.withValues(alpha: 0.1)
+                                            : Colors.grey.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(

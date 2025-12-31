@@ -21,7 +21,7 @@ export default function SupportPage() {
             <h2 className="text-xl font-semibold text-gray-900 mb-3">Contact options</h2>
             <ul className="space-y-3 text-gray-700">
               <li>Email: <a href="mailto:hello@siargaotradingroad.com" className="text-cyan-600 hover:text-cyan-700">hello@siargaotradingroad.com</a></li>
-              <li>Phone: <span className="text-gray-800">+63 XXX XXX XXXX</span></li>
+              <li>Phone: <a href="tel:09606075119" className="text-cyan-600 hover:text-cyan-700">09606075119</a></li>
               <li>Location: General Luna, Siargao Island</li>
             </ul>
           </div>

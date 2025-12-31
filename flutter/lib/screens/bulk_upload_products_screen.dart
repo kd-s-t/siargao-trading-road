@@ -335,19 +335,23 @@ class _BulkUploadProductsScreenState extends State<BulkUploadProductsScreen> {
       });
 
       if (_createdCount! > 0) {
-        SnackbarHelper.showSuccess(context, 'Successfully created $_createdCount product(s)');
         if (mounted) {
+          SnackbarHelper.showSuccess(context, 'Successfully created $_createdCount product(s)');
           Navigator.pop(context, true);
         }
       } else {
-        SnackbarHelper.showError(context, 'Failed to create any products');
+        if (mounted) {
+          SnackbarHelper.showError(context, 'Failed to create any products');
+        }
       }
     } catch (e) {
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
         _uploading = false;
       });
-      SnackbarHelper.showError(context, _error!);
+      if (mounted) {
+        SnackbarHelper.showError(context, _error!);
+      }
     }
   }
 
@@ -644,7 +648,7 @@ class _BulkUploadProductsScreenState extends State<BulkUploadProductsScreen> {
                                 padding: const EdgeInsets.only(bottom: 4),
                                 child: Text(
                                   error,
-                                  style: TextStyle(fontSize: 12),
+                                  style: const TextStyle(fontSize: 12),
                                 ),
                               )),
                           if (_uploadErrors!.length > 5)

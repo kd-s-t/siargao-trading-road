@@ -209,7 +209,7 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, String>> uploadImage(String filePath, {String? imageType}) async {
+  static Future<Map<String, String>> uploadImage(String filePath, {String? imageType, String? employeeId}) async {
     final originalFile = File(filePath);
     final originalBytes = await originalFile.readAsBytes();
     final decoded = img.decodeImage(originalBytes);
@@ -278,7 +278,19 @@ class AuthService {
     await tempFile.writeAsBytes(compressedBytes, flush: true);
 
     try {
-      final response = await ApiService.postMultipart('/upload', tempFile.path, 'file');
+      final queryParams = <String, String>{};
+      if (imageType != null) {
+        queryParams['type'] = imageType;
+      }
+      if (employeeId != null) {
+        queryParams['employee_id'] = employeeId;
+      }
+      final response = await ApiService.postMultipart(
+        '/upload',
+        tempFile.path,
+        'file',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
 
       if (response.statusCode == 200) {
         try {

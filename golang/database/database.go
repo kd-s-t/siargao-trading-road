@@ -83,6 +83,7 @@ func Connect(cfg *config.Config) error {
 		&models.AuditLog{},
 		&models.BugReport{},
 		&models.ScheduleException{},
+		&models.StockHistory{},
 	}
 
 	for _, model := range modelsToMigrate {
@@ -131,7 +132,7 @@ func Migrate() error {
 		return fmt.Errorf("failed to migrate feature_flags index: %w", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Employee{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{})
+	err = DB.AutoMigrate(&models.User{}, &models.Employee{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{}, &models.StockHistory{})
 	if err != nil {
 		return err
 	}
@@ -257,7 +258,7 @@ func migrateFeatureFlagsIndex() error {
 }
 
 func SeedAdmin() error {
-	adminEmail := getEnv("ADMIN_EMAIL", "admin@example.com")
+	adminEmail := getEnv("ADMIN_EMAIL", "admin@siargaotradingroad.com")
 	adminPassword := getEnv("ADMIN_PASSWORD", "admin123")
 	adminName := getEnv("ADMIN_NAME", "Admin")
 
@@ -319,7 +320,7 @@ func FixDatabaseTables() error {
 		return fmt.Errorf("database connection not initialized")
 	}
 
-	tableNames := []string{"users", "employees", "products", "orders", "order_items", "business_documents", "messages", "ratings", "audit_logs", "bug_reports", "schedule_exceptions", "feature_flags"}
+	tableNames := []string{"users", "employees", "products", "orders", "order_items", "business_documents", "messages", "ratings", "audit_logs", "bug_reports", "schedule_exceptions", "feature_flags", "products_stocks_history"}
 
 	fmt.Println("Dropping problematic tables to allow clean recreation...")
 	for _, tableName := range tableNames {
@@ -351,7 +352,7 @@ func FixDatabaseTables() error {
 		return fmt.Errorf("failed to migrate feature_flags index: %w", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Employee{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{})
+	err = DB.AutoMigrate(&models.User{}, &models.Employee{}, &models.Product{}, &models.Order{}, &models.OrderItem{}, &models.BusinessDocument{}, &models.Message{}, &models.Rating{}, &models.AuditLog{}, &models.BugReport{}, &models.ScheduleException{}, &models.FeatureFlag{}, &models.StockHistory{})
 	if err != nil {
 		return fmt.Errorf("failed to migrate models after dropping tables: %w", err)
 	}

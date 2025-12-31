@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/models/audit_log.dart';
 import 'package:siargao_trading_road/models/employee.dart';
 import 'package:siargao_trading_road/services/audit_log_service.dart';
+import 'package:siargao_trading_road/services/auth_service.dart';
 import 'package:siargao_trading_road/services/employee_service.dart';
 import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 
@@ -92,6 +94,23 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
           children: [
             Row(
               children: [
+                if (_currentEmployee.profilePicUrl != null && _currentEmployee.profilePicUrl!.isNotEmpty)
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.grey.shade300,
+                    backgroundImage: NetworkImage(_currentEmployee.profilePicUrl!),
+                  )
+                else
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.person,
+                      size: 30,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,8 +147,8 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _currentEmployee.statusActive
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.grey.withOpacity(0.1),
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -197,7 +216,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -306,7 +325,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: enabled
-            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
             : Colors.grey.shade200,
         borderRadius: BorderRadius.circular(8),
       ),
@@ -432,7 +451,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Activity Logs (${_total})',
+                'Activity Logs ($_total)',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -513,6 +532,8 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     bool canChangeStatus = _currentEmployee.canChangeStatus;
     bool statusActive = _currentEmployee.statusActive;
     bool submitting = false;
+    bool uploadingImage = false;
+    String? profilePicUrl = _currentEmployee.profilePicUrl;
 
     await showDialog<bool>(
       context: context,
@@ -527,6 +548,86 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Center(
+                        child: GestureDetector(
+                          onTap: uploadingImage ? null : () async {
+                            final ImagePicker picker = ImagePicker();
+                            final XFile? image = await picker.pickImage(
+                              source: ImageSource.gallery,
+                              imageQuality: 80,
+                            );
+                            if (image != null) {
+                              setModalState(() {
+                                uploadingImage = true;
+                              });
+                              try {
+                                final result = await AuthService.uploadImage(
+                                  image.path,
+                                  imageType: 'employee',
+                                  employeeId: _currentEmployee.id.toString(),
+                                );
+                                setModalState(() {
+                                  profilePicUrl = result['url'];
+                                  uploadingImage = false;
+                                });
+                              } catch (e) {
+                                setModalState(() {
+                                  uploadingImage = false;
+                                });
+                                if (context.mounted) {
+                                  SnackbarHelper.showError(
+                                    context,
+                                    'Failed to upload image: ${e.toString().replaceAll('Exception: ', '')}',
+                                  );
+                                }
+                              }
+                            }
+                          },
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Colors.grey.shade300,
+                                backgroundImage: profilePicUrl != null && profilePicUrl!.isNotEmpty
+                                    ? NetworkImage(profilePicUrl!)
+                                    : null,
+                                child: profilePicUrl == null || profilePicUrl!.isEmpty
+                                    ? Icon(Icons.person, size: 40, color: Colors.grey.shade600)
+                                    : null,
+                              ),
+                              if (uploadingImage)
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 2),
+                                    ),
+                                    child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: usernameController,
                         decoration: const InputDecoration(
@@ -617,15 +718,6 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                         },
                         title: const Text('Change Status'),
                       ),
-                      SwitchListTile(
-                        value: statusActive,
-                        onChanged: (v) {
-                          setModalState(() {
-                            statusActive = v;
-                          });
-                        },
-                        title: const Text('Active'),
-                      ),
                     ],
                   ),
                 ),
@@ -653,6 +745,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                               name: nameController.text.trim().isEmpty ? null : nameController.text.trim(),
                               phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
                               role: roleController.text.trim().isEmpty ? null : roleController.text.trim(),
+                              profilePicUrl: profilePicUrl,
                               canManageInventory: canManageInventory,
                               canManageOrders: canManageOrders,
                               canChat: canChat,

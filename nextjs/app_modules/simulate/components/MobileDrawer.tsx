@@ -43,7 +43,7 @@ export function MobileDrawer({
 
   const menuItems = [
     { label: 'Profile', icon: <AccountIcon />, view: 'profile' as const },
-    ...(mobileUser?.role === 'supplier' ? [{ label: 'Products', icon: <InventoryIcon />, view: 'my-products' as const }] : []),
+    ...(mobileUser?.role === 'supplier' || mobileUser?.role === 'store' ? [{ label: 'Products', icon: <InventoryIcon />, view: 'my-products' as const }] : []),
     ...(mobileUser?.role === 'supplier' ? [] : [{ label: 'Suppliers', icon: <StoreIcon />, view: 'suppliers' as const }]),
     ...(mobileUser?.role === 'store' ? [] : [{ label: 'Stores', icon: <StoreIcon />, view: 'stores' as const }]),
     { 

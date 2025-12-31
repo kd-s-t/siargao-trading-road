@@ -6,8 +6,9 @@ import 'package:siargao_trading_road/models/order.dart';
 
 class DrawerContent extends StatelessWidget {
   final GlobalKey<NavigatorState>? navigatorKey;
+  final Function(int)? onNavigateToIndex;
   
-  const DrawerContent({super.key, this.navigatorKey});
+  const DrawerContent({super.key, this.navigatorKey, this.onNavigateToIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +108,7 @@ class DrawerContent extends StatelessWidget {
         ? [
             {'label': 'Profile', 'icon': Icons.account_circle, 'route': '/profile'},
             {'label': 'Suppliers', 'icon': Icons.store, 'route': '/suppliers'},
+            {'label': 'Products', 'icon': Icons.inventory_2, 'route': '/products'},
             {
               'label': 'Orders',
               'icon': Icons.list_alt,
@@ -146,6 +148,19 @@ class DrawerContent extends StatelessWidget {
           onTap: () {
             final route = item['route'] as String;
             Navigator.pop(context);
+            
+            if (onNavigateToIndex != null) {
+              final index = route == '/suppliers' ? 0
+                  : route == '/products' ? 1
+                  : route == '/orders' ? 2
+                  : route == '/profile' ? 3
+                  : -1;
+              if (index >= 0) {
+                onNavigateToIndex!(index);
+                return;
+              }
+            }
+            
             if (navigatorKey?.currentState != null) {
               navigatorKey!.currentState!.pushNamed(route);
             } else {

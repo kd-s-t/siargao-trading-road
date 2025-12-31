@@ -99,12 +99,21 @@ func UploadImage(c *gin.Context) {
 
 	role, _ := c.Get("role")
 	folderType := c.Query("type")
+	employeeID := c.Query("employee_id")
 
 	var key string
-	if folderType == "product" {
-		key = fmt.Sprintf("products/%d/%s", userID, fmt.Sprintf("%d%s", time.Now().Unix(), ext))
-	} else {
-		key = fmt.Sprintf("uploads/%s/%d/%s", role, userID, fmt.Sprintf("%d%s", time.Now().Unix(), ext))
+	timestamp := fmt.Sprintf("%d%s", time.Now().Unix(), ext)
+	switch folderType {
+	case "product":
+		key = fmt.Sprintf("products/%d/%s", userID, timestamp)
+	case "employee":
+		if employeeID != "" {
+			key = fmt.Sprintf("employees/%d/%s/%s", userID, employeeID, timestamp)
+		} else {
+			key = fmt.Sprintf("employees/%d/%s", userID, timestamp)
+		}
+	default:
+		key = fmt.Sprintf("uploads/%s/%d/%s", role, userID, timestamp)
 	}
 
 	contentType := file.Header.Get("Content-Type")

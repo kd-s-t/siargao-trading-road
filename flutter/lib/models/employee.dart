@@ -11,6 +11,7 @@ class Employee {
   final bool canChangeStatus;
   final bool canRate;
   final bool statusActive;
+  final String? profilePicUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -27,6 +28,7 @@ class Employee {
     required this.canChangeStatus,
     required this.canRate,
     required this.statusActive,
+    this.profilePicUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -54,6 +56,7 @@ class Employee {
       canChangeStatus: json['can_change_status'] as bool? ?? false,
       canRate: json['can_rate'] as bool? ?? false,
       statusActive: json['status_active'] as bool? ?? false,
+      profilePicUrl: json['profile_pic_url'] as String?,
       createdAt: parseDate('created_at'),
       updatedAt: parseDate('updated_at'),
     );

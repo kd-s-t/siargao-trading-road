@@ -14,6 +14,8 @@ import {
   Users,
   UserPlus,
   Search,
+  Mail,
+  MessageCircle,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/marketing/Header';
@@ -396,6 +398,72 @@ export default function Home() {
             <p className="text-blue-100 text-sm">Available for Android now. iOS version launching soon.</p>
           </motion.div>
         </motion.div>
+      </div>
+
+      <div id="contact" className="py-12 sm:py-16 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div
+            className="text-center mb-8 sm:mb-12 md:mb-16"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={stagger}
+          >
+            <motion.div className="inline-block mb-4 sm:mb-6" variants={fadeIn}>
+              <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl">
+                <MessageCircle className="w-8 h-8 text-white" />
+              </div>
+            </motion.div>
+            <motion.h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 px-4 sm:px-0" variants={fadeIn}>
+              Have Questions?
+            </motion.h2>
+            <motion.p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4 sm:px-0" variants={fadeIn}>
+              We&apos;re here to help. Reach out to us for any inquiries, support, or feedback.
+            </motion.p>
+          </motion.div>
+          <motion.div
+            className="max-w-2xl mx-auto"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={stagger}
+          >
+            <motion.div
+              className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl p-8 sm:p-10 shadow-lg border border-cyan-100"
+              variants={fadeIn}
+            >
+              <div className="text-center space-y-6">
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Mail className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Get in Touch</h3>
+                    <p className="text-gray-600 mb-4">
+                      Send us an email and we&apos;ll get back to you as soon as possible.
+                    </p>
+                    <a
+                      href="mailto:hello@siargaotradingroad.com"
+                      className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full font-semibold hover:from-cyan-600 hover:to-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
+                    >
+                      <Mail className="w-5 h-5" />
+                      <span>hello@siargaotradingroad.com</span>
+                    </a>
+                  </div>
+                </div>
+                <div className="pt-6 border-t border-cyan-200">
+                  <p className="text-sm text-gray-600">
+                    For support inquiries, visit our{' '}
+                    <a href="/support" className="text-cyan-600 hover:text-cyan-700 font-semibold underline">
+                      support page
+                    </a>
+                    {' '}for more information.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
       </div>
 
       <Footer />

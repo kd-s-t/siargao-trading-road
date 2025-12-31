@@ -22,13 +22,7 @@ export function DashboardContent() {
     const redirect = !authLoading && (!user || user.role !== 'admin');
     
     if (redirect) {
-      if (user?.role === 'store') {
-        router.push('/store/dashboard');
-      } else if (user?.role === 'supplier') {
-        router.push('/supplier/dashboard');
-      } else {
-        router.push('/login');
-      }
+      router.push('/login');
     }
   }, [user, authLoading, router]);
 

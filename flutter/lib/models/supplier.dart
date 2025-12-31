@@ -12,6 +12,8 @@ class Supplier {
   final String? closingTime;
   final double? latitude;
   final double? longitude;
+  final double? averageRating;
+  final int ratingCount;
 
   Supplier({
     required this.id,
@@ -27,6 +29,8 @@ class Supplier {
     this.closingTime,
     this.latitude,
     this.longitude,
+    this.averageRating,
+    this.ratingCount = 0,
   });
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
@@ -58,6 +62,8 @@ class Supplier {
       closingTime: json['closing_time'] as String?,
       latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
       longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
+      averageRating: json['average_rating'] != null ? (json['average_rating'] as num).toDouble() : null,
+      ratingCount: json['rating_count'] as int? ?? 0,
     );
   }
 }

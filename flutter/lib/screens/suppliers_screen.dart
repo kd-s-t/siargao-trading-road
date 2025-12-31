@@ -37,7 +37,6 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       if (mounted && !_hasLoaded) {
         _loadSuppliers();
       }
-      _mapController.move(_siargaoCenter, 11.0);
     });
   }
 
@@ -656,7 +655,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       children: [
         FlutterMap(
           mapController: _mapController,
-          options: MapOptions(
+          options: const MapOptions(
             initialCenter: _siargaoCenter,
             initialZoom: 11.0,
             minZoom: 9.0,
@@ -673,12 +672,12 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 return Marker(
                   point: LatLng(supplier.latitude!, supplier.longitude!),
                   width: 80,
-                  height: 80,
+                  height: supplier.averageRating != null && supplier.ratingCount > 0 ? 95 : 80,
                   child: GestureDetector(
                     onTap: () => _handleSupplierPress(supplier),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(4),
@@ -688,7 +687,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                             border: Border.all(color: Colors.white, width: 2),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
+                                color: Colors.black.withValues(alpha: 0.3),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -740,32 +739,63 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                   ),
                                 ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 70),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: supplier.averageRating != null && supplier.ratingCount > 0 ? 3 : 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
+                                  color: Colors.black.withValues(alpha: 0.2),
                                   blurRadius: 2,
                                   offset: const Offset(0, 1),
                                 ),
                               ],
                             ),
-                            child: Text(
-                              supplier.name,
-                              style: const TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  supplier.name,
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                ),
+                                if (supplier.averageRating != null && supplier.ratingCount > 0) ...[
+                                  const SizedBox(height: 1),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.star,
+                                        size: 8,
+                                        color: Colors.amber[700],
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        supplier.averageRating!.toStringAsFixed(1),
+                                        style: TextStyle(
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey[800],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ),

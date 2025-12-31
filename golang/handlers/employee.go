@@ -17,6 +17,7 @@ type EmployeeCreateRequest struct {
 	Name               string `json:"name"`
 	Phone              string `json:"phone"`
 	Role               string `json:"role"`
+	ProfilePicURL      string `json:"profile_pic_url"`
 	CanManageInventory *bool  `json:"can_manage_inventory"`
 	CanManageOrders    *bool  `json:"can_manage_orders"`
 	CanChat            *bool  `json:"can_chat"`
@@ -30,6 +31,7 @@ type EmployeeUpdateRequest struct {
 	Name               *string `json:"name"`
 	Phone              *string `json:"phone"`
 	Role               *string `json:"role"`
+	ProfilePicURL      *string `json:"profile_pic_url"`
 	CanManageInventory *bool   `json:"can_manage_inventory"`
 	CanManageOrders    *bool   `json:"can_manage_orders"`
 	CanChat            *bool   `json:"can_chat"`
@@ -109,6 +111,7 @@ func CreateEmployee(c *gin.Context) {
 		Name:               req.Name,
 		Phone:              req.Phone,
 		Role:               req.Role,
+		ProfilePicURL:      req.ProfilePicURL,
 		CanManageInventory: true,
 		CanManageOrders:    true,
 		CanChat:            true,
@@ -208,14 +211,21 @@ func UpdateEmployee(c *gin.Context) {
 		employee.Password = string(hashedPassword)
 	}
 
-	if req.Name != nil {
-		employee.Name = *req.Name
+	if !empCtx.IsEmployee {
+		if req.Name != nil {
+			employee.Name = *req.Name
+		}
+		if req.Role != nil {
+			employee.Role = *req.Role
+		}
 	}
+
+	if req.ProfilePicURL != nil {
+		employee.ProfilePicURL = *req.ProfilePicURL
+	}
+
 	if req.Phone != nil {
 		employee.Phone = *req.Phone
-	}
-	if req.Role != nil {
-		employee.Role = *req.Role
 	}
 	if !empCtx.IsEmployee {
 		if req.CanManageInventory != nil {

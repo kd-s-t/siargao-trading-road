@@ -4,13 +4,17 @@ import (
 	"siargao-trading-road/config"
 	"siargao-trading-road/handlers"
 	"siargao-trading-road/middleware"
+	"siargao-trading-road/services"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRoutes(r *gin.Engine, cfg *config.Config) {
+	emailService := services.NewEmailService(cfg)
+	
 	r.Use(func(c *gin.Context) {
 		c.Set("config", cfg)
+		c.Set("email_service", emailService)
 		c.Next()
 	})
 
@@ -44,6 +48,8 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 			protected.PUT("/products/:id", handlers.UpdateProduct)
 			protected.DELETE("/products/:id", handlers.DeleteProduct)
 			protected.POST("/products/:id/restore", handlers.RestoreProduct)
+			protected.GET("/products/:id/stock-history", handlers.GetProductStockHistory)
+			protected.GET("/stock-history", handlers.GetStockHistory)
 
 			protected.GET("/orders", handlers.GetOrders)
 			protected.GET("/orders/draft", handlers.GetDraftOrder)

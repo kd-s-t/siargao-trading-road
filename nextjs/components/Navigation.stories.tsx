@@ -34,18 +34,6 @@ const getAdminMenuItems = (): MenuItem[] => [
   { text: 'Products', icon: <InventoryIcon />, path: '/products' },
 ];
 
-const getStoreMenuItems = (): MenuItem[] => [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/store/dashboard' },
-  { text: 'Orders', icon: <ShoppingCartIcon />, path: '/store/orders' },
-  { text: 'Products', icon: <InventoryIcon />, path: '/store/products' },
-];
-
-const getSupplierMenuItems = (): MenuItem[] => [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/supplier/dashboard' },
-  { text: 'Orders', icon: <ShoppingCartIcon />, path: '/supplier/orders' },
-  { text: 'Products', icon: <InventoryIcon />, path: '/supplier/products' },
-];
-
 interface NavigationDrawerProps {
   menuItems: MenuItem[];
   selectedPath?: string;
@@ -96,30 +84,6 @@ export const AdminNavigation: Story = {
   render: () => (
     <Box sx={{ display: 'flex' }}>
       <NavigationDrawer menuItems={getAdminMenuItems()} selectedPath="/dashboard" />
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Toolbar />
-        <Box>Content area</Box>
-      </Box>
-    </Box>
-  ),
-};
-
-export const StoreNavigation: Story = {
-  render: () => (
-    <Box sx={{ display: 'flex' }}>
-      <NavigationDrawer menuItems={getStoreMenuItems()} selectedPath="/store/dashboard" />
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Toolbar />
-        <Box>Content area</Box>
-      </Box>
-    </Box>
-  ),
-};
-
-export const SupplierNavigation: Story = {
-  render: () => (
-    <Box sx={{ display: 'flex' }}>
-      <NavigationDrawer menuItems={getSupplierMenuItems()} selectedPath="/supplier/dashboard" />
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
         <Box>Content area</Box>

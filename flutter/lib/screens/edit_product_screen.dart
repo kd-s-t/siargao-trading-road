@@ -3,9 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:siargao_trading_road/models/product.dart';
+import 'package:siargao_trading_road/models/stock_history.dart';
 import 'package:siargao_trading_road/services/auth_service.dart';
 import 'package:siargao_trading_road/services/product_service.dart';
+import 'package:siargao_trading_road/services/stock_history_service.dart';
 
 class EditProductScreen extends StatefulWidget {
   final Product? product;
@@ -23,6 +26,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
   String? _uploading;
   File? _selectedImage;
   String? _imageUrl;
+  List<StockHistory> _stockHistory = [];
+  bool _loadingStockHistory = false;
 
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
@@ -64,6 +69,32 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _unitOptions = _unitOptions.toSet().toList();
     _categoryController = TextEditingController(text: product?.category ?? '');
     _imageUrl = product?.imageUrl;
+    if (product != null) {
+      _loadStockHistory();
+    }
+  }
+
+  Future<void> _loadStockHistory() async {
+    if (widget.product == null) return;
+    
+    setState(() {
+      _loadingStockHistory = true;
+    });
+
+    try {
+      final history = await StockHistoryService.getProductStockHistory(
+        widget.product!.id,
+        limit: 50,
+      );
+      setState(() {
+        _stockHistory = history;
+        _loadingStockHistory = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loadingStockHistory = false;
+      });
+    }
   }
 
   @override
@@ -323,12 +354,208 @@ class _EditProductScreenState extends State<EditProductScreen> {
                     : const Text('Update Product'),
               ),
               const SizedBox(height: 32),
+              _buildStockHistorySection(),
             ],
           ),
         ),
         ),
       ),
     );
+  }
+
+  Widget _buildStockHistorySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 32),
+        Row(
+          children: [
+            const Text(
+              'Stock History',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Spacer(),
+            if (_loadingStockHistory)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                iconSize: 20,
+                onPressed: _loadStockHistory,
+                tooltip: 'Refresh',
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_loadingStockHistory)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_stockHistory.isEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Center(
+                child: Text(
+                  'No stock history available',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _stockHistory.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final history = _stockHistory[index];
+              return _buildStockHistoryItem(history);
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildStockHistoryItem(StockHistory history) {
+    final isIncrease = history.changeAmount > 0;
+    final changeTypeLabel = _getChangeTypeLabel(history.changeType);
+    final dateFormat = DateFormat('MMM dd, yyyy');
+    final timeFormat = DateFormat('hh:mm a');
+    
+    return Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isIncrease ? Colors.green.shade50 : Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    isIncrease ? '+${history.changeAmount}' : '${history.changeAmount}',
+                    style: TextStyle(
+                      color: isIncrease ? Colors.green.shade700 : Colors.red.shade700,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    changeTypeLabel,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${history.previousStock} → ${history.newStock}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      if (history.updatedBy != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              history.employeeId != null ? Icons.person_outline : Icons.account_circle_outlined,
+                              size: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                'Updated by ${history.updatedBy}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Text(
+                  '${dateFormat.format(history.createdAt)} ${timeFormat.format(history.createdAt)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+            if (history.notes != null && history.notes!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                history.notes!,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getChangeTypeLabel(String changeType) {
+    switch (changeType) {
+      case 'initial_stock':
+        return 'Initial Stock';
+      case 'manual_adjustment':
+        return 'Manual Adjustment';
+      case 'order_item_added':
+        return 'Order Item Added';
+      case 'order_item_removed':
+        return 'Order Item Removed';
+      case 'stock_reset':
+        return 'Stock Reset';
+      default:
+        return changeType.replaceAll('_', ' ').split(' ').map((word) {
+          return word[0].toUpperCase() + word.substring(1);
+        }).join(' ');
+    }
   }
 
   Widget _buildImageSelector() {

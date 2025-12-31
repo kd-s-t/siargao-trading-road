@@ -34,6 +34,27 @@ type UpdateProductRequest struct {
 	ImageURL      string  `json:"image_url"`
 }
 
+func logStockChange(productID uint, previousStock int, newStock int, changeType string, userID *uint, employeeID *uint, orderID *uint, notes string) {
+	changeAmount := newStock - previousStock
+	if changeAmount == 0 {
+		return
+	}
+
+	stockHistory := models.StockHistory{
+		ProductID:     productID,
+		PreviousStock: previousStock,
+		NewStock:      newStock,
+		ChangeAmount:  changeAmount,
+		ChangeType:    changeType,
+		OrderID:       orderID,
+		UserID:        userID,
+		EmployeeID:    employeeID,
+		Notes:         notes,
+	}
+
+	database.DB.Create(&stockHistory)
+}
+
 func GetProducts(c *gin.Context) {
 	userID, err := getUserID(c)
 	if err != nil {
@@ -52,7 +73,7 @@ func GetProducts(c *gin.Context) {
 	var products []models.Product
 	query := database.DB.Preload("Supplier")
 
-	if role == "supplier" {
+	if role == "supplier" || role == "store" {
 		query = query.Where("supplier_id = ?", userID)
 	}
 
@@ -89,7 +110,7 @@ func GetProduct(c *gin.Context) {
 	var product models.Product
 	query := database.DB.Preload("Supplier").Where("id = ?", id)
 
-	if role == "supplier" {
+	if role == "supplier" || role == "store" {
 		query = query.Where("supplier_id = ?", userID)
 	}
 
@@ -133,10 +154,10 @@ func CreateProduct(c *gin.Context) {
 			return
 		}
 		supplierID = *req.SupplierID
-	case "supplier":
+	case "supplier", "store":
 		supplierID = userID
 	default:
-		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers and admins can create products"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers, stores, and admins can create products"})
 		return
 	}
 
@@ -161,6 +182,18 @@ func CreateProduct(c *gin.Context) {
 	if err := database.DB.Create(&product).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create product"})
 		return
+	}
+
+	if product.StockQuantity > 0 {
+		var userIDPtr *uint
+		if role != "admin" {
+			userIDPtr = &userID
+		}
+		var employeeIDPtr *uint
+		if empCtx.IsEmployee {
+			employeeIDPtr = &empCtx.EmployeeID
+		}
+		logStockChange(product.ID, 0, product.StockQuantity, "initial_stock", userIDPtr, employeeIDPtr, nil, "")
 	}
 
 	if err := database.DB.Preload("Supplier").First(&product, product.ID).Error; err != nil {
@@ -188,7 +221,7 @@ func UpdateProduct(c *gin.Context) {
 	var product models.Product
 	query := database.DB.Where("id = ?", id)
 
-	if role == "supplier" {
+	if role == "supplier" || role == "store" {
 		query = query.Where("supplier_id = ?", userID)
 	}
 
@@ -201,6 +234,16 @@ func UpdateProduct(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	previousStock := product.StockQuantity
+	var userIDPtr *uint
+	if role != "admin" {
+		userIDPtr = &userID
+	}
+	var employeeIDPtr *uint
+	if empCtx.IsEmployee {
+		employeeIDPtr = &empCtx.EmployeeID
 	}
 
 	// Employees can only update stock quantity
@@ -250,6 +293,10 @@ func UpdateProduct(c *gin.Context) {
 		return
 	}
 
+	if req.StockQuantity != nil && previousStock != product.StockQuantity {
+		logStockChange(product.ID, previousStock, product.StockQuantity, "manual_adjustment", userIDPtr, employeeIDPtr, nil, "")
+	}
+
 	c.JSON(http.StatusOK, product)
 }
 
@@ -270,7 +317,7 @@ func DeleteProduct(c *gin.Context) {
 	var product models.Product
 	query := database.DB.Where("id = ?", id)
 
-	if role == "supplier" {
+	if role == "supplier" || role == "store" {
 		query = query.Where("supplier_id = ?", userID)
 	}
 
@@ -304,7 +351,7 @@ func RestoreProduct(c *gin.Context) {
 	var product models.Product
 	query := database.DB.Unscoped().Where("id = ?", id)
 
-	if role == "supplier" {
+	if role == "supplier" || role == "store" {
 		query = query.Where("supplier_id = ?", userID)
 	}
 
@@ -337,6 +384,29 @@ func ResetProductStocks(c *gin.Context) {
 	if role != "supplier" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "only suppliers can reset stocks"})
 		return
+	}
+
+	var products []models.Product
+	if err := database.DB.Where("supplier_id = ?", userID).
+		Where("deleted_at IS NULL").
+		Where("stock_quantity != 0").
+		Find(&products).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch products"})
+		return
+	}
+
+	var userIDPtr *uint
+	if role != "admin" {
+		userIDPtr = &userID
+	}
+	var employeeIDPtr *uint
+	if empCtx.IsEmployee {
+		employeeIDPtr = &empCtx.EmployeeID
+	}
+
+	for _, product := range products {
+		previousStock := product.StockQuantity
+		logStockChange(product.ID, previousStock, 0, "stock_reset", userIDPtr, employeeIDPtr, nil, "")
 	}
 
 	result := database.DB.Model(&models.Product{}).
@@ -393,10 +463,10 @@ func BulkCreateProducts(c *gin.Context) {
 				continue
 			}
 			supplierID = *productReq.SupplierID
-		} else if role == "supplier" {
+		} else if role == "supplier" || role == "store" {
 			supplierID = userID
 		} else {
-			errors = append(errors, fmt.Sprintf("Product %d: only suppliers and admins can create products", i+1))
+			errors = append(errors, fmt.Sprintf("Product %d: only suppliers, stores, and admins can create products", i+1))
 			continue
 		}
 
@@ -421,6 +491,18 @@ func BulkCreateProducts(c *gin.Context) {
 		if err := database.DB.Create(&product).Error; err != nil {
 			errors = append(errors, fmt.Sprintf("Product %d: failed to create - %v", i+1, err))
 			continue
+		}
+
+		if product.StockQuantity > 0 {
+			var userIDPtr *uint
+			if role != "admin" {
+				userIDPtr = &userID
+			}
+			var employeeIDPtr *uint
+			if empCtx.IsEmployee {
+				employeeIDPtr = &empCtx.EmployeeID
+			}
+			logStockChange(product.ID, 0, product.StockQuantity, "initial_stock", userIDPtr, employeeIDPtr, nil, "")
 		}
 
 		if err := database.DB.Preload("Supplier").First(&product, product.ID).Error; err != nil {

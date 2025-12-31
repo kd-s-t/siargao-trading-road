@@ -23,10 +23,6 @@ export function useLogin() {
       const response = await login(formData.email, formData.password);
       if (response?.role === 'admin') {
         router.push('/dashboard');
-      } else if (response?.role === 'store') {
-        router.push('/store/dashboard');
-      } else if (response?.role === 'supplier') {
-        router.push('/supplier/dashboard');
       } else {
         router.push('/login');
       }

@@ -5,6 +5,9 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:animate_gradient/animate_gradient.dart';
 import 'package:siargao_trading_road/screens/suppliers_screen.dart';
 import 'package:siargao_trading_road/screens/supplier_products_screen.dart';
+import 'package:siargao_trading_road/screens/products_screen.dart';
+import 'package:siargao_trading_road/screens/add_product_screen.dart';
+import 'package:siargao_trading_road/screens/edit_product_screen.dart';
 import 'package:siargao_trading_road/screens/orders_screen.dart';
 import 'package:siargao_trading_road/screens/order_detail_screen.dart';
 import 'package:siargao_trading_road/screens/truck_screen.dart';
@@ -13,8 +16,10 @@ import 'package:siargao_trading_road/screens/analytics_screen.dart';
 import 'package:siargao_trading_road/screens/employees_screen.dart';
 import 'package:siargao_trading_road/screens/schedule_editor_screen.dart';
 import 'package:siargao_trading_road/screens/ratings_screen.dart';
+import 'package:siargao_trading_road/screens/bulk_upload_products_screen.dart';
 import 'package:siargao_trading_road/navigation/smooth_page_route.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
+import 'package:siargao_trading_road/models/product.dart';
 class StoreDrawer extends StatefulWidget {
   const StoreDrawer({super.key});
 
@@ -28,6 +33,7 @@ class _StoreDrawerState extends State<StoreDrawer> {
   int _currentIndex = 0;
   late final PageController _pageController = PageController(initialPage: _currentIndex);
   final _profileEditKey = GlobalKey<ProfileScreenState>();
+  final _productsScreenKey = GlobalKey();
 
   List<Widget> _getTabletScreens(bool isEmployee) {
     if (isEmployee) {
@@ -44,6 +50,7 @@ class _StoreDrawerState extends State<StoreDrawer> {
     }
     return [
       const SuppliersScreen(useScaffold: false),
+      ProductsScreen(key: _productsScreenKey, useScaffold: false),
       const OrdersScreen(useScaffold: false),
       const AnalyticsScreen(useScaffold: false),
       const EmployeesScreen(useScaffold: false),
@@ -59,6 +66,7 @@ class _StoreDrawerState extends State<StoreDrawer> {
   List<Widget> _getPhoneScreens() {
     return [
       const SuppliersScreen(useScaffold: false),
+      ProductsScreen(key: _productsScreenKey, useScaffold: false),
       const OrdersScreen(useScaffold: false),
       ProfileScreen(
         key: _profileEditKey,
@@ -165,10 +173,15 @@ class _StoreDrawerState extends State<StoreDrawer> {
         );
       case 1:
         return AppBar(
-          title: _buildAppBarTitle(isTablet, 'Orders'),
+          title: _buildAppBarTitle(isTablet, 'Products'),
           centerTitle: isTablet,
         );
       case 2:
+        return AppBar(
+          title: _buildAppBarTitle(isTablet, 'Orders'),
+          centerTitle: isTablet,
+        );
+      case 3:
         if (isPhone) {
           return AppBar(
             title: _buildAppBarTitle(isTablet, 'Profile'),
@@ -213,12 +226,17 @@ class _StoreDrawerState extends State<StoreDrawer> {
             centerTitle: isTablet,
           );
         }
-      case 3:
+      case 4:
+        return AppBar(
+          title: _buildAppBarTitle(isTablet, 'Analytics'),
+          centerTitle: isTablet,
+        );
+      case 5:
         return AppBar(
           title: _buildAppBarTitle(isTablet, 'Manage Employees'),
           centerTitle: isTablet,
         );
-      case 4:
+      case 6:
         return AppBar(
           title: _buildAppBarTitle(isTablet, 'Profile'),
           centerTitle: isTablet,
@@ -267,7 +285,113 @@ class _StoreDrawerState extends State<StoreDrawer> {
     return MediaQuery.of(context).size.width >= 600;
   }
 
+  Widget? _buildFloatingActionButton() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isEmployee = authProvider.isEmployee;
+    final canManageInventory = authProvider.employee?.canManageInventory ?? false;
+    
+    if (isEmployee) {
+      if (_currentIndex != 1) return null;
+      if (!canManageInventory) return null;
+      return FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.pushNamed(context, '/add-product');
+          if (result is Product && mounted) {
+            final state = _productsScreenKey.currentState;
+            if (state != null) {
+              (state as dynamic).addProduct(result);
+            }
+          }
+        },
+        child: const Icon(Icons.add),
+      );
+    }
+    
+    if (_currentIndex == 1) {
+      return FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (context) => SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.add),
+                    title: const Text('Add 1 Product'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/add-product').then((result) {
+                        if (result is Product && mounted) {
+                          final state = _productsScreenKey.currentState;
+                          if (state != null) {
+                            (state as dynamic).addProduct(result);
+                          }
+                        }
+                      });
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.upload_file),
+                    title: const Text('Upload CSV'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      final navigator = StoreDrawer.navigatorKey.currentState;
+                      if (navigator != null) {
+                        navigator.pushNamed('/bulk-upload-products').then((result) {
+                          if (result == true && mounted) {
+                            final state = _productsScreenKey.currentState;
+                            if (state != null) {
+                              (state as dynamic).refreshProducts();
+                            }
+                          }
+                        });
+                      } else {
+                        Navigator.pushNamed(context, '/bulk-upload-products').then((result) {
+                          if (result == true && mounted) {
+                            final state = _productsScreenKey.currentState;
+                            if (state != null) {
+                              (state as dynamic).refreshProducts();
+                            }
+                          }
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
+      );
+    }
+    
+    return null;
+  }
+
   void _onNavigationTap(int index) {
+    if (!mounted || !_pageController.hasClients) return;
+    final isTablet = _isTablet(context);
+    _safeSetState(() {
+      _currentIndex = index;
+    });
+    _pageController.animateToPage(
+      index,
+      duration: isTablet 
+        ? const Duration(milliseconds: 400)
+        : const Duration(milliseconds: 300),
+      curve: isTablet 
+        ? Curves.easeOutCubic
+        : Curves.easeInOut,
+    ).catchError((_) {});
+  }
+
+  void _navigateToIndex(int index) {
     if (!mounted || !_pageController.hasClients) return;
     final isTablet = _isTablet(context);
     _safeSetState(() {
@@ -313,6 +437,11 @@ class _StoreDrawerState extends State<StoreDrawer> {
               icon: Icon(Icons.store_outlined),
               selectedIcon: Icon(Icons.store),
               label: Text('Suppliers'),
+            ),
+            const NavigationRailDestination(
+              icon: Icon(Icons.inventory_2_outlined),
+              selectedIcon: Icon(Icons.inventory_2),
+              label: Text('Products'),
             ),
             const NavigationRailDestination(
               icon: Icon(Icons.shopping_cart_outlined),
@@ -431,6 +560,7 @@ class _StoreDrawerState extends State<StoreDrawer> {
                 },
                 children: _getPhoneScreens(),
               ),
+        floatingActionButton: _buildFloatingActionButton(),
         bottomNavigationBar: isTablet
             ? null
             : SafeArea(
@@ -445,8 +575,9 @@ class _StoreDrawerState extends State<StoreDrawer> {
                   animationDuration: const Duration(milliseconds: 300),
                   items: [
                     _buildAssetIcon('assets/suppliers.png', _currentIndex == 0, context),
-                    _buildAssetIcon('assets/orders.png', _currentIndex == 1, context),
-                    _buildProfileIcon(authProvider, _currentIndex == 2, context),
+                    _buildAssetIcon('assets/products.png', _currentIndex == 1, context),
+                    _buildAssetIcon('assets/orders.png', _currentIndex == 2, context),
+                    _buildProfileIcon(authProvider, _currentIndex == 3, context),
                   ],
                 ),
               ),
@@ -454,6 +585,32 @@ class _StoreDrawerState extends State<StoreDrawer> {
       onGenerateRoute: (settings) {
         Widget screen;
         switch (settings.name) {
+          case '/suppliers':
+          case '/products':
+          case '/orders':
+          case '/profile':
+            final index = settings.name == '/suppliers' ? 0
+                : settings.name == '/products' ? 1
+                : settings.name == '/orders' ? 2
+                : 3;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _navigateToIndex(index);
+              if (StoreDrawer.navigatorKey.currentState?.canPop() ?? false) {
+                StoreDrawer.navigatorKey.currentState!.pop();
+              }
+            });
+            return SmoothPageRoute(
+              child: const SizedBox.shrink(),
+              settings: settings,
+            );
+          case '/add-product':
+            screen = const AddProductScreen();
+            break;
+          case '/edit-product':
+            screen = EditProductScreen(
+              product: (settings.arguments as Map?)?['product'],
+            );
+            break;
           case '/supplier-products':
             final args = settings.arguments as Map<String, dynamic>?;
             final supplierId = args?['supplierId'] as int?;
@@ -482,6 +639,9 @@ class _StoreDrawerState extends State<StoreDrawer> {
           case '/ratings':
             screen = const RatingsScreen();
             break;
+          case '/bulk-upload-products':
+            screen = const BulkUploadProductsScreen();
+            break;
           default:
             return null;
         }
@@ -497,26 +657,28 @@ class _StoreDrawerState extends State<StoreDrawer> {
     final logo = authProvider.user?.logoUrl;
     
     if (logo != null && logo.isNotEmpty) {
-      return Image.network(
-        logo,
-        width: 30,
-        height: 30,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Icon(
-            Icons.account_circle,
-            size: 30,
-            color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
-          );
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Icon(
-            Icons.account_circle,
-            size: 30,
-            color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
-          );
-        },
+      return ClipOval(
+        child: Image.network(
+          logo,
+          width: 30,
+          height: 30,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(
+              Icons.account_circle,
+              size: 30,
+              color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Icon(
+              Icons.account_circle,
+              size: 30,
+              color: isActive ? Theme.of(context).colorScheme.secondary : Colors.white,
+            );
+          },
+        ),
       );
     }
     return Icon(

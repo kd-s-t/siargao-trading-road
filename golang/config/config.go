@@ -18,6 +18,11 @@ type Config struct {
 	S3Bucket     string
 	AWSAccessKey string
 	AWSSecretKey string
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
 }
 
 func Load() (*Config, error) {
@@ -35,6 +40,11 @@ func Load() (*Config, error) {
 		S3Bucket:     getEnv("S3_BUCKET", ""),
 		AWSAccessKey: getEnv("AWS_ACCESS_KEY_ID", ""),
 		AWSSecretKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),
+		SMTPHost:     getEnv("SMTP_HOST", "smtp.gmail.com"),
+		SMTPPort:     getEnv("SMTP_PORT", "587"),
+		SMTPUser:     getEnv("SMTP_USER", ""),
+		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:     getEnv("SMTP_FROM", ""),
 	}, nil
 }
 

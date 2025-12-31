@@ -35,16 +35,8 @@ export function useAdminAuthRedirect() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user) {
+      if (!user || user.role !== 'admin') {
         router.push('/login');
-      } else if (user.role !== 'admin') {
-        if (user.role === 'store') {
-          router.push('/store/dashboard');
-        } else if (user.role === 'supplier') {
-          router.push('/supplier/dashboard');
-        } else {
-          router.push('/login');
-        }
       }
     }
   }, [user, authLoading, router]);

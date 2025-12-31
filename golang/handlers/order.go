@@ -15,6 +15,7 @@ import (
 	"siargao-trading-road/config"
 	"siargao-trading-road/database"
 	"siargao-trading-road/models"
+	"siargao-trading-road/services"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -45,6 +46,18 @@ func getUserID(c *gin.Context) (uint, error) {
 	default:
 		return 0, fmt.Errorf("invalid user ID type: %T", v)
 	}
+}
+
+func getEmailService(c *gin.Context) *services.EmailService {
+	emailServiceVal, exists := c.Get("email_service")
+	if !exists {
+		return nil
+	}
+	emailService, ok := emailServiceVal.(*services.EmailService)
+	if !ok {
+		return nil
+	}
+	return emailService
 }
 
 func GetOrders(c *gin.Context) {
@@ -196,6 +209,7 @@ func UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
+	oldStatus := order.Status
 	order.Status = models.OrderStatus(req.Status)
 
 	if err := database.DB.Save(&order).Error; err != nil {
@@ -203,7 +217,19 @@ func UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
-	database.DB.Preload("Store").Preload("OrderItems").Preload("OrderItems.Product").First(&order, order.ID)
+	if err := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").First(&order, order.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load order details"})
+		return
+	}
+
+	emailService := getEmailService(c)
+	if emailService != nil && oldStatus != order.Status {
+		if order.Status == models.OrderStatusDelivered {
+			go emailService.SendOrderDeliveredEmail(order)
+		} else {
+			go emailService.SendOrderStatusChangeEmail(order, oldStatus)
+		}
+	}
 
 	c.JSON(http.StatusOK, order)
 }
@@ -332,6 +358,8 @@ func AddOrderItem(c *gin.Context) {
 		return
 	}
 
+	previousStock := product.StockQuantity
+
 	if err := database.DB.Where("order_id = ? AND product_id = ?", orderID, req.ProductID).First(&existingItem).Error; err == nil {
 		existingItem.Quantity += req.Quantity
 		existingItem.Subtotal = float64(existingItem.Quantity) * existingItem.UnitPrice
@@ -352,6 +380,17 @@ func AddOrderItem(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update product stock"})
 		return
 	}
+
+	var userIDPtr *uint
+	if userID > 0 {
+		userIDPtr = &userID
+	}
+	var employeeIDPtr *uint
+	if empCtx.IsEmployee {
+		employeeIDPtr = &empCtx.EmployeeID
+	}
+	orderIDUint := uint(order.ID)
+	logStockChange(product.ID, previousStock, product.StockQuantity, "order_item_added", userIDPtr, employeeIDPtr, &orderIDUint, "")
 
 	var totalAmount float64
 	database.DB.Model(&models.OrderItem{}).Where("order_id = ?", orderID).Select("COALESCE(SUM(subtotal), 0)").Scan(&totalAmount)
@@ -407,6 +446,7 @@ func UpdateOrderItem(c *gin.Context) {
 		return
 	}
 
+	previousStock := product.StockQuantity
 	quantityDiff := req.Quantity - orderItem.Quantity
 	newStock := product.StockQuantity - quantityDiff
 
@@ -422,6 +462,17 @@ func UpdateOrderItem(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update product stock"})
 		return
 	}
+
+	var userIDPtr *uint
+	if userID > 0 {
+		userIDPtr = &userID
+	}
+	var employeeIDPtr *uint
+	if empCtx.IsEmployee {
+		employeeIDPtr = &empCtx.EmployeeID
+	}
+	orderIDUint := uint(orderItem.OrderID)
+	logStockChange(product.ID, previousStock, product.StockQuantity, "order_item_updated", userIDPtr, employeeIDPtr, &orderIDUint, "")
 
 	orderItem.Quantity = req.Quantity
 	orderItem.Subtotal = orderItem.UnitPrice * float64(req.Quantity)
@@ -474,11 +525,23 @@ func RemoveOrderItem(c *gin.Context) {
 		return
 	}
 
+	previousStock := product.StockQuantity
 	product.StockQuantity += orderItem.Quantity
 	if err := database.DB.Save(&product).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to restore product stock"})
 		return
 	}
+
+	var userIDPtr *uint
+	if userID > 0 {
+		userIDPtr = &userID
+	}
+	var employeeIDPtr *uint
+	if empCtx.IsEmployee {
+		employeeIDPtr = &empCtx.EmployeeID
+	}
+	orderIDUint := uint(orderItem.OrderID)
+	logStockChange(product.ID, previousStock, product.StockQuantity, "order_item_removed", userIDPtr, employeeIDPtr, &orderIDUint, "")
 
 	orderID := orderItem.OrderID
 	database.DB.Delete(&orderItem)
@@ -625,6 +688,11 @@ func SubmitOrder(c *gin.Context) {
 		return
 	}
 
+	emailService := getEmailService(c)
+	if emailService != nil {
+		go emailService.SendOrderSuccessEmail(order)
+	}
+
 	c.JSON(http.StatusOK, order)
 }
 
@@ -676,6 +744,11 @@ func MarkPaymentAsPaid(c *gin.Context) {
 	if err := database.DB.Preload("Store").Preload("Supplier").Preload("OrderItems").Preload("OrderItems.Product").First(&order, order.ID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load order details"})
 		return
+	}
+
+	emailService := getEmailService(c)
+	if emailService != nil {
+		go emailService.SendPaymentPaidEmail(order)
 	}
 
 	log.Printf("MarkPaymentAsPaid: payment marked as paid. orderID=%s, userID=%d", orderID, userID)
@@ -799,6 +872,15 @@ func SendInvoiceEmail(c *gin.Context) {
 	if order.Store.Email == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "store email not found"})
 		return
+	}
+
+	emailService := getEmailService(c)
+	if emailService != nil {
+		invoiceURL := ""
+		if order.InvoiceURL != "" {
+			invoiceURL = order.InvoiceURL
+		}
+		go emailService.SendInvoiceEmail(order, invoiceURL)
 	}
 
 	c.JSON(http.StatusOK, gin.H{

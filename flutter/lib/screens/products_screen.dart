@@ -8,6 +8,7 @@ import 'package:siargao_trading_road/widgets/shimmer_loading.dart';
 import 'package:siargao_trading_road/utils/snackbar_helper.dart';
 import 'package:siargao_trading_road/providers/auth_provider.dart';
 import 'package:siargao_trading_road/navigation/supplier_drawer.dart';
+import 'package:siargao_trading_road/navigation/store_drawer.dart';
 
 class ProductsScreen extends StatefulWidget {
   final bool? useScaffold;
@@ -775,7 +776,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         title: const Text('Upload CSV'),
                         onTap: () {
                           Navigator.pop(context);
-                          final navigator = SupplierDrawer.navigatorKey.currentState;
+                          final storeNavigator = StoreDrawer.navigatorKey.currentState;
+                          final supplierNavigator = SupplierDrawer.navigatorKey.currentState;
+                          final navigator = storeNavigator ?? supplierNavigator;
                           if (navigator != null) {
                             navigator.pushNamed('/bulk-upload-products').then((result) {
                               if (result == true && mounted) {

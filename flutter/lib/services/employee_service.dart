@@ -18,6 +18,7 @@ class EmployeeService {
     String? name,
     String? phone,
     String? role,
+    String? profilePicUrl,
     bool canManageInventory = true,
     bool canManageOrders = true,
     bool canChat = true,
@@ -30,6 +31,7 @@ class EmployeeService {
       'name': name,
       'phone': phone,
       'role': role,
+      'profile_pic_url': profilePicUrl,
       'can_manage_inventory': canManageInventory,
       'can_manage_orders': canManageOrders,
       'can_chat': canChat,
@@ -52,6 +54,7 @@ class EmployeeService {
     String? name,
     String? phone,
     String? role,
+    String? profilePicUrl,
     bool? canManageInventory,
     bool? canManageOrders,
     bool? canChat,
@@ -64,6 +67,7 @@ class EmployeeService {
     if (name != null) body['name'] = name;
     if (phone != null) body['phone'] = phone;
     if (role != null) body['role'] = role;
+    if (profilePicUrl != null) body['profile_pic_url'] = profilePicUrl;
     if (canManageInventory != null) body['can_manage_inventory'] = canManageInventory;
     if (canManageOrders != null) body['can_manage_orders'] = canManageOrders;
     if (canChat != null) body['can_chat'] = canChat;

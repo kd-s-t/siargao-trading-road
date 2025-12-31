@@ -21,6 +21,7 @@ type Employee struct {
 	CanChangeStatus    bool           `gorm:"default:true" json:"can_change_status"`
 	CanRate            bool           `gorm:"default:false" json:"can_rate"`
 	StatusActive       bool           `gorm:"default:true" json:"status_active"`
+	ProfilePicURL      string         `json:"profile_pic_url"`
 	CreatedAt          time.Time      `json:"created_at"`
 	UpdatedAt          time.Time      `json:"updated_at"`
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
