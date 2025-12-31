@@ -28,4 +28,3 @@ type StockHistory struct {
 func (StockHistory) TableName() string {
 	return "products_stocks_history"
 }
-

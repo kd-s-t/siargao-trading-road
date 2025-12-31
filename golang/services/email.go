@@ -5,9 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"strconv"
 	"siargao-trading-road/config"
 	"siargao-trading-road/models"
+	"strconv"
 
 	"gopkg.in/gomail.v2"
 )
@@ -16,7 +16,7 @@ import (
 var logoBytes []byte
 
 type EmailService struct {
-	config    *config.Config
+	config     *config.Config
 	logoBase64 string
 }
 
@@ -108,7 +108,7 @@ func (es *EmailService) SendThankYouEmail(user models.User) error {
 
 func (es *EmailService) SendOrderSuccessEmail(order models.Order) error {
 	subject := fmt.Sprintf("Order #%d Confirmed", order.ID)
-	
+
 	var paymentInfo string
 	if order.PaymentMethod == models.PaymentMethodGCash {
 		paymentInfo = fmt.Sprintf("Payment Method: GCash (Status: %s)", order.PaymentStatus)
@@ -125,7 +125,7 @@ func (es *EmailService) SendOrderSuccessEmail(order models.Order) error {
 
 	itemsList := ""
 	for _, item := range order.OrderItems {
-		itemsList += fmt.Sprintf("<tr><td>%s</td><td>%d</td><td>₱%.2f</td><td>₱%.2f</td></tr>", 
+		itemsList += fmt.Sprintf("<tr><td>%s</td><td>%d</td><td>₱%.2f</td><td>₱%.2f</td></tr>",
 			item.Product.Name, item.Quantity, item.UnitPrice, item.Subtotal)
 	}
 
@@ -188,7 +188,7 @@ func (es *EmailService) SendOrderSuccessEmail(order models.Order) error {
 
 func (es *EmailService) SendOrderStatusChangeEmail(order models.Order, oldStatus models.OrderStatus) error {
 	subject := fmt.Sprintf("Order #%d Status Updated", order.ID)
-	
+
 	statusMessages := map[models.OrderStatus]string{
 		models.OrderStatusPreparing: "Your order is now being prepared by the supplier.",
 		models.OrderStatusInTransit: "Your order is now in transit and on its way to you.",
@@ -243,7 +243,7 @@ func (es *EmailService) SendOrderStatusChangeEmail(order models.Order, oldStatus
 
 func (es *EmailService) SendPaymentPaidEmail(order models.Order) error {
 	subject := fmt.Sprintf("Payment Confirmed for Order #%d", order.ID)
-	
+
 	body := fmt.Sprintf(`
 		<html>
 		<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
@@ -286,14 +286,14 @@ func (es *EmailService) SendPaymentPaidEmail(order models.Order) error {
 
 func (es *EmailService) SendOrderDeliveredEmail(order models.Order) error {
 	subject := fmt.Sprintf("Order #%d Delivered", order.ID)
-	
+
 	deliveryDetails := ""
 	if order.DeliveryOption == models.DeliveryOptionDeliver && order.ShippingAddress != "" {
 		deliveryDetails = fmt.Sprintf("<p><strong>Delivery Address:</strong> %s</p>", order.ShippingAddress)
 	} else {
 		deliveryDetails = "<p><strong>Delivery Method:</strong> Pickup</p>"
 	}
-	
+
 	body := fmt.Sprintf(`
 		<html>
 		<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
@@ -336,12 +336,12 @@ func (es *EmailService) SendOrderDeliveredEmail(order models.Order) error {
 
 func (es *EmailService) SendInvoiceEmail(order models.Order, invoiceURL string) error {
 	subject := fmt.Sprintf("Invoice for Order #%d", order.ID)
-	
+
 	invoiceLink := ""
 	if invoiceURL != "" {
 		invoiceLink = fmt.Sprintf(`<p><a href="%s" style="background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Download Invoice</a></p>`, invoiceURL)
 	}
-	
+
 	body := fmt.Sprintf(`
 		<html>
 		<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
@@ -364,4 +364,3 @@ func (es *EmailService) SendInvoiceEmail(order models.Order, invoiceURL string) 
 
 	return es.SendEmail(order.Store.Email, subject, body)
 }
-

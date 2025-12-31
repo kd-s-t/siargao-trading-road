@@ -11,7 +11,7 @@ import (
 
 func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 	emailService := services.NewEmailService(cfg)
-	
+
 	r.Use(func(c *gin.Context) {
 		c.Set("config", cfg)
 		c.Set("email_service", emailService)

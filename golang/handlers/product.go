@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -52,7 +53,14 @@ func logStockChange(productID uint, previousStock int, newStock int, changeType 
 		Notes:         notes,
 	}
 
-	database.DB.Create(&stockHistory)
+	if err := database.DB.Create(&stockHistory).Error; err != nil {
+		log.Printf("Failed to create stock history: %v", err)
+		log.Printf("Stock history details: ProductID=%d, PreviousStock=%d, NewStock=%d, ChangeType=%s, UserID=%v, EmployeeID=%v",
+			productID, previousStock, newStock, changeType, userID, employeeID)
+	} else {
+		log.Printf("Stock history created: ID=%d, ProductID=%d, ChangeType=%s, ChangeAmount=%d",
+			stockHistory.ID, productID, changeType, changeAmount)
+	}
 }
 
 func GetProducts(c *gin.Context) {
